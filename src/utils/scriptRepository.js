@@ -42,3 +42,8 @@ export async function deleteScript(name) {
   const { error } = await supabase.from(TABLE).delete().eq('name', name)
   if (error) throw error
 }
+
+export async function deleteScript(name) {
+  const { error } = await supabase.from(TABLE).delete().eq('title', name)
+  if (error) throw error
+}
