@@ -155,7 +155,8 @@ a {
 .editor-title {
   text-align: center;
   margin: 0 0 1rem 0;
-  
+}
+
 .app-name {
   position: fixed;
   bottom: 1rem;
