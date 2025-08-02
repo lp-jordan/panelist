@@ -53,7 +53,7 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
 
   async function handleDeleteScript(name) {
     await deleteScript(name)
-    refreshScripts()
+    setScripts(await listScripts())
   }
 
   async function handleCreateProject() {
