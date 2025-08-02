@@ -139,3 +139,11 @@ a {
   padding: 0.25rem 0;
 }
 
+.app-name {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  color: var(--text-color);
+}
+
