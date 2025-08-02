@@ -1,3 +1,4 @@
+/* global __APP_VERSION__ */
 import { useEditor, EditorContent } from '@tiptap/react'
 import { useState } from 'react'
 import { BubbleMenu } from '@tiptap/react/menus'
@@ -68,7 +69,7 @@ export default function App() {
           </>
         )}
       </div>
-      <div className="app-name">Panelist v{import.meta.env.__APP_VERSION__}</div>
+      <div className="app-name">Panelist v{__APP_VERSION__}</div>
     </div>
   )
 }
