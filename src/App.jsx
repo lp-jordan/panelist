@@ -1,3 +1,11 @@
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+
 export default function App() {
-  return <div id="editor">Editor placeholder</div>;
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: '',
+  })
+
+  return <EditorContent editor={editor} />
 }
