@@ -32,37 +32,40 @@ export default function App() {
   })
 
   return (
-    <div className="app-layout">
-      <Sidebar />
-      <div className="editor-container">
-        {editor && (
-          <BubbleMenu
-            className="bubble-menu"
-            editor={editor}
-            tippyOptions={{ duration: 100 }}
-          >
-            <button
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              className={editor.isActive('bold') ? 'is-active' : ''}
+    <>
+      <div className="app-layout">
+        <Sidebar />
+        <div className="editor-container">
+          {editor && (
+            <BubbleMenu
+              className="bubble-menu"
+              editor={editor}
+              tippyOptions={{ duration: 100 }}
             >
-              B
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={editor.isActive('italic') ? 'is-active' : ''}
-            >
-              I
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-              className={editor.isActive('underline') ? 'is-active' : ''}
-            >
-              U
-            </button>
-          </BubbleMenu>
-        )}
-        <EditorContent editor={editor} />
+              <button
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={editor.isActive('bold') ? 'is-active' : ''}
+              >
+                B
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={editor.isActive('italic') ? 'is-active' : ''}
+              >
+                I
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                className={editor.isActive('underline') ? 'is-active' : ''}
+              >
+                U
+              </button>
+            </BubbleMenu>
+          )}
+          <EditorContent editor={editor} />
+        </div>
       </div>
-    </div>
+      <div className="app-name">Panelist</div>
+    </>
   )
 }
