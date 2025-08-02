@@ -44,7 +44,6 @@ export default function App() {
             <BubbleMenu
               className="bubble-menu"
               editor={editor}
-              tippyOptions={{ duration: 100 }}
             >
               <button
                 onClick={() => editor.chain().focus().toggleBold().run()}
