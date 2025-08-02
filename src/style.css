@@ -2,6 +2,7 @@
   --background-color: #000;
   --text-color: #fff;
   --accent-color: #4e9cff;
+  --editor-background-color: #111;
 }
 
 html, body {
@@ -18,7 +19,9 @@ a {
 .ProseMirror {
   padding: 1rem;
   border: 1px solid #333;
-  min-height: 200px;
+  min-height: 100vh;
+  background: var(--editor-background-color);
+  box-sizing: border-box;
 }
 
 .page-header {
