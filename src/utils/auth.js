@@ -1,13 +1,40 @@
 import { supabase } from './supabaseClient.js'
 
-export function signUp(email, password) {
-  return supabase.auth.signUp({ email, password })
+export async function signUp(email, password) {
+  try {
+    const result = await supabase.auth.signUp({ email, password })
+    if (result.error) {
+      console.error('signUp error:', result.error)
+    }
+    return result
+  } catch (error) {
+    console.error('unexpected signUp error:', error)
+    return { data: null, error }
+  }
 }
 
-export function signIn(email, password) {
-  return supabase.auth.signInWithPassword({ email, password })
+export async function signIn(email, password) {
+  try {
+    const result = await supabase.auth.signInWithPassword({ email, password })
+    if (result.error) {
+      console.error('signIn error:', result.error)
+    }
+    return result
+  } catch (error) {
+    console.error('unexpected signIn error:', error)
+    return { data: null, error }
+  }
 }
 
-export function signOut() {
-  return supabase.auth.signOut()
+export async function signOut() {
+  try {
+    const result = await supabase.auth.signOut()
+    if (result.error) {
+      console.error('signOut error:', result.error)
+    }
+    return result
+  } catch (error) {
+    console.error('unexpected signOut error:', error)
+    return { error }
+  }
 }

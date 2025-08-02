@@ -30,14 +30,21 @@ export default function Login({ onLogin }) {
     }
 
     let result
-    if (isSignUp) {
-      result = await signUp(trimmedEmail, trimmedPassword)
-    } else {
-      result = await signIn(trimmedEmail, trimmedPassword)
+    try {
+      if (isSignUp) {
+        result = await signUp(trimmedEmail, trimmedPassword)
+      } else {
+        result = await signIn(trimmedEmail, trimmedPassword)
+      }
+    } catch (err) {
+      console.error('Unexpected auth error:', err)
+      setError(err.message)
+      return
     }
 
     const { data, error: err } = result
     if (err) {
+      console.error('Auth error:', err)
       setError(err.message)
     } else {
       onLogin?.(data.session)
