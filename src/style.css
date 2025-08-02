@@ -16,7 +16,7 @@ a {
 }
 
 .ProseMirror {
-  padding: 1rem;
+  padding: 2rem;
   border: 1px solid #333;
   min-height: 200px;
 }
@@ -93,6 +93,8 @@ a {
 .editor-container {
   flex: 1;
   overflow: auto;
+  padding: 2rem;
+  box-sizing: border-box;
 }
 
 .sidebar {
@@ -105,7 +107,18 @@ a {
 }
 
 .sidebar.collapsed {
-  width: 40px;
+  width: 0;
+  border-right: none;
+  overflow: visible;
+}
+
+.sidebar.collapsed .sidebar-content {
+  display: none;
+}
+
+.sidebar.collapsed .collapse-toggle {
+  left: 0;
+  right: auto;
 }
 
 .collapse-toggle {
@@ -134,5 +147,10 @@ a {
 .sidebar-content li {
   cursor: pointer;
   padding: 0.25rem 0;
+}
+
+.editor-title {
+  text-align: center;
+  margin: 0 0 1rem 0;
 }
 
