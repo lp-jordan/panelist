@@ -21,3 +21,13 @@ The `SmartFlow` extension adds keyboard shortcuts for navigating script panels.
 4. Use **Shift+Tab** to move the cursor backward within the panel.
 
 Verify that the cursor stops when reaching the start or end of a panel.
+
+## Supabase connectivity
+
+Set the `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables and run:
+
+```
+npm run test:supabase
+```
+
+The script will report whether the project can reach the configured Supabase instance.
