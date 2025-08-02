@@ -4,7 +4,7 @@ import {
   createScript,
   readScript,
   deleteScript,
-} from '../utils/scriptStorage'
+} from '../utils/scriptRepository'
 
 export default function Sidebar({ onSelectScript, onSelectFolder, renderAssets }) {
   const [collapsed, setCollapsed] = useState(false)
