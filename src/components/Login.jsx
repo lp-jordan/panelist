@@ -10,6 +10,10 @@ export default function Login({ onLogin }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
+    if (!email || !password) {
+      setError('Email and password are required')
+      return
+    }
 
     const trimmedEmail = email.trim()
     const trimmedPassword = password.trim()
