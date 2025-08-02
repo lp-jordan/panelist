@@ -2,10 +2,29 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
+import SlashCommand from './extensions/SlashCommand'
+import {
+  PageHeader,
+  PanelHeader,
+  Description,
+  Dialogue,
+  Sfx,
+  NoCopy,
+} from './extensions/customNodes'
 
 export default function App() {
   const editor = useEditor({
-    extensions: [StarterKit, Underline],
+    extensions: [
+      StarterKit,
+      PageHeader,
+      PanelHeader,
+      Description,
+      Dialogue,
+      Sfx,
+      NoCopy,
+      SlashCommand,
+      Underline,
+    ],
     content: '',
   })
 

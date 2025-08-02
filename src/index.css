@@ -4,6 +4,46 @@
   min-height: 200px;
 }
 
+.page-header {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.panel-header {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.description {
+  font-style: italic;
+}
+
+.sfx {
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.no-copy {
+  opacity: 0.6;
+}
+
+.slash-command-menu {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px;
+  z-index: 100;
+}
+
+.slash-command-item {
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.slash-command-item.is-selected {
+  background: #eee;
+
 .bubble-menu {
   display: flex;
   gap: 0.25rem;
