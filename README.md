@@ -24,10 +24,12 @@ Verify that the cursor stops when reaching the start or end of a panel.
 
 ## Supabase connectivity
 
-Set the `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables and run:
+Set the `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` environment variables and run:
 
 ```
 npm run test:supabase
 ```
 
 The script will report whether the project can reach the configured Supabase instance.
+
+Script files are stored in a Supabase Storage bucket named `scripts`.

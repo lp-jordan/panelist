@@ -1,24 +1,16 @@
-import { mkdir, readFile, writeFile, unlink, readdir } from 'node:fs/promises'
-import { join } from 'node:path'
-import { cwd } from 'node:process'
+import { supabase } from './supabaseClient'
 
-const scriptsDir = join(cwd(), 'scripts')
-
-async function ensureDir() {
-  await mkdir(scriptsDir, { recursive: true })
-}
+const BUCKET = 'scripts'
 
 export async function listScripts() {
-  await ensureDir()
-  const files = await readdir(scriptsDir)
-  return files
-    .filter((f) => f.endsWith('.json'))
-    .map((f) => f.replace(/\.json$/, ''))
+  const { data, error } = await supabase.storage.from(BUCKET).list()
+  if (error) throw error
+  return data
+    .filter((f) => f.name.endsWith('.json'))
+    .map((f) => f.name.replace(/\.json$/, ''))
 }
 
 export async function createScript(name, data) {
-  await ensureDir()
-  const filePath = join(scriptsDir, `${name}.json`)
   const payload = {
     metadata: {
       title: name,
@@ -27,14 +19,22 @@ export async function createScript(name, data) {
     },
     content: data.content ?? '',
   }
-  await writeFile(filePath, JSON.stringify(payload, null, 2), 'utf8')
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(`${name}.json`, JSON.stringify(payload, null, 2), {
+      contentType: 'application/json',
+    })
+  if (error) throw error
   return payload
 }
 
 export async function readScript(name) {
-  const filePath = join(scriptsDir, `${name}.json`)
-  const content = await readFile(filePath, 'utf8')
-  return JSON.parse(content)
+  const { data, error } = await supabase.storage
+    .from(BUCKET)
+    .download(`${name}.json`)
+  if (error) throw error
+  const text = await data.text()
+  return JSON.parse(text)
 }
 
 export async function updateScript(name, data) {
@@ -47,12 +47,19 @@ export async function updateScript(name, data) {
     },
     content: data.content ?? existing.content,
   }
-  const filePath = join(scriptsDir, `${name}.json`)
-  await writeFile(filePath, JSON.stringify(updated, null, 2), 'utf8')
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(`${name}.json`, JSON.stringify(updated, null, 2), {
+      contentType: 'application/json',
+      upsert: true,
+    })
+  if (error) throw error
   return updated
 }
 
 export async function deleteScript(name) {
-  const filePath = join(scriptsDir, `${name}.json`)
-  await unlink(filePath)
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .remove([`${name}.json`])
+  if (error) throw error
 }
