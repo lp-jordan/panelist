@@ -14,6 +14,7 @@ export async function listScripts() {
 }
 
 export async function createScript(name, data) {
+  const now = new Date().toISOString()
   const payload = {
     title: name,
     created_at: now,
