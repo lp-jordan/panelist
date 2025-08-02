@@ -1,9 +1,3 @@
-function App() {
-  return (
-    <div>
-      <h1>Vite + React</h1>
-    </div>
-  )
+export default function App() {
+  return <div id="editor">Editor placeholder</div>;
 }
-
-export default App
