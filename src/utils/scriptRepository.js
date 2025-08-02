@@ -12,8 +12,8 @@ export async function createScript(name, data) {
   const now = new Date().toISOString()
   const payload = {
     title: name,
-    createdAt: now,
-    updatedAt: now,
+    created_at: now,
+    updated_at: now,
     content: data.content ?? '',
   }
   const { error } = await supabase.from(TABLE).insert(payload)
@@ -21,8 +21,8 @@ export async function createScript(name, data) {
   return {
     metadata: {
       title: payload.title,
-      createdAt: payload.createdAt,
-      updatedAt: payload.updatedAt,
+      created_at: payload.created_at,
+      updated_at: payload.updated_at,
     },
     content: payload.content,
   }
@@ -31,15 +31,15 @@ export async function createScript(name, data) {
 export async function readScript(name) {
   const { data, error } = await supabase
     .from(TABLE)
-    .select('title, createdAt, updatedAt, content')
+    .select('title, created_at, updated_at, content')
     .eq('title', name)
     .single()
   if (error) throw error
   return {
     metadata: {
       title: data.title,
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
     },
     content: data.content,
   }
@@ -51,14 +51,14 @@ export async function updateScript(name, data) {
     metadata: {
       ...existing.metadata,
       ...data.metadata,
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     content: data.content ?? existing.content,
   }
   const row = {
     title: updated.metadata.title,
-    createdAt: updated.metadata.createdAt,
-    updatedAt: updated.metadata.updatedAt,
+    created_at: updated.metadata.created_at,
+    updated_at: updated.metadata.updated_at,
     content: updated.content,
   }
   const { error } = await supabase.from(TABLE).update(row).eq('title', name)

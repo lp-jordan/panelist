@@ -39,12 +39,15 @@ To create the table, run the following SQL in the Supabase SQL editor:
 create table if not exists scripts (
   id uuid primary key default gen_random_uuid(),
   title text,
-  content jsonb
+  content jsonb,
+  created_at timestamptz,
+  updated_at timestamptz
 );
 ```
 
 Seed it with a sample row if desired:
 
 ```sql
-insert into scripts (title, content) values ('Example', '{}'::jsonb);
+insert into scripts (title, content, created_at, updated_at)
+values ('Example', '{}'::jsonb, now(), now());
 ```
