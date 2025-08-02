@@ -1,8 +1,9 @@
-import { supabase } from './supabaseClient'
+import { getSupabase } from './supabaseClient'
 
 const TABLE = 'scripts'
 
 export async function listScripts() {
+  const supabase = await getSupabase()
   const { data, error } = await supabase
     .from(TABLE)
     .select('title')
@@ -21,6 +22,7 @@ export async function createScript(name, data) {
     updated_at: now,
     content: data.content ?? '',
   }
+  const supabase = await getSupabase()
   const { error } = await supabase.from(TABLE).insert(payload)
   if (error) throw error
   return {
@@ -34,6 +36,7 @@ export async function createScript(name, data) {
 }
 
 export async function readScript(name) {
+  const supabase = await getSupabase()
   const { data, error } = await supabase
     .from(TABLE)
     .select('title, project_id, created_at, updated_at, content')
@@ -69,11 +72,13 @@ export async function updateScript(name, data, projectId) {
     updated_at: updated.metadata.updated_at,
     content: updated.content,
   }
+  const supabase = await getSupabase()
   const { error } = await supabase.from(TABLE).update(row).eq('title', name)
   if (error) throw error
 }
 
 export async function deleteScript(name) {
+  const supabase = await getSupabase()
   const { error } = await supabase.from(TABLE).delete().eq('title', name)
   if (error) throw error
 }
