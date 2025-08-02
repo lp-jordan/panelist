@@ -1,6 +1,23 @@
+:root {
+  --background-color: #000;
+  --text-color: #fff;
+  --accent-color: #4e9cff;
+}
+
+html, body {
+  background-color: var(--background-color);
+  color: var(--text-color);
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+
+a {
+  color: var(--accent-color);
+}
+
 .ProseMirror {
   padding: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid #333;
   min-height: 200px;
 }
 
@@ -29,11 +46,12 @@
 
 .slash-command-menu {
   position: absolute;
-  background: white;
-  border: 1px solid #ccc;
+  background: #111;
+  border: 1px solid var(--accent-color);
   border-radius: 4px;
   padding: 4px;
   z-index: 100;
+  color: var(--text-color);
 }
 
 .slash-command-item {
@@ -42,23 +60,27 @@
 }
 
 .slash-command-item.is-selected {
-  background: #eee;
+  background: var(--accent-color);
+  color: var(--background-color);
+}
 
 .bubble-menu {
   display: flex;
   gap: 0.25rem;
   padding: 0.25rem;
   border-radius: 0.25rem;
-  background: #fff;
-  border: 1px solid #ccc;
+  background: #111;
+  border: 1px solid var(--accent-color);
 }
 
 .bubble-menu button {
   border: none;
   background: none;
   cursor: pointer;
+  color: var(--accent-color);
 }
 
 .bubble-menu button.is-active {
   font-weight: bold;
+  color: var(--text-color);
 }
