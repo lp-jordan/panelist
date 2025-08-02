@@ -39,14 +39,11 @@ export default function App() {
       <div className="editor-container">
         <h1 className="editor-title">{scriptTitle}</h1>
         {editor && (
-          <BubbleMenu
-            className="bubble-menu"
-            editor={editor}
-            tippyOptions={{ duration: 100 }}
-          >
-            <button
-              onClick={() => editor.chain().focus().toggleBold().run()}
-              className={editor.isActive('bold') ? 'is-active' : ''}
+          <>
+            <BubbleMenu
+              className="bubble-menu"
+              editor={editor}
+              tippyOptions={{ duration: 100 }}
             >
               <button
                 onClick={() => editor.chain().focus().toggleBold().run()}
@@ -67,11 +64,11 @@ export default function App() {
                 U
               </button>
             </BubbleMenu>
-          )}
-          <EditorContent editor={editor} />
-        </div>
+            <EditorContent editor={editor} />
+          </>
+        )}
       </div>
       <div className="app-name">Panelist</div>
-    </>
+    </div>
   )
 }
