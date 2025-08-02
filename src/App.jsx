@@ -1,4 +1,5 @@
 import { useEditor, EditorContent } from '@tiptap/react'
+import { useState } from 'react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
@@ -15,6 +16,7 @@ import {
 import Sidebar from './components/Sidebar'
 
 export default function App() {
+  const [scriptTitle] = useState('Untitled Script')
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -32,15 +34,19 @@ export default function App() {
   })
 
   return (
-    <>
-      <div className="app-layout">
-        <Sidebar />
-        <div className="editor-container">
-          {editor && (
-            <BubbleMenu
-              className="bubble-menu"
-              editor={editor}
-              tippyOptions={{ duration: 100 }}
+    <div className="app-layout">
+      <Sidebar />
+      <div className="editor-container">
+        <h1 className="editor-title">{scriptTitle}</h1>
+        {editor && (
+          <BubbleMenu
+            className="bubble-menu"
+            editor={editor}
+            tippyOptions={{ duration: 100 }}
+          >
+            <button
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              className={editor.isActive('bold') ? 'is-active' : ''}
             >
               <button
                 onClick={() => editor.chain().focus().toggleBold().run()}
