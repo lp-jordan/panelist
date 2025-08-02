@@ -12,6 +12,7 @@
   "dependencies": {
     "@tiptap/react": "^3.0.9",
     "@tiptap/starter-kit": "^3.0.9",
+    "@tiptap/suggestion": "^3.0.9",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
