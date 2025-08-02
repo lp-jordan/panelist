@@ -13,7 +13,9 @@ export default function Sidebar({ onSelectScript, onSelectFolder, renderAssets }
   const [projectFolders, setProjectFolders] = useState([])
 
   async function refreshScripts() {
-    const names = await listScripts()
+    const result = await listScripts()
+    const list = result?.data ?? result
+    const names = list.map((s) => s.name ?? s)
     setScripts(names)
   }
 
@@ -32,7 +34,8 @@ export default function Sidebar({ onSelectScript, onSelectFolder, renderAssets }
   }
 
   async function handleSelect(name) {
-    const data = await readScript(name)
+    const result = await readScript(name)
+    const data = result?.data ?? result
     onSelectScript?.(name, data)
   }
 

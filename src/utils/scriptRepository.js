@@ -3,13 +3,17 @@ import { supabase } from './supabaseClient'
 const TABLE = 'scripts'
 
 export async function listScripts() {
-  const { data, error } = await supabase.from(TABLE).select('title')
+  const { data, error } = await supabase
+    .from(TABLE)
+    .select('name')
+    .order('name')
   if (error) throw error
-  return (data ?? []).map((r) => r.title)
+  return data
+    ? data.map((row) => row.name)
+    : []
 }
 
 export async function createScript(name, data) {
-  const now = new Date().toISOString()
   const payload = {
     title: name,
     created_at: now,
@@ -63,11 +67,9 @@ export async function updateScript(name, data) {
   }
   const { error } = await supabase.from(TABLE).update(row).eq('title', name)
   if (error) throw error
-  return updated
 }
 
 export async function deleteScript(name) {
   const { error } = await supabase.from(TABLE).delete().eq('title', name)
   if (error) throw error
 }
-
