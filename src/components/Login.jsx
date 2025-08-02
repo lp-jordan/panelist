@@ -14,12 +14,28 @@ export default function Login({ onLogin }) {
       setError('Email and password are required')
       return
     }
+
+    const trimmedEmail = email.trim()
+    const trimmedPassword = password.trim()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      setError('Please enter a valid email address.')
+      return
+    }
+
+    if (!trimmedPassword || trimmedPassword.length < 8) {
+      setError('Password must be at least 8 characters long.')
+      return
+    }
+
     let result
     if (isSignUp) {
-      result = await signUp(email, password)
+      result = await signUp(trimmedEmail, trimmedPassword)
     } else {
-      result = await signIn(email, password)
+      result = await signIn(trimmedEmail, trimmedPassword)
     }
+
     const { data, error: err } = result
     if (err) {
       setError(err.message)
