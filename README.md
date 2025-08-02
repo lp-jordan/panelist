@@ -31,5 +31,20 @@ npm run test:supabase
 ```
 
 The script will report whether the project can reach the configured Supabase instance.
+Scripts are persisted in a Supabase table called `scripts`.
 
-Script files are stored in a Supabase Storage bucket named `scripts`.
+To create the table, run the following SQL in the Supabase SQL editor:
+
+```sql
+create table if not exists scripts (
+  id uuid primary key default gen_random_uuid(),
+  title text,
+  content jsonb
+);
+```
+
+Seed it with a sample row if desired:
+
+```sql
+insert into scripts (title, content) values ('Example', '{}'::jsonb);
+```
