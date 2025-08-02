@@ -48,24 +48,30 @@ export default function App() {
               onClick={() => editor.chain().focus().toggleBold().run()}
               className={editor.isActive('bold') ? 'is-active' : ''}
             >
-              B
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-              className={editor.isActive('italic') ? 'is-active' : ''}
-            >
-              I
-            </button>
-            <button
-              onClick={() => editor.chain().focus().toggleUnderline().run()}
-              className={editor.isActive('underline') ? 'is-active' : ''}
-            >
-              U
-            </button>
-          </BubbleMenu>
-        )}
-        <EditorContent editor={editor} />
+              <button
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={editor.isActive('bold') ? 'is-active' : ''}
+              >
+                B
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={editor.isActive('italic') ? 'is-active' : ''}
+              >
+                I
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                className={editor.isActive('underline') ? 'is-active' : ''}
+              >
+                U
+              </button>
+            </BubbleMenu>
+          )}
+          <EditorContent editor={editor} />
+        </div>
       </div>
-    </div>
+      <div className="app-name">Panelist</div>
+    </>
   )
 }

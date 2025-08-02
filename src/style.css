@@ -2,6 +2,7 @@
   --background-color: #000;
   --text-color: #fff;
   --accent-color: #4e9cff;
+  --editor-background-color: #111;
 }
 
 html, body {
@@ -18,7 +19,9 @@ a {
 .ProseMirror {
   padding: 2rem;
   border: 1px solid #333;
-  min-height: 200px;
+  min-height: 100vh;
+  background: var(--editor-background-color);
+  box-sizing: border-box;
 }
 
 .page-header {
@@ -152,5 +155,12 @@ a {
 .editor-title {
   text-align: center;
   margin: 0 0 1rem 0;
+  
+.app-name {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  font-size: clamp(1rem, 2vw, 1.5rem);
+  color: var(--text-color);
 }
 
