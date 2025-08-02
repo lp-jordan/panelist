@@ -12,15 +12,8 @@ export default function Sidebar({ onSelectScript, onSelectFolder, renderAssets }
   const [newName, setNewName] = useState('')
   const [projectFolders, setProjectFolders] = useState([])
 
-  async function refreshScripts() {
-    const result = await listScripts()
-    const list = result?.data ?? result
-    const names = list.map((s) => s.name ?? s)
-    setScripts(names)
-  }
-
   useEffect(() => {
-    refreshScripts()
+    ;(async () => setScripts(await listScripts()))()
     const folders = JSON.parse(localStorage.getItem('projectFolders') || '[]')
     setProjectFolders(folders)
   }, [])
@@ -30,18 +23,17 @@ export default function Sidebar({ onSelectScript, onSelectFolder, renderAssets }
     if (!name) return
     await createScript(name, {})
     setNewName('')
-    refreshScripts()
+    setScripts(await listScripts())
   }
 
   async function handleSelect(name) {
-    const result = await readScript(name)
-    const data = result?.data ?? result
+    const data = await readScript(name)
     onSelectScript?.(name, data)
   }
 
   async function handleDelete(name) {
     await deleteScript(name)
-    refreshScripts()
+    setScripts(await listScripts())
   }
 
   return (
