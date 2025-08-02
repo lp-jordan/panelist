@@ -68,7 +68,7 @@ export default function App() {
           </>
         )}
       </div>
-      <div className="app-name">Panelist</div>
+      <div className="app-name">Panelist v{import.meta.env.__APP_VERSION__}</div>
     </div>
   )
 }
