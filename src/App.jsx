@@ -3,7 +3,6 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import { useState } from 'react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
 import SlashCommand from './extensions/SlashCommand'
 import SmartFlow from './extensions/SmartFlow'
 import {
@@ -29,7 +28,6 @@ export default function App() {
       NoCopy,
       SmartFlow,
       SlashCommand,
-      Underline,
     ],
     content: '',
   })
