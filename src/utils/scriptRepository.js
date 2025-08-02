@@ -36,13 +36,14 @@ export async function createScript(name, data) {
 export async function readScript(name) {
   const { data, error } = await supabase
     .from(TABLE)
-    .select('title, created_at, updated_at, content')
+    .select('title, project_id, created_at, updated_at, content')
     .eq('title', name)
     .single()
   if (error) throw error
   return {
     metadata: {
       title: data.title,
+      projectId: data.project_id,
       created_at: data.created_at,
       updated_at: data.updated_at,
     },
@@ -50,18 +51,20 @@ export async function readScript(name) {
   }
 }
 
-export async function updateScript(name, data) {
+export async function updateScript(name, data, projectId) {
   const existing = await readScript(name)
   const updated = {
     metadata: {
       ...existing.metadata,
       ...data.metadata,
+      projectId: projectId ?? existing.metadata.projectId,
       updated_at: new Date().toISOString(),
     },
     content: data.content ?? existing.content,
   }
   const row = {
     title: updated.metadata.title,
+    project_id: updated.metadata.projectId,
     created_at: updated.metadata.created_at,
     updated_at: updated.metadata.updated_at,
     content: updated.content,
