@@ -10,3 +10,14 @@ Currently, two official plugins are available:
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Manual Testing
+
+The `SmartFlow` extension adds keyboard shortcuts for navigating script panels.
+
+1. Run `npm run dev` and open the editor.
+2. Create a `PageHeader` node. Press **Enter** to insert the next node (`PanelHeader`), then **Enter** again to continue through the flow (`Description` → `Dialogue`).
+3. Use **Tab** to move the cursor forward through nodes in the current panel.
+4. Use **Shift+Tab** to move the cursor backward within the panel.
+
+Verify that the cursor stops when reaching the start or end of a panel.

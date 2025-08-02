@@ -3,6 +3,7 @@ import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 import SlashCommand from './extensions/SlashCommand'
+import SmartFlow from './extensions/SmartFlow'
 import {
   PageHeader,
   PanelHeader,
@@ -22,6 +23,7 @@ export default function App() {
       Dialogue,
       Sfx,
       NoCopy,
+      SmartFlow,
       SlashCommand,
       Underline,
     ],
