@@ -5,15 +5,16 @@ const TABLE = 'scripts'
 export async function listScripts() {
   const { data, error } = await supabase
     .from(TABLE)
-    .select('name')
-    .order('name')
+    .select('title')
+    .order('title')
   if (error) throw error
   return data
-    ? data.map((row) => row.name)
+    ? data.map((row) => row.title)
     : []
 }
 
 export async function createScript(name, data) {
+  const now = new Date().toISOString()
   const payload = {
     title: name,
     created_at: now,
