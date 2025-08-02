@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, unlink } from 'node:fs/promises'
+import { mkdir, readFile, writeFile, unlink, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { cwd } from 'node:process'
 
@@ -6,6 +6,14 @@ const scriptsDir = join(cwd(), 'scripts')
 
 async function ensureDir() {
   await mkdir(scriptsDir, { recursive: true })
+}
+
+export async function listScripts() {
+  await ensureDir()
+  const files = await readdir(scriptsDir)
+  return files
+    .filter((f) => f.endsWith('.json'))
+    .map((f) => f.replace(/\.json$/, ''))
 }
 
 export async function createScript(name, data) {
