@@ -1,8 +1,9 @@
-import { supabase } from './supabaseClient'
+import { getSupabase } from './supabaseClient'
 
 const TABLE = 'projects'
 
 export async function listProjects() {
+  const supabase = await getSupabase()
   const { data, error } = await supabase
     .from(TABLE)
     .select('name')
@@ -19,6 +20,7 @@ export async function createProject(name, data = {}) {
     updated_at: now,
     ...data,
   }
+  const supabase = await getSupabase()
   const { data: inserted, error } = await supabase
     .from(TABLE)
     .insert(payload)
@@ -29,6 +31,7 @@ export async function createProject(name, data = {}) {
 }
 
 export async function readProject(name) {
+  const supabase = await getSupabase()
   const { data, error } = await supabase
     .from(TABLE)
     .select('*')
@@ -45,6 +48,7 @@ export async function updateProject(name, data) {
     ...data,
     updated_at: new Date().toISOString(),
   }
+  const supabase = await getSupabase()
   const { data: result, error } = await supabase
     .from(TABLE)
     .update(updated)
@@ -56,6 +60,7 @@ export async function updateProject(name, data) {
 }
 
 export async function deleteProject(name) {
+  const supabase = await getSupabase()
   const { error } = await supabase.from(TABLE).delete().eq('name', name)
   if (error) throw error
 }
