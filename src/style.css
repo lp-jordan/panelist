@@ -150,6 +150,23 @@ a {
 .sidebar-content li {
   cursor: pointer;
   padding: 0.25rem 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-content li button {
+  margin-left: 0.5rem;
+}
+
+.new-script {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.new-script input {
+  flex: 1;
 }
 
 .editor-title {

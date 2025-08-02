@@ -1,16 +1,45 @@
 import { useState, useEffect } from 'react'
+import {
+  listScripts,
+  createScript,
+  readScript,
+  deleteScript,
+} from '../utils/scriptStorage'
 
 export default function Sidebar({ onSelectScript, onSelectFolder, renderAssets }) {
   const [collapsed, setCollapsed] = useState(false)
-  const [recentScripts, setRecentScripts] = useState([])
+  const [scripts, setScripts] = useState([])
+  const [newName, setNewName] = useState('')
   const [projectFolders, setProjectFolders] = useState([])
 
+  async function refreshScripts() {
+    const names = await listScripts()
+    setScripts(names)
+  }
+
   useEffect(() => {
-    const scripts = JSON.parse(localStorage.getItem('recentScripts') || '[]')
+    refreshScripts()
     const folders = JSON.parse(localStorage.getItem('projectFolders') || '[]')
-    setRecentScripts(scripts)
     setProjectFolders(folders)
   }, [])
+
+  async function handleCreate() {
+    const name = newName.trim()
+    if (!name) return
+    await createScript(name, {})
+    setNewName('')
+    refreshScripts()
+  }
+
+  async function handleSelect(name) {
+    const data = await readScript(name)
+    onSelectScript?.(name, data)
+  }
+
+  async function handleDelete(name) {
+    await deleteScript(name)
+    refreshScripts()
+  }
 
   return (
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
@@ -22,11 +51,22 @@ export default function Sidebar({ onSelectScript, onSelectFolder, renderAssets }
       </button>
       <div className="sidebar-content">
         <section>
-          <h3>Recent Scripts</h3>
+          <h3>Scripts</h3>
+          <div className="new-script">
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="New script name"
+            />
+            <button onClick={handleCreate}>Add</button>
+          </div>
           <ul>
-            {recentScripts.length === 0 && <li>No scripts</li>}
-            {recentScripts.map((s) => (
-              <li key={s} onClick={() => onSelectScript?.(s)}>{s}</li>
+            {scripts.length === 0 && <li>No scripts</li>}
+            {scripts.map((s) => (
+              <li key={s}>
+                <span onClick={() => handleSelect(s)}>{s}</span>
+                <button onClick={() => handleDelete(s)}>x</button>
+              </li>
             ))}
           </ul>
         </section>
