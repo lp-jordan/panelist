@@ -3,3 +3,22 @@
   border: 1px solid #ccc;
   min-height: 200px;
 }
+
+.bubble-menu {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  background: #fff;
+  border: 1px solid #ccc;
+}
+
+.bubble-menu button {
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.bubble-menu button.is-active {
+  font-weight: bold;
+}
