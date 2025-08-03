@@ -13,7 +13,7 @@ import {
 } from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
 
-export default function Sidebar({
+function Sidebar({
   onSelectScript,
   onSelectProject,
   onSelectFolder,
