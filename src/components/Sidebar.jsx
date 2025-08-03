@@ -46,6 +46,7 @@ const PageNavigator = forwardRef(function PageNavigator(
 
   return (
     <div className="page-navigator">
+      <h4 className="section-label">Pages</h4>
       <ul>
         {pages.length === 0 && <li>No pages</li>}
         {pages.map((p) => (
@@ -54,8 +55,11 @@ const PageNavigator = forwardRef(function PageNavigator(
             className={p.name === activePage ? 'active-page' : ''}
             onClick={() => onSelectPage(p.name)}
           >
-            <div className="page-title">{p.name}</div>
-            <div className="page-preview">{p.preview}</div>
+            <span className="page-icon">📄</span>
+            <div>
+              <div className="page-title">{p.name}</div>
+              <div className="page-preview">{p.preview}</div>
+            </div>
           </li>
         ))}
       </ul>
@@ -187,15 +191,15 @@ function Sidebar({
             <button className="add-project" onClick={handleCreateProject}>
               +
             </button>
-            {projectDropdownOpen && (
-              <ul className="project-dropdown">
-                {projects.map((p) => (
-                  <li key={p} onClick={() => handleSelectProject(p)}>
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ul
+              className={`project-dropdown${projectDropdownOpen ? ' open' : ''}`}
+            >
+              {projects.map((p) => (
+                <li key={p} onClick={() => handleSelectProject(p)}>
+                  {p}
+                </li>
+              ))}
+            </ul>
           </div>
           {selectedProject && (
             <PageNavigator
