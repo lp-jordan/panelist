@@ -20,7 +20,7 @@ function Sidebar({
   renderAssets,
   onSignOut,
   activeScript: activeScriptProp,
-}) {
+}, ref) {
   const [collapsed, setCollapsed] = useState(false)
   const [scripts, setScripts] = useState([])
   const [newScriptName, setNewScriptName] = useState('')
