@@ -86,6 +86,7 @@ function Sidebar({
   )
   const activePage = activePageProp ?? activePageState
   const [exportScope, setExportScope] = useState('current')
+  const pageNavigatorRef = useRef(null)
 
   useEffect(() => {
     if (activePageProp !== undefined) {
