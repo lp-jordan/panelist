@@ -1,6 +1,6 @@
 /* global __APP_VERSION__ */
 import { useEditor, EditorContent } from '@tiptap/react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import SlashCommand from './extensions/SlashCommand'
@@ -15,6 +15,7 @@ import {
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
 import { createPage } from './utils/pageRepository'
+import { updateScript } from './utils/scriptRepository'
 
 function ProjectHeader({ projectName, onAddPage, disabled }) {
   return (
@@ -32,8 +33,9 @@ function ProjectHeader({ projectName, onAddPage, disabled }) {
 }
 
 export default function App({ onSignOut }) {
-  const [pageTitle, setPageTitle] = useState('Untitled Page')
+  const [scriptTitle, setScriptTitle] = useState('Untitled Script')
   const [activeProject, setActiveProject] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
   const sidebarRef = useRef(null)
   const currentPage = { content: '' }
   const editor = useEditor({
@@ -65,9 +67,33 @@ export default function App({ onSignOut }) {
   }
 
   function handleSelectPage(name, data) {
-    setPageTitle(name)
+    setScriptTitle(name)
     editor?.commands?.setContent(data.content ?? '')
   }
+
+  useEffect(() => {
+    if (!editor) return
+    let timeoutId
+    const saveHandler = () => {
+      setIsSaving(true)
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(async () => {
+        if (activeProject) {
+          await updateScript(
+            scriptTitle,
+            { content: editor.getHTML() },
+            activeProject.id,
+          )
+        }
+        setIsSaving(false)
+      }, 500)
+    }
+    editor.on('update', saveHandler)
+    return () => {
+      editor.off('update', saveHandler)
+      clearTimeout(timeoutId)
+    }
+  }, [editor, scriptTitle, activeProject])
 
   return (
     <div className="app-layout">
@@ -83,7 +109,10 @@ export default function App({ onSignOut }) {
           onAddPage={handleAddPage}
           disabled={!activeProject}
         />
-        <h1 className="editor-title">{pageTitle}</h1>
+        <h1 className="editor-title">
+          {scriptTitle}
+          {isSaving && <span className="saving-indicator"> saving...</span>}
+        </h1>
         {editor && (
           <>
             <BubbleMenu
