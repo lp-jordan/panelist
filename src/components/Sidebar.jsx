@@ -6,12 +6,10 @@ import {
   useRef,
 } from 'react'
 import { listScripts, readScript } from '../utils/scriptRepository'
-import {
-  listProjects,
-  createProject,
-  readProject,
-} from '../utils/projectRepository'
+import { listProjects, createProject, readProject } from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
+import { Button } from './ui/button'
+import { cn } from '../lib/utils'
 
 const PageNavigator = forwardRef(function PageNavigator(
   { projectId, activePage, onSelectPage },
@@ -39,64 +37,46 @@ const PageNavigator = forwardRef(function PageNavigator(
 
   useEffect(() => {
     refresh()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   useImperativeHandle(ref, () => ({ refresh }))
 
   return (
-    <div className="page-navigator">
-      <h4 className="section-label">Pages</h4>
-      <ul>
-        {pages.length === 0 && <li>No pages</li>}
+    <div className="mt-4">
+      <h4 className="mb-2 text-sm font-semibold">Pages</h4>
+      <ul className="space-y-1">
+        {pages.length === 0 && (
+          <li className="text-sm text-zinc-400">No pages</li>
+        )}
         {pages.map((p) => (
           <li
             key={p.name}
-            className={p.name === activePage ? 'active-page' : ''}
+            className={cn(
+              'cursor-pointer rounded-md p-2 text-sm hover:bg-zinc-800',
+              p.name === activePage && 'bg-zinc-800',
+            )}
             onClick={() => onSelectPage(p.name)}
           >
-            <span className="page-icon">📄</span>
-            <div>
-              <div className="page-title">{p.name}</div>
-              <div className="page-preview">{p.preview}</div>
-            </div>
+            <div className="font-medium">{p.name}</div>
+            <div className="text-xs text-zinc-400">{p.preview}</div>
           </li>
         ))}
       </ul>
-      <button
-        className="add-page"
+      <Button
+        className="mt-2 w-full"
         onClick={() => console.log('New Page placeholder')}
       >
         + New Page
-      </button>
+      </Button>
     </div>
   )
 })
 
-function Sidebar({
-  onSelectPage,
-  onSelectProject,
-  onSelectFolder,
-  renderAssets,
-  onSignOut,
-  activePage: activePageProp,
-}, ref) {
-  const [collapsed, setCollapsed] = useState(false)
+function Sidebar({ onSelectPage, onSelectProject, onSignOut }, ref) {
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
-  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false)
-  const [activePageState, setActivePageState] = useState(
-    activePageProp ?? null,
-  )
-  const activePage = activePageProp ?? activePageState
-  const [exportScope, setExportScope] = useState('current')
+  const [activePage, setActivePage] = useState(null)
   const pageNavigatorRef = useRef(null)
-
-  useEffect(() => {
-    if (activePageProp !== undefined) {
-      setActivePageState(activePageProp)
-    }
-  }, [activePageProp])
 
   async function refreshProjects() {
     const result = await listProjects()
@@ -112,13 +92,12 @@ function Sidebar({
         handleSelectProject(names[0])
       }
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleSelectPage(name) {
     const result = await readScript(name, selectedProject?.id)
     const data = result?.data ?? result
-    setActivePageState(name)
+    setActivePage(name)
     onSelectPage?.(name, data)
   }
 
@@ -138,29 +117,14 @@ function Sidebar({
     const result = await readProject(name)
     const data = result?.data ?? result
     setSelectedProject(data)
-    setActivePageState(null)
-    const handler = onSelectProject ?? onSelectFolder
-    handler?.(name, data)
+    setActivePage(null)
+    onSelectProject?.(name, data)
     pageNavigatorRef.current?.refresh(data?.id)
-    setProjectDropdownOpen(false)
   }
 
   async function handleSignOut() {
     await signOut()
     onSignOut?.()
-  }
-
-  function handleExport(format) {
-    console.log(`Export ${exportScope} as ${format}`)
-  }
-
-  async function handleAccount() {
-    await handleSignOut()
-    console.log('Sign in placeholder')
-  }
-
-  function handleSettings() {
-    console.log('Settings placeholder')
   }
 
   useImperativeHandle(ref, () => ({
@@ -169,80 +133,41 @@ function Sidebar({
   }))
 
   return (
-    <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
-      <button
-        className="collapse-toggle"
-        onClick={() => setCollapsed((c) => !c)}
-      >
-        {collapsed ? '>' : '<'}
-      </button>
-      <div className="sidebar-content">
-        <section>
-          <div className="project-header">
-            <div
-              className="project-title"
-              onClick={() => setProjectDropdownOpen((o) => !o)}
-            >
-              {selectedProject?.name ?? 'Select project'}{' '}
-              <span className="dropdown-indicator">
-                {projectDropdownOpen ? '▲' : '▼'}
-              </span>
-            </div>
-            <button className="add-project" onClick={handleCreateProject}>
-              +
-            </button>
-            <ul
-              className={`project-dropdown${projectDropdownOpen ? ' open' : ''}`}
-            >
-              {projects.map((p) => (
-                <li key={p} onClick={() => handleSelectProject(p)}>
-                  {p}
-                </li>
-              ))}
-            </ul>
-          </div>
-          {projectDropdownOpen && (
-            <ul className="project-dropdown">
-              {projects.map((p) => (
-                <li key={p} onClick={() => handleSelectProject(p)}>
-                  {p}
-                </li>
-              ))}
-            </ul>
-          )}
-          {selectedProject && (
-            <PageNavigator
-              ref={pageNavigatorRef}
-              projectId={selectedProject.id}
-              activePage={activePage}
-              onSelectPage={handleSelectPage}
-            />
-          )}
-        </section>
-        {renderAssets?.()}
-        <div className="additional-options">
-          <h4>Additional Options</h4>
-          <div className="export-section">
-            <select
-              value={exportScope}
-              onChange={(e) => setExportScope(e.target.value)}
-            >
-              <option value="current">Current Page</option>
-              <option value="selected">Selected Pages</option>
-              <option value="full">Full Document</option>
-            </select>
-            <div className="export-formats">
-              <button onClick={() => handleExport('PDF')}>PDF</button>
-              <button onClick={() => handleExport('Docx')}>Docx</button>
-            </div>
-          </div>
-          <button onClick={handleAccount}>Account</button>
-          <button onClick={handleSettings}>Settings</button>
+    <aside className="w-64 border-r border-zinc-800 p-4">
+      <div className="flex items-center justify-between">
+        <div className="font-semibold">
+          {selectedProject?.name ?? 'Select project'}
         </div>
+        <Button size="sm" onClick={handleCreateProject}>
+          +
+        </Button>
+      </div>
+      <ul className="mt-2 space-y-1">
+        {projects.map((p) => (
+          <li
+            key={p}
+            className="cursor-pointer rounded-md p-2 text-sm hover:bg-zinc-800"
+            onClick={() => handleSelectProject(p)}
+          >
+            {p}
+          </li>
+        ))}
+      </ul>
+      {selectedProject && (
+        <PageNavigator
+          ref={pageNavigatorRef}
+          projectId={selectedProject.id}
+          activePage={activePage}
+          onSelectPage={handleSelectPage}
+        />
+      )}
+      <div className="mt-4">
+        <Button variant="ghost" className="w-full" onClick={handleSignOut}>
+          Sign out
+        </Button>
       </div>
     </aside>
   )
 }
 
 export default forwardRef(Sidebar)
-

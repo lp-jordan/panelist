@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import { EditorContent } from '@tiptap/react'
+import { Button } from './ui/button'
 
 export default function Editor({ editor, mode }) {
   useEffect(() => {
@@ -13,27 +14,36 @@ export default function Editor({ editor, mode }) {
 
   return (
     <>
-      <BubbleMenu className="bubble-menu" editor={editor}>
-        <button
+      <BubbleMenu
+        className="flex gap-1 rounded-md border border-zinc-700 bg-zinc-900 p-1"
+        editor={editor}
+      >
+        <Button
+          size="sm"
+          variant={editor.isActive('bold') ? 'default' : 'ghost'}
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={editor.isActive('bold') ? 'is-active' : ''}
         >
           B
-        </button>
-        <button
+        </Button>
+        <Button
+          size="sm"
+          variant={editor.isActive('italic') ? 'default' : 'ghost'}
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={editor.isActive('italic') ? 'is-active' : ''}
         >
           I
-        </button>
-        <button
+        </Button>
+        <Button
+          size="sm"
+          variant={editor.isActive('underline') ? 'default' : 'ghost'}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={editor.isActive('underline') ? 'is-active' : ''}
         >
           U
-        </button>
+        </Button>
       </BubbleMenu>
-      <EditorContent editor={editor} />
+      <EditorContent
+        editor={editor}
+        className="min-h-screen rounded-md bg-zinc-900 p-8 shadow-lg"
+      />
     </>
   )
 }
