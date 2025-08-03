@@ -29,6 +29,12 @@ const SlashCommand = Extension.create({
               },
             },
             {
+              title: 'Character',
+              command: ({ editor, range }) => {
+                editor.chain().focus().deleteRange(range).setCharacter().run()
+              },
+            },
+            {
               title: 'Dialogue',
               command: ({ editor, range }) => {
                 editor.chain().focus().deleteRange(range).setDialogue().run()

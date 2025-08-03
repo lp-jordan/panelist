@@ -232,6 +232,23 @@ body {
   margin-bottom: 12px;
 }
 
+.character {
+  font-family: 'Courier New', monospace;
+  font-weight: 700;
+  font-size: 12pt;
+  text-transform: uppercase;
+  margin-left: calc(2 * var(--tab-width));
+  margin-bottom: 0;
+}
+
+.dialogue {
+  font-family: 'Courier New', monospace;
+  font-weight: 400;
+  font-size: 12pt;
+  margin-left: calc(2 * var(--tab-width));
+  margin-bottom: 8px;
+}
+
 .cue-label {
   font-family: 'Courier New', monospace;
   font-weight: 700;
