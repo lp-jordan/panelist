@@ -1,7 +1,6 @@
 /* global __APP_VERSION__ */
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor } from '@tiptap/react'
 import { useState, useRef } from 'react'
-import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import SlashCommand from './extensions/SlashCommand'
 import SmartFlow from './extensions/SmartFlow'
@@ -14,6 +13,8 @@ import {
   NoCopy,
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
+import Editor from './components/Editor'
+import ModeCarousel from './components/ModeCarousel'
 import { createPage } from './utils/pageRepository'
 
 function ProjectHeader({ projectName, onAddPage, disabled }) {
@@ -34,6 +35,7 @@ function ProjectHeader({ projectName, onAddPage, disabled }) {
 export default function App({ onSignOut }) {
   const [pageTitle, setPageTitle] = useState('Untitled Page')
   const [activeProject, setActiveProject] = useState(null)
+  const [mode, setMode] = useState('Script')
   const sidebarRef = useRef(null)
   const currentPage = { content: '' }
   const editor = useEditor({
@@ -78,40 +80,14 @@ export default function App({ onSignOut }) {
         onSignOut={onSignOut}
       />
       <div className="editor-container">
+        <ModeCarousel currentMode={mode} onModeChange={setMode} />
         <ProjectHeader
           projectName={activeProject?.name}
           onAddPage={handleAddPage}
           disabled={!activeProject}
         />
         <h1 className="editor-title">{pageTitle}</h1>
-        {editor && (
-          <>
-            <BubbleMenu
-              className="bubble-menu"
-              editor={editor}
-            >
-              <button
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                className={editor.isActive('bold') ? 'is-active' : ''}
-              >
-                B
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                className={editor.isActive('italic') ? 'is-active' : ''}
-              >
-                I
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleUnderline().run()}
-                className={editor.isActive('underline') ? 'is-active' : ''}
-              >
-                U
-              </button>
-            </BubbleMenu>
-            <EditorContent editor={editor} />
-          </>
-        )}
+        {editor && <Editor editor={editor} mode={mode} />}
       </div>
       <div className="app-name">Panelist v{__APP_VERSION__}</div>
     </div>
