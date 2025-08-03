@@ -1,15 +1,18 @@
 :root {
-  --background-color: #000;
+  --background-color: #121212;
+  --panel-background-color: #1e1e1e;
+  --hover-background-color: #2a2a2a;
   --text-color: #fff;
   --accent-color: #4e9cff;
-  --editor-background-color: #111;
+  --editor-background-color: #1e1e1e;
 }
 
-html, body {
+html,
+body {
   background-color: var(--background-color);
   color: var(--text-color);
   margin: 0;
-  font-family: system-ui, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 a {
@@ -18,10 +21,11 @@ a {
 
 .ProseMirror {
   padding: 2rem;
-  border: 1px solid #333;
   min-height: 100vh;
   background: var(--editor-background-color);
   box-sizing: border-box;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
 }
 
 .page-header {
@@ -121,8 +125,8 @@ a {
 
 .sidebar {
   width: 250px;
-  background: #111;
-  border-right: 1px solid #333;
+  background: var(--panel-background-color);
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.4);
   transition: width 0.3s ease;
   overflow: hidden;
   position: relative;
@@ -149,11 +153,17 @@ a {
   right: -15px;
   width: 30px;
   height: 30px;
-  background: #111;
-  border: 1px solid #333;
+  background: var(--panel-background-color);
+  border: none;
   border-radius: 50%;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.4);
   color: var(--text-color);
   cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.collapse-toggle:hover {
+  background: var(--hover-background-color);
 }
 
 .sidebar-content {
@@ -168,19 +178,41 @@ a {
 
 .sidebar-content li {
   cursor: pointer;
-  padding: 0.25rem 0;
+  padding: 0.75rem 0.5rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 0.5rem;
+  justify-content: flex-start;
+  border-radius: 8px;
+  transition: background 0.2s ease;
 }
 
-.sidebar-content li button {
-  margin-left: 0.5rem;
+.sidebar-content li:hover {
+  background: var(--hover-background-color);
 }
 
 .sidebar-content li.active-page {
   font-weight: bold;
   color: var(--accent-color);
+  background: rgba(78, 156, 255, 0.1);
+}
+
+.section-label {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+.page-icon {
+  font-size: 1rem;
+  margin-top: 0.2rem;
+}
+
+.page-preview {
+  font-size: 0.8rem;
+  opacity: 0.7;
 }
 
 .new-page {
@@ -212,6 +244,12 @@ a {
   padding: 0.5rem 1rem;
   cursor: pointer;
   white-space: nowrap;
+  border-radius: 9999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.mode-carousel button:hover {
+  background: var(--hover-background-color);
 }
 
 .mode-carousel button.active {
@@ -246,5 +284,56 @@ a {
   display: flex;
   gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+.export-formats button,
+.add-project,
+.add-page,
+.additional-options button {
+  background: var(--accent-color);
+  color: var(--background-color);
+  border: none;
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.export-formats button:hover,
+.add-project:hover,
+.add-page:hover,
+.additional-options button:hover {
+  background: #5ea9ff;
+}
+
+.export-formats button:active,
+.add-project:active,
+.add-page:active,
+.additional-options button:active {
+  transform: scale(0.98);
+}
+
+.project-dropdown {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.project-dropdown.open {
+  max-height: 200px;
+}
+
+.project-dropdown li {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+.project-dropdown li:hover {
+  background: var(--hover-background-color);
 }
 
