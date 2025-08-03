@@ -8,6 +8,7 @@ import {
   PageHeader,
   PanelHeader,
   Description,
+  Character,
   Dialogue,
   Sfx,
   NoCopy,
@@ -32,6 +33,7 @@ export default function App({ onSignOut }) {
       PageHeader,
       PanelHeader,
       Description,
+      Character,
       Dialogue,
       Sfx,
       NoCopy,
@@ -76,6 +78,13 @@ export default function App({ onSignOut }) {
       clearTimeout(timeoutId)
     }
   }, [editor, pageTitle, activeProject])
+
+  useEffect(() => {
+    if (!editor) return
+    editor.commands.setCharacterSuggestions(
+      activeProject?.characters ?? [],
+    )
+  }, [editor, activeProject])
 
   return (
     <div className="app-layout">
