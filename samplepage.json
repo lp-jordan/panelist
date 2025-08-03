@@ -1,0 +1,33 @@
+{
+  "page": 1,
+  "panel_count": 4,
+  "panels": [
+    {
+      "panel_number": 1,
+      "header": "Panel Header: Description.",
+      "cues": [
+        {
+          "type": "CHARACTER",
+          "label": "CHARACTER",
+          "content": "This is dialogue."
+        },
+        {
+          "type": "SFX",
+          "label": "SFX",
+          "content": "SOUND EFFECT"
+        },
+        {
+          "type": "NARRATION",
+          "label": "NARRATION",
+          "content": "This is narration. Functions like dialogue."
+        },
+        {
+          "type": "CAPTION",
+          "label": "CAPTION",
+          "content": "This is a caption. Functions like dialogue."
+        }
+      ],
+      "notes": "NO COPY"
+    }
+  ]
+}

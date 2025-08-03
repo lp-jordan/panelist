@@ -1,0 +1,47 @@
+{
+  "styles": {
+    "panel_header": {
+      "font": "Baskerville",
+      "weight": "bold",
+      "size": 14,
+      "uppercase": true,
+      "margin_top": 24,
+      "margin_bottom": 12
+    },
+    "cue_label": {
+      "font": "Courier New",
+      "weight": "bold",
+      "size": 12,
+      "uppercase": true,
+      "tab": 0
+    },
+    "cue_content": {
+      "font": "Courier New",
+      "weight": "normal",
+      "size": 12,
+      "tab": 2
+    },
+    "sfx": {
+      "font": "Courier New",
+      "style": "italic",
+      "size": 12,
+      "tab": 2
+    },
+    "notes": {
+      "font": "Courier New",
+      "color": "#888888",
+      "italic": true,
+      "tab": 1
+    }
+  },
+  "tabs": {
+    "character_dialogue": 2,
+    "narration": 2,
+    "caption": 2,
+    "sfx": 2
+  },
+  "spacing": {
+    "between_panels": 24,
+    "between_cues": 8
+  }
+}
