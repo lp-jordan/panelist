@@ -19,15 +19,19 @@ async function getCurrentUserId(supabase) {
   return user.id
 }
 
-export async function listScripts() {
+export async function listScripts(projectId) {
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
-    const { data, error } = await supabase
+    let query = supabase
       .from(TABLE)
       .select('title')
       .eq('user_id', userId)
       .order('title')
+    if (projectId) {
+      query = query.eq('project_id', projectId)
+    }
+    const { data, error } = await query
     if (error) throw error
     return data ? data.map((row) => row.title) : []
   } catch (error) {
@@ -36,7 +40,7 @@ export async function listScripts() {
   }
 }
 
-export async function createScript(name, data) {
+export async function createScript(name, data, projectId) {
   try {
     const now = new Date().toISOString()
     const supabase = await getSupabase()
@@ -47,6 +51,7 @@ export async function createScript(name, data) {
       updated_at: now,
       content: data.content ?? '',
       user_id: userId,
+      project_id: projectId ?? null,
     }
     const { error } = await supabase.from(TABLE).insert(payload)
     if (error) throw error

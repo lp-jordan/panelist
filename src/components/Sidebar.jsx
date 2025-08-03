@@ -13,7 +13,13 @@ import {
 } from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
 
-export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolder, renderAssets, onSignOut }) {
+export default function Sidebar({
+  onSelectScript,
+  onSelectProject,
+  onSelectFolder,
+  renderAssets,
+  onSignOut,
+}) {
   const [collapsed, setCollapsed] = useState(false)
   const [scripts, setScripts] = useState([])
   const [newScriptName, setNewScriptName] = useState('')
@@ -21,11 +27,14 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
   const [projects, setProjects] = useState([])
   const [newProjectName, setNewProjectName] = useState('')
   const [projectError, setProjectError] = useState('')
+  const [selectedProject, setSelectedProject] = useState(null)
 
-  async function refreshScripts() {
-    const result = await listScripts()
-    const list = result?.data ?? result
-    const names = list.map((s) => s.name ?? s)
+  async function refreshScripts(projectId) {
+    if (!projectId) {
+      setScripts([])
+      return
+    }
+    const names = await listScripts(projectId)
     setScripts(names)
   }
 
@@ -34,21 +43,26 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
     const list = result?.data ?? result
     const names = list.map((p) => p.name ?? p)
     setProjects(names)
+    return names
   }
 
   useEffect(() => {
-    refreshScripts()
-    refreshProjects()
+    refreshProjects().then((names) => {
+      if (names.length > 0) {
+        handleSelectProject(names[0])
+      }
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function handleCreateScript() {
     const name = newScriptName.trim()
-    if (!name) return
+    if (!name || !selectedProject) return
     try {
-      await createScript(name, {})
+      await createScript(name, {}, selectedProject.id)
       setNewScriptName('')
       setScriptError('')
-      refreshScripts()
+      refreshScripts(selectedProject.id)
     } catch (err) {
       console.error('Error creating script:', err)
       setScriptError(err.message)
@@ -63,7 +77,7 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
 
   async function handleDeleteScript(name) {
     await deleteScript(name)
-    setScripts(await listScripts())
+    refreshScripts(selectedProject?.id)
   }
 
   async function handleCreateProject() {
@@ -73,7 +87,8 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
       await createProject(name, {})
       setNewProjectName('')
       setProjectError('')
-      refreshProjects()
+      await refreshProjects()
+      handleSelectProject(name)
     } catch (err) {
       console.error('Error creating project:', err)
       setProjectError(err.message)
@@ -83,13 +98,23 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
   async function handleSelectProject(name) {
     const result = await readProject(name)
     const data = result?.data ?? result
+    setSelectedProject(data)
     const handler = onSelectProject ?? onSelectFolder
     handler?.(name, data)
+    refreshScripts(data?.id)
   }
 
   async function handleDeleteProject(name) {
     await deleteProject(name)
-    refreshProjects()
+    const names = await refreshProjects()
+    if (selectedProject?.name === name) {
+      if (names.length > 0) {
+        handleSelectProject(names[0])
+      } else {
+        setSelectedProject(null)
+        setScripts([])
+      }
+    }
   }
 
   async function handleSignOut() {
@@ -107,46 +132,61 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
       </button>
       <div className="sidebar-content">
         <section>
-          <h3>Scripts</h3>
-          <div className="new-script">
-            <input
-              value={newScriptName}
-              onChange={(e) => setNewScriptName(e.target.value)}
-              placeholder="New script name"
-            />
-            <button onClick={handleCreateScript}>Add</button>
-            {scriptError && <p className="error">{scriptError}</p>}
+          <div className="project-select">
+            <select
+              value={selectedProject?.name ?? ''}
+              onChange={(e) => handleSelectProject(e.target.value)}
+            >
+              <option value="" disabled>
+                Select project
+              </option>
+              {projects.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+            <div className="new-project">
+              <input
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder="New project name"
+              />
+              <button onClick={handleCreateProject}>Add</button>
+              {projectError && <p className="error">{projectError}</p>}
+            </div>
+            <button
+              disabled={!selectedProject}
+              onClick={() =>
+                selectedProject && handleDeleteProject(selectedProject.name)
+              }
+            >
+              Delete Project
+            </button>
           </div>
-          <ul>
-            {scripts.length === 0 && <li>No scripts</li>}
-            {scripts.map((s) => (
-              <li key={s}>
-                <span onClick={() => handleSelectScript(s)}>{s}</span>
-                <button onClick={() => handleDeleteScript(s)}>x</button>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h3>Projects</h3>
-          <div className="new-project">
-            <input
-              value={newProjectName}
-              onChange={(e) => setNewProjectName(e.target.value)}
-              placeholder="New project name"
-            />
-            <button onClick={handleCreateProject}>Add</button>
-            {projectError && <p className="error">{projectError}</p>}
-          </div>
-          <ul>
-            {projects.length === 0 && <li>No projects</li>}
-            {projects.map((p) => (
-              <li key={p}>
-                <span onClick={() => handleSelectProject(p)}>{p}</span>
-                <button onClick={() => handleDeleteProject(p)}>x</button>
-              </li>
-            ))}
-          </ul>
+          {selectedProject && <h3>{selectedProject.name}</h3>}
+          {selectedProject && (
+            <>
+              <div className="new-script">
+                <input
+                  value={newScriptName}
+                  onChange={(e) => setNewScriptName(e.target.value)}
+                  placeholder="New script name"
+                />
+                <button onClick={handleCreateScript}>Add</button>
+                {scriptError && <p className="error">{scriptError}</p>}
+              </div>
+              <ul>
+                {scripts.length === 0 && <li>No scripts</li>}
+                {scripts.map((s) => (
+                  <li key={s}>
+                    <span onClick={() => handleSelectScript(s)}>{s}</span>
+                    <button onClick={() => handleDeleteScript(s)}>x</button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </section>
         {renderAssets?.()}
         <button onClick={handleSignOut}>Sign out</button>
