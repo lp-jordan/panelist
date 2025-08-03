@@ -15,7 +15,9 @@ import {
 import Sidebar from './components/Sidebar'
 import Editor from './components/Editor'
 import ModeCarousel from './components/ModeCarousel'
+import PageNavigator from './components/PageNavigator'
 import { createPage } from './utils/pageRepository'
+import { updateScript } from './utils/scriptRepository'
 
 function ProjectHeader({ projectName, onAddPage, disabled }) {
   return (
@@ -35,7 +37,8 @@ function ProjectHeader({ projectName, onAddPage, disabled }) {
 export default function App({ onSignOut }) {
   const [pageTitle, setPageTitle] = useState('Untitled Page')
   const [activeProject, setActiveProject] = useState(null)
-  const [mode, setMode] = useState('Script')
+  const [isSaving, setIsSaving] = useState(false)
+  const [mode, setMode] = useState('Write')
   const sidebarRef = useRef(null)
   const currentPage = { content: '' }
   const editor = useEditor({
@@ -71,6 +74,30 @@ export default function App({ onSignOut }) {
     editor?.commands?.setContent(data.content ?? '')
   }
 
+  useEffect(() => {
+    if (!editor) return
+    let timeoutId
+    const saveHandler = () => {
+      setIsSaving(true)
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(async () => {
+        if (activeProject) {
+          await updateScript(
+            pageTitle,
+            { content: editor.getHTML() },
+            activeProject.id,
+          )
+        }
+        setIsSaving(false)
+      }, 500)
+    }
+    editor.on('update', saveHandler)
+    return () => {
+      editor.off('update', saveHandler)
+      clearTimeout(timeoutId)
+    }
+  }, [editor, pageTitle, activeProject])
+
   return (
     <div className="app-layout">
       <Sidebar
@@ -86,8 +113,43 @@ export default function App({ onSignOut }) {
           onAddPage={handleAddPage}
           disabled={!activeProject}
         />
+        <ModeCarousel onModeChange={setMode} />
+        <PageNavigator
+          projectId={activeProject?.id}
+          onSelectPage={handleSelectPage}
+        />
         <h1 className="editor-title">{pageTitle}</h1>
         {editor && <Editor editor={editor} mode={mode} />}
+          {isSaving && <span className="saving-indicator"> saving...</span>}
+        </h1>
+        {editor && (
+          <>
+            <BubbleMenu
+              className="bubble-menu"
+              editor={editor}
+            >
+              <button
+                onClick={() => editor.chain().focus().toggleBold().run()}
+                className={editor.isActive('bold') ? 'is-active' : ''}
+              >
+                B
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleItalic().run()}
+                className={editor.isActive('italic') ? 'is-active' : ''}
+              >
+                I
+              </button>
+              <button
+                onClick={() => editor.chain().focus().toggleUnderline().run()}
+                className={editor.isActive('underline') ? 'is-active' : ''}
+              >
+                U
+              </button>
+            </BubbleMenu>
+            <EditorContent editor={editor} />
+          </>
+        )}
       </div>
       <div className="app-name">Panelist v{__APP_VERSION__}</div>
     </div>
