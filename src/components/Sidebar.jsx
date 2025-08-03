@@ -17,8 +17,10 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
   const [collapsed, setCollapsed] = useState(false)
   const [scripts, setScripts] = useState([])
   const [newScriptName, setNewScriptName] = useState('')
+  const [scriptError, setScriptError] = useState('')
   const [projects, setProjects] = useState([])
   const [newProjectName, setNewProjectName] = useState('')
+  const [projectError, setProjectError] = useState('')
 
   async function refreshScripts() {
     const result = await listScripts()
@@ -42,9 +44,15 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
   async function handleCreateScript() {
     const name = newScriptName.trim()
     if (!name) return
-    await createScript(name, {})
-    setNewScriptName('')
-    refreshScripts()
+    try {
+      await createScript(name, {})
+      setNewScriptName('')
+      setScriptError('')
+      refreshScripts()
+    } catch (err) {
+      console.error('Error creating script:', err)
+      setScriptError(err.message)
+    }
   }
 
   async function handleSelectScript(name) {
@@ -61,9 +69,15 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
   async function handleCreateProject() {
     const name = newProjectName.trim()
     if (!name) return
-    await createProject(name, {})
-    setNewProjectName('')
-    refreshProjects()
+    try {
+      await createProject(name, {})
+      setNewProjectName('')
+      setProjectError('')
+      refreshProjects()
+    } catch (err) {
+      console.error('Error creating project:', err)
+      setProjectError(err.message)
+    }
   }
 
   async function handleSelectProject(name) {
@@ -101,6 +115,7 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
               placeholder="New script name"
             />
             <button onClick={handleCreateScript}>Add</button>
+            {scriptError && <p className="error">{scriptError}</p>}
           </div>
           <ul>
             {scripts.length === 0 && <li>No scripts</li>}
@@ -121,6 +136,7 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
               placeholder="New project name"
             />
             <button onClick={handleCreateProject}>Add</button>
+            {projectError && <p className="error">{projectError}</p>}
           </div>
           <ul>
             {projects.length === 0 && <li>No projects</li>}
