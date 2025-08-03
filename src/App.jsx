@@ -14,9 +14,13 @@ import {
   NoCopy,
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
+import { readScript } from './utils/scriptRepository'
 
 export default function App({ onSignOut }) {
-  const [scriptTitle] = useState('Untitled Script')
+  const [currentScript, setCurrentScript] = useState({
+    title: 'Untitled Script',
+    content: '',
+  })
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -29,14 +33,23 @@ export default function App({ onSignOut }) {
       SmartFlow,
       SlashCommand,
     ],
-    content: '',
+    content: currentScript.content,
   })
+
+  async function handleScriptChange(name) {
+    const result = await readScript(name)
+    const data = result?.data ?? result
+    if (!data) return
+    const script = { ...data.metadata, content: data.content }
+    setCurrentScript(script)
+    editor?.commands.setContent(script.content)
+  }
 
   return (
     <div className="app-layout">
-      <Sidebar onSignOut={onSignOut} />
+      <Sidebar onSignOut={onSignOut} onSelectScript={handleScriptChange} />
       <div className="editor-container">
-        <h1 className="editor-title">{scriptTitle}</h1>
+        <h1 className="editor-title">{currentScript.title}</h1>
         {editor && (
           <>
             <BubbleMenu
