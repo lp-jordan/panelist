@@ -9,7 +9,6 @@ import {
   listProjects,
   createProject,
   readProject,
-  deleteProject,
 } from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
 
@@ -26,9 +25,8 @@ function Sidebar({
   const [newPageName, setNewPageName] = useState('')
   const [pageError, setPageError] = useState('')
   const [projects, setProjects] = useState([])
-  const [newProjectName, setNewProjectName] = useState('')
-  const [projectError, setProjectError] = useState('')
   const [selectedProject, setSelectedProject] = useState(null)
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false)
   const [activePageState, setActivePageState] = useState(
     activePageProp ?? null,
   )
@@ -93,17 +91,14 @@ function Sidebar({
     }
 
   async function handleCreateProject() {
-    const name = newProjectName.trim()
+    const name = prompt('New project name')?.trim()
     if (!name) return
     try {
       await createProject(name, {})
-      setNewProjectName('')
-      setProjectError('')
       await refreshProjects()
       handleSelectProject(name)
     } catch (err) {
       console.error('Error creating project:', err)
-      setProjectError(err.message)
     }
   }
 
@@ -115,19 +110,7 @@ function Sidebar({
     const handler = onSelectProject ?? onSelectFolder
     handler?.(name, data)
     refreshPages(data?.id)
-  }
-
-  async function handleDeleteProject(name) {
-    await deleteProject(name)
-    const names = await refreshProjects()
-    if (selectedProject?.name === name) {
-      if (names.length > 0) {
-        handleSelectProject(names[0])
-      } else {
-        setSelectedProject(null)
-        setPages([])
-      }
-    }
+    setProjectDropdownOpen(false)
   }
 
   async function handleSignOut() {
@@ -150,39 +133,29 @@ function Sidebar({
       </button>
       <div className="sidebar-content">
         <section>
-          <div className="project-select">
-            <select
-              value={selectedProject?.name ?? ''}
-              onChange={(e) => handleSelectProject(e.target.value)}
+          <div className="project-header">
+            <div
+              className="project-title"
+              onClick={() => setProjectDropdownOpen((o) => !o)}
             >
-              <option value="" disabled>
-                Select project
-              </option>
-              {projects.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
-            <div className="new-project">
-              <input
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
-                placeholder="New project name"
-              />
-              <button onClick={handleCreateProject}>Add</button>
-              {projectError && <p className="error">{projectError}</p>}
+              {selectedProject?.name ?? 'Select project'}{' '}
+              <span className="dropdown-indicator">
+                {projectDropdownOpen ? '▲' : '▼'}
+              </span>
             </div>
-            <button
-              disabled={!selectedProject}
-              onClick={() =>
-                selectedProject && handleDeleteProject(selectedProject.name)
-              }
-            >
-              Delete Project
+            <button className="add-project" onClick={handleCreateProject}>
+              +
             </button>
+            {projectDropdownOpen && (
+              <ul className="project-dropdown">
+                {projects.map((p) => (
+                  <li key={p} onClick={() => handleSelectProject(p)}>
+                    {p}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          {selectedProject && <h3>{selectedProject.name}</h3>}
           {selectedProject && (
             <>
               <div className="new-page">
