@@ -1,6 +1,6 @@
 /* global __APP_VERSION__ */
 import { useEditor } from '@tiptap/react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import SlashCommand from './extensions/SlashCommand'
 import SmartFlow from './extensions/SmartFlow'
@@ -113,7 +113,6 @@ export default function App({ onSignOut }) {
           onAddPage={handleAddPage}
           disabled={!activeProject}
         />
-        <ModeCarousel onModeChange={setMode} />
         <PageNavigator
           projectId={activeProject?.id}
           onSelectPage={handleSelectPage}
