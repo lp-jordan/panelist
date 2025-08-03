@@ -1,30 +1,35 @@
-import { useState, useEffect } from 'react'
+import { useRef } from 'react'
 
-export default function ModeCarousel({ modes = ['Write', 'Preview'], onModeChange }) {
-  const [index, setIndex] = useState(0)
-  const currentMode = modes[index]
+const modes = ['Script', 'Tiles*', 'Animation*']
 
-  useEffect(() => {
-    onModeChange?.(currentMode)
-  }, [currentMode, onModeChange])
+export default function ModeCarousel({ currentMode, onModeChange }) {
+  const containerRef = useRef(null)
 
-  function prev() {
-    setIndex((i) => (i - 1 + modes.length) % modes.length)
-  }
-
-  function next() {
-    setIndex((i) => (i + 1) % modes.length)
+  function handleSelect(mode) {
+    const isPlaceholder = mode.endsWith('*')
+    const cleanMode = mode.replace('*', '')
+    if (isPlaceholder) {
+      console.log(`${cleanMode} mode is coming soon`)
+      return
+    }
+    onModeChange?.(cleanMode)
   }
 
   return (
-    <div className="mode-carousel">
-      <button onClick={prev} disabled={modes.length <= 1}>
-        {'<'}
-      </button>
-      <span className="mode-label">{currentMode}</span>
-      <button onClick={next} disabled={modes.length <= 1}>
-        {'>'}
-      </button>
+    <div className="mode-carousel" ref={containerRef}>
+      {modes.map((mode) => {
+        const cleanMode = mode.replace('*', '')
+        const isActive = currentMode === cleanMode
+        return (
+          <button
+            key={mode}
+            className={isActive ? 'active' : ''}
+            onClick={() => handleSelect(mode)}
+          >
+            {mode}
+          </button>
+        )
+      })}
     </div>
   )
 }

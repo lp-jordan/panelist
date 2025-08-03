@@ -1,7 +1,6 @@
 /* global __APP_VERSION__ */
-import { useEditor, EditorContent } from '@tiptap/react'
-import { useState, useRef, useEffect } from 'react'
-import { BubbleMenu } from '@tiptap/react/menus'
+import { useEditor } from '@tiptap/react'
+import { useState, useRef } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import SlashCommand from './extensions/SlashCommand'
 import SmartFlow from './extensions/SmartFlow'
@@ -14,6 +13,7 @@ import {
   NoCopy,
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
+import Editor from './components/Editor'
 import ModeCarousel from './components/ModeCarousel'
 import PageNavigator from './components/PageNavigator'
 import { createPage } from './utils/pageRepository'
@@ -107,6 +107,7 @@ export default function App({ onSignOut }) {
         onSignOut={onSignOut}
       />
       <div className="editor-container">
+        <ModeCarousel currentMode={mode} onModeChange={setMode} />
         <ProjectHeader
           projectName={activeProject?.name}
           onAddPage={handleAddPage}
@@ -117,8 +118,8 @@ export default function App({ onSignOut }) {
           projectId={activeProject?.id}
           onSelectPage={handleSelectPage}
         />
-        <h1 className="editor-title">
-          {pageTitle} <span className="mode-display">({mode})</span>
+        <h1 className="editor-title">{pageTitle}</h1>
+        {editor && <Editor editor={editor} mode={mode} />}
           {isSaving && <span className="saving-indicator"> saving...</span>}
         </h1>
         {editor && (
