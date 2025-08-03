@@ -47,7 +47,7 @@ export default function App({ onSignOut }) {
       SmartFlow,
       SlashCommand,
     ],
-    content: '',
+    content: currentScript.content,
   })
 
   async function handleAddScript() {

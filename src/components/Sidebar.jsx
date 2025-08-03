@@ -13,16 +13,14 @@ import {
 } from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
 
-function Sidebar(
-  {
-    onSelectScript,
-    onSelectProject,
-    onSelectFolder,
-    renderAssets,
-    onSignOut,
-  },
-  ref,
-) {
+export default function Sidebar({
+  onSelectScript,
+  onSelectProject,
+  onSelectFolder,
+  renderAssets,
+  onSignOut,
+  activeScript: activeScriptProp,
+}) {
   const [collapsed, setCollapsed] = useState(false)
   const [scripts, setScripts] = useState([])
   const [newScriptName, setNewScriptName] = useState('')
@@ -31,6 +29,16 @@ function Sidebar(
   const [newProjectName, setNewProjectName] = useState('')
   const [projectError, setProjectError] = useState('')
   const [selectedProject, setSelectedProject] = useState(null)
+  const [activeScriptState, setActiveScriptState] = useState(
+    activeScriptProp ?? null,
+  )
+  const activeScript = activeScriptProp ?? activeScriptState
+
+  useEffect(() => {
+    if (activeScriptProp !== undefined) {
+      setActiveScriptState(activeScriptProp)
+    }
+  }, [activeScriptProp])
 
   async function refreshScripts(projectId) {
     if (!projectId) {
@@ -75,6 +83,7 @@ function Sidebar(
   async function handleSelectScript(name) {
     const result = await readScript(name)
     const data = result?.data ?? result
+    setActiveScriptState(name)
     onSelectScript?.(name, data)
   }
 
@@ -102,6 +111,7 @@ function Sidebar(
     const result = await readProject(name)
     const data = result?.data ?? result
     setSelectedProject(data)
+    setActiveScriptState(null)
     const handler = onSelectProject ?? onSelectFolder
     handler?.(name, data)
     refreshScripts(data?.id)
@@ -187,7 +197,10 @@ function Sidebar(
               <ul>
                 {scripts.length === 0 && <li>No scripts</li>}
                 {scripts.map((s) => (
-                  <li key={s}>
+                  <li
+                    key={s}
+                    className={s === activeScript ? 'active-script' : ''}
+                  >
                     <span onClick={() => handleSelectScript(s)}>{s}</span>
                     <button onClick={() => handleDeleteScript(s)}>x</button>
                   </li>
