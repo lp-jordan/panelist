@@ -14,10 +14,7 @@ export default function Editor({ editor, mode }) {
 
   return (
     <>
-      <BubbleMenu
-        className="flex gap-1 rounded-md border border-zinc-700 bg-zinc-900 p-1"
-        editor={editor}
-      >
+      <BubbleMenu className="editor-bubble-menu" editor={editor}>
         <Button
           size="sm"
           variant={editor.isActive('bold') ? 'default' : 'ghost'}
@@ -40,10 +37,7 @@ export default function Editor({ editor, mode }) {
           U
         </Button>
       </BubbleMenu>
-      <EditorContent
-        editor={editor}
-        className="min-h-screen rounded-md bg-zinc-900 p-8 shadow-lg"
-      />
+      <EditorContent editor={editor} className="editor-content" />
     </>
   )
 }

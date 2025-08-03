@@ -17,23 +17,19 @@ export default function ModeCarousel({ currentMode, onModeChange }) {
   }
 
   return (
-    <div
-      className="mb-4 flex gap-2 overflow-x-auto"
-      ref={containerRef}
-    >
+    <div className="mode-carousel" ref={containerRef}>
       {modes.map((mode) => {
         const cleanMode = mode.replace('*', '')
         const isActive = currentMode === cleanMode
-        return (
-          <Button
-            key={mode}
-            variant={isActive ? 'default' : 'ghost'}
-            onClick={() => handleSelect(mode)}
-            className="whitespace-nowrap"
-          >
-            {mode}
-          </Button>
-        )
+          return (
+            <Button
+              key={mode}
+              variant={isActive ? 'default' : 'ghost'}
+              onClick={() => handleSelect(mode)}
+            >
+              {mode}
+            </Button>
+          )
       })}
     </div>
   )
