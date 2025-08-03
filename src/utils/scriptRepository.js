@@ -23,15 +23,12 @@ export async function listScripts(projectId) {
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
-    let query = supabase
+    const { data, error } = await supabase
       .from(TABLE)
       .select('title')
       .eq('user_id', userId)
+      .eq('project_id', projectId)
       .order('title')
-    if (projectId) {
-      query = query.eq('project_id', projectId)
-    }
-    const { data, error } = await query
     if (error) throw error
     return data ? data.map((row) => row.title) : []
   } catch (error) {
@@ -58,6 +55,7 @@ export async function createScript(name, data, projectId) {
     return {
       metadata: {
         title: payload.title,
+        projectId: payload.project_id,
         created_at: payload.created_at,
         updated_at: payload.updated_at,
       },
@@ -69,7 +67,7 @@ export async function createScript(name, data, projectId) {
   }
 }
 
-export async function readScript(name) {
+export async function readScript(name, projectId) {
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
@@ -78,6 +76,7 @@ export async function readScript(name) {
       .select('title, project_id, created_at, updated_at, content')
       .eq('title', name)
       .eq('user_id', userId)
+      .eq('project_id', projectId)
       .single()
     if (error) throw error
     return {
@@ -97,7 +96,7 @@ export async function readScript(name) {
 
 export async function updateScript(name, data, projectId) {
   try {
-    const existing = await readScript(name)
+    const existing = await readScript(name, projectId)
     if (!existing) return null
     const updated = {
       metadata: {
@@ -122,13 +121,14 @@ export async function updateScript(name, data, projectId) {
       .update(row)
       .eq('title', name)
       .eq('user_id', userId)
+      .eq('project_id', projectId ?? existing.metadata.projectId)
     if (error) throw error
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
   }
 }
 
-export async function deleteScript(name) {
+export async function deleteScript(name, projectId) {
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
@@ -137,6 +137,7 @@ export async function deleteScript(name) {
       .delete()
       .eq('title', name)
       .eq('user_id', userId)
+      .eq('project_id', projectId)
     if (error) throw error
   } catch (error) {
     if (!handleUnauthorized(error)) throw error

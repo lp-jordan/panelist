@@ -20,7 +20,7 @@ function Sidebar({
   renderAssets,
   onSignOut,
   activeScript: activeScriptProp,
-}) {
+}, ref) {
   const [collapsed, setCollapsed] = useState(false)
   const [scripts, setScripts] = useState([])
   const [newScriptName, setNewScriptName] = useState('')
@@ -40,14 +40,14 @@ function Sidebar({
     }
   }, [activeScriptProp])
 
-  async function refreshScripts(projectId) {
-    if (!projectId) {
-      setScripts([])
-      return
+    async function refreshScripts(projectId) {
+      if (!projectId) {
+        setScripts([])
+        return
+      }
+      const names = await listScripts(projectId)
+      setScripts(names)
     }
-    const names = await listScripts(projectId)
-    setScripts(names)
-  }
 
   async function refreshProjects() {
     const result = await listProjects()
@@ -80,17 +80,17 @@ function Sidebar({
     }
   }
 
-  async function handleSelectScript(name) {
-    const result = await readScript(name)
-    const data = result?.data ?? result
-    setActiveScriptState(name)
-    onSelectScript?.(name, data)
-  }
+    async function handleSelectScript(name) {
+      const result = await readScript(name, selectedProject?.id)
+      const data = result?.data ?? result
+      setActiveScriptState(name)
+      onSelectScript?.(name, data)
+    }
 
-  async function handleDeleteScript(name) {
-    await deleteScript(name)
-    refreshScripts(selectedProject?.id)
-  }
+    async function handleDeleteScript(name) {
+      await deleteScript(name, selectedProject?.id)
+      refreshScripts(selectedProject?.id)
+    }
 
   async function handleCreateProject() {
     const name = newProjectName.trim()

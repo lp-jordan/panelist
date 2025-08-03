@@ -35,6 +35,7 @@ export default function App({ onSignOut }) {
   const [scriptTitle, setScriptTitle] = useState('Untitled Script')
   const [activeProject, setActiveProject] = useState(null)
   const sidebarRef = useRef(null)
+  const currentScript = { content: '' }
   const editor = useEditor({
     extensions: [
       StarterKit,
