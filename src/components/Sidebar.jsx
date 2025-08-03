@@ -11,7 +11,9 @@ import {
   readProject,
   deleteProject,
 } from '../utils/projectRepository'
-export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolder, renderAssets }) {
+import { signOut } from '../utils/auth.js'
+
+export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolder, renderAssets, onSignOut }) {
   const [collapsed, setCollapsed] = useState(false)
   const [scripts, setScripts] = useState([])
   const [newScriptName, setNewScriptName] = useState('')
@@ -76,6 +78,11 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
     refreshProjects()
   }
 
+  async function handleSignOut() {
+    await signOut()
+    onSignOut?.()
+  }
+
   return (
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
       <button
@@ -126,6 +133,7 @@ export default function Sidebar({ onSelectScript, onSelectProject, onSelectFolde
           </ul>
         </section>
         {renderAssets?.()}
+        <button onClick={handleSignOut}>Sign out</button>
       </div>
     </aside>
   )
