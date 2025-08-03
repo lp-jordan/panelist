@@ -1,16 +1,73 @@
-import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import {
-  listPages,
-  createPage,
-  readPage,
-  deletePage,
-} from '../utils/pageRepository'
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+} from 'react'
+import { listScripts, readScript } from '../utils/scriptRepository'
 import {
   listProjects,
   createProject,
   readProject,
 } from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
+
+const PageNavigator = forwardRef(function PageNavigator(
+  { projectId, activePage, onSelectPage },
+  ref,
+) {
+  const [pages, setPages] = useState([])
+
+  async function refresh(id = projectId) {
+    if (!id) {
+      setPages([])
+      return
+    }
+    const names = await listScripts(id)
+    const enriched = await Promise.all(
+      names.map(async (name) => {
+        const result = await readScript(name, id)
+        const data = result?.data ?? result
+        const content = data?.content ?? ''
+        const preview = content.split('\n')[0] || ''
+        return { name, preview }
+      }),
+    )
+    setPages(enriched)
+  }
+
+  useEffect(() => {
+    refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
+
+  useImperativeHandle(ref, () => ({ refresh }))
+
+  return (
+    <div className="page-navigator">
+      <ul>
+        {pages.length === 0 && <li>No pages</li>}
+        {pages.map((p) => (
+          <li
+            key={p.name}
+            className={p.name === activePage ? 'active-page' : ''}
+            onClick={() => onSelectPage(p.name)}
+          >
+            <div className="page-title">{p.name}</div>
+            <div className="page-preview">{p.preview}</div>
+          </li>
+        ))}
+      </ul>
+      <button
+        className="add-page"
+        onClick={() => console.log('New Page placeholder')}
+      >
+        + New Page
+      </button>
+    </div>
+  )
+})
 
 function Sidebar({
   onSelectPage,
@@ -21,9 +78,6 @@ function Sidebar({
   activePage: activePageProp,
 }, ref) {
   const [collapsed, setCollapsed] = useState(false)
-  const [pages, setPages] = useState([])
-  const [newPageName, setNewPageName] = useState('')
-  const [pageError, setPageError] = useState('')
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
   const [projectDropdownOpen, setProjectDropdownOpen] = useState(false)
@@ -38,15 +92,6 @@ function Sidebar({
       setActivePageState(activePageProp)
     }
   }, [activePageProp])
-
-    async function refreshPages(projectId) {
-      if (!projectId) {
-        setPages([])
-        return
-      }
-      const names = await listPages(projectId)
-      setPages(names)
-    }
 
   async function refreshProjects() {
     const result = await listProjects()
@@ -65,31 +110,12 @@ function Sidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function handleCreatePage() {
-    const name = newPageName.trim()
-    if (!name || !selectedProject) return
-    try {
-      await createPage(name, {}, selectedProject.id)
-      setNewPageName('')
-      setPageError('')
-      refreshPages(selectedProject.id)
-    } catch (err) {
-      console.error('Error creating page:', err)
-      setPageError(err.message)
-    }
+  async function handleSelectPage(name) {
+    const result = await readScript(name, selectedProject?.id)
+    const data = result?.data ?? result
+    setActivePageState(name)
+    onSelectPage?.(name, data)
   }
-
-    async function handleSelectPage(name) {
-      const result = await readPage(name, selectedProject?.id)
-      const data = result?.data ?? result
-      setActivePageState(name)
-      onSelectPage?.(name, data)
-    }
-
-    async function handleDeletePage(name) {
-      await deletePage(name, selectedProject?.id)
-      refreshPages(selectedProject?.id)
-    }
 
   async function handleCreateProject() {
     const name = prompt('New project name')?.trim()
@@ -110,7 +136,7 @@ function Sidebar({
     setActivePageState(null)
     const handler = onSelectProject ?? onSelectFolder
     handler?.(name, data)
-    refreshPages(data?.id)
+    pageNavigatorRef.current?.refresh(data?.id)
     setProjectDropdownOpen(false)
   }
 
@@ -133,7 +159,7 @@ function Sidebar({
   }
 
   useImperativeHandle(ref, () => ({
-    refreshPages,
+    refreshPages: () => pageNavigatorRef.current?.refresh(),
     selectPage: handleSelectPage,
   }))
 
@@ -171,29 +197,12 @@ function Sidebar({
             )}
           </div>
           {selectedProject && (
-            <>
-              <div className="new-page">
-                <input
-                  value={newPageName}
-                  onChange={(e) => setNewPageName(e.target.value)}
-                  placeholder="New page name"
-                />
-                <button onClick={handleCreatePage}>Add</button>
-                {pageError && <p className="error">{pageError}</p>}
-              </div>
-              <ul>
-                {pages.length === 0 && <li>No pages</li>}
-                {pages.map((s) => (
-                  <li
-                    key={s}
-                    className={s === activePage ? 'active-page' : ''}
-                  >
-                    <span onClick={() => handleSelectPage(s)}>{s}</span>
-                    <button onClick={() => handleDeletePage(s)}>x</button>
-                  </li>
-                ))}
-              </ul>
-            </>
+            <PageNavigator
+              ref={pageNavigatorRef}
+              projectId={selectedProject.id}
+              activePage={activePage}
+              onSelectPage={handleSelectPage}
+            />
           )}
         </section>
         {renderAssets?.()}

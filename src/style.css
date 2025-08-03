@@ -194,6 +194,27 @@ a {
   margin: 0 0 1rem 0;
 }
 
+.mode-carousel {
+  display: flex;
+  overflow-x: auto;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.mode-carousel button {
+  background: none;
+  border: 1px solid #333;
+  color: var(--text-color);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mode-carousel button.active {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+}
+
 .app-name {
   position: fixed;
   bottom: 1rem;
