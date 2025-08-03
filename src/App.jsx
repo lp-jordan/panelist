@@ -11,6 +11,9 @@ import {
   Dialogue,
   Sfx,
   NoCopy,
+  CueLabel,
+  CueContent,
+  Notes,
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
 import Editor from './components/Editor'
@@ -32,6 +35,9 @@ export default function App({ onSignOut }) {
       Dialogue,
       Sfx,
       NoCopy,
+      CueLabel,
+      CueContent,
+      Notes,
       SmartFlow,
       SlashCommand,
     ],

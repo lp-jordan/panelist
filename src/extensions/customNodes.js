@@ -28,7 +28,7 @@ export const PanelHeader = Node.create({
     return [{ tag: 'h2' }]
   },
   renderHTML({ HTMLAttributes }) {
-    return ['h2', mergeAttributes(HTMLAttributes), 0]
+    return ['h2', mergeAttributes(HTMLAttributes, { class: 'panel-header' }), 0]
   },
   addCommands() {
     return {
@@ -82,5 +82,20 @@ export const Sfx = paragraphNode({
 export const NoCopy = paragraphNode({
   name: 'noCopy',
   className: 'no-copy',
+})
+
+export const CueLabel = paragraphNode({
+  name: 'cueLabel',
+  className: 'cue-label',
+})
+
+export const CueContent = paragraphNode({
+  name: 'cueContent',
+  className: 'cue-content',
+})
+
+export const Notes = paragraphNode({
+  name: 'notes',
+  className: 'notes',
 })
 

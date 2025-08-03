@@ -6,4 +6,48 @@
   body {
     @apply bg-zinc-900 text-zinc-100 antialiased;
   }
+  :root {
+    --tab-width: 4ch;
+  }
+}
+
+@layer components {
+  .panel-header {
+    font-family: 'Baskerville', serif;
+    font-weight: 700;
+    font-size: 14pt;
+    text-transform: uppercase;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  .cue-label {
+    font-family: 'Courier New', monospace;
+    font-weight: 700;
+    font-size: 12pt;
+    text-transform: uppercase;
+    margin-left: calc(0 * var(--tab-width));
+    margin-bottom: 0;
+  }
+  .cue-content {
+    font-family: 'Courier New', monospace;
+    font-weight: 400;
+    font-size: 12pt;
+    margin-left: calc(2 * var(--tab-width));
+    margin-bottom: 8px;
+  }
+  .sfx {
+    font-family: 'Courier New', monospace;
+    font-style: italic;
+    font-size: 12pt;
+    margin-left: calc(2 * var(--tab-width));
+    margin-bottom: 8px;
+  }
+  .notes {
+    font-family: 'Courier New', monospace;
+    font-style: italic;
+    font-size: 12pt;
+    color: #888888;
+    margin-left: calc(1 * var(--tab-width));
+    margin-bottom: 8px;
+  }
 }
