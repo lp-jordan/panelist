@@ -28,13 +28,19 @@ export async function listProjects() {
 export async function createProject(name, data = {}) {
   try {
     const now = new Date().toISOString()
+    const supabase = await getSupabase()
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser()
+    if (userError) throw userError
     const payload = {
       name,
       created_at: now,
       updated_at: now,
+      user_id: user.id,
       ...data,
     }
-    const supabase = await getSupabase()
     const { data: inserted, error } = await supabase
       .from(TABLE)
       .insert(payload)
