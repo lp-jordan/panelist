@@ -14,6 +14,8 @@ import {
   NoCopy,
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
+import ModeCarousel from './components/ModeCarousel'
+import PageNavigator from './components/PageNavigator'
 import { createPage } from './utils/pageRepository'
 import { updateScript } from './utils/scriptRepository'
 
@@ -33,9 +35,10 @@ function ProjectHeader({ projectName, onAddPage, disabled }) {
 }
 
 export default function App({ onSignOut }) {
-  const [scriptTitle, setScriptTitle] = useState('Untitled Script')
+  const [pageTitle, setPageTitle] = useState('Untitled Page')
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [mode, setMode] = useState('Write')
   const sidebarRef = useRef(null)
   const currentPage = { content: '' }
   const editor = useEditor({
@@ -67,7 +70,7 @@ export default function App({ onSignOut }) {
   }
 
   function handleSelectPage(name, data) {
-    setScriptTitle(name)
+    setPageTitle(name)
     editor?.commands?.setContent(data.content ?? '')
   }
 
@@ -80,7 +83,7 @@ export default function App({ onSignOut }) {
       timeoutId = setTimeout(async () => {
         if (activeProject) {
           await updateScript(
-            scriptTitle,
+            pageTitle,
             { content: editor.getHTML() },
             activeProject.id,
           )
@@ -93,7 +96,7 @@ export default function App({ onSignOut }) {
       editor.off('update', saveHandler)
       clearTimeout(timeoutId)
     }
-  }, [editor, scriptTitle, activeProject])
+  }, [editor, pageTitle, activeProject])
 
   return (
     <div className="app-layout">
@@ -109,8 +112,13 @@ export default function App({ onSignOut }) {
           onAddPage={handleAddPage}
           disabled={!activeProject}
         />
+        <ModeCarousel onModeChange={setMode} />
+        <PageNavigator
+          projectId={activeProject?.id}
+          onSelectPage={handleSelectPage}
+        />
         <h1 className="editor-title">
-          {scriptTitle}
+          {pageTitle} <span className="mode-display">({mode})</span>
           {isSaving && <span className="saving-indicator"> saving...</span>}
         </h1>
         {editor && (
