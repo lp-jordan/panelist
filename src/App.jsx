@@ -1,6 +1,6 @@
 /* global __APP_VERSION__ */
 import { useEditor } from '@tiptap/react'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import SlashCommand from './extensions/SlashCommand'
 import SmartFlow from './extensions/SmartFlow'
@@ -120,35 +120,7 @@ export default function App({ onSignOut }) {
         />
         <h1 className="editor-title">{pageTitle}</h1>
         {editor && <Editor editor={editor} mode={mode} />}
-          {isSaving && <span className="saving-indicator"> saving...</span>}
-        {editor && (
-          <>
-            <BubbleMenu
-              className="bubble-menu"
-              editor={editor}
-            >
-              <button
-                onClick={() => editor.chain().focus().toggleBold().run()}
-                className={editor.isActive('bold') ? 'is-active' : ''}
-              >
-                B
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleItalic().run()}
-                className={editor.isActive('italic') ? 'is-active' : ''}
-              >
-                I
-              </button>
-              <button
-                onClick={() => editor.chain().focus().toggleUnderline().run()}
-                className={editor.isActive('underline') ? 'is-active' : ''}
-              >
-                U
-              </button>
-            </BubbleMenu>
-            <EditorContent editor={editor} />
-          </>
-        )}
+        {isSaving && <span className="saving-indicator"> saving...</span>}
       </div>
       <div className="app-name">Panelist v{__APP_VERSION__}</div>
     </div>
