@@ -113,7 +113,6 @@ export default function App({ onSignOut }) {
           onAddPage={handleAddPage}
           disabled={!activeProject}
         />
-        <ModeCarousel onModeChange={setMode} />
         <PageNavigator
           projectId={activeProject?.id}
           onSelectPage={handleSelectPage}
