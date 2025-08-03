@@ -25,7 +25,7 @@ function Root() {
     return <Login onLogin={setSession} />
   }
 
-  return <App />
+  return <App onSignOut={() => setSession(null)} />
 }
 
 export default Root

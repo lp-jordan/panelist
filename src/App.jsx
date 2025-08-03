@@ -15,7 +15,7 @@ import {
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
 
-export default function App() {
+export default function App({ onSignOut }) {
   const [scriptTitle] = useState('Untitled Script')
   const editor = useEditor({
     extensions: [
@@ -34,7 +34,7 @@ export default function App() {
 
   return (
     <div className="app-layout">
-      <Sidebar />
+      <Sidebar onSignOut={onSignOut} />
       <div className="editor-container">
         <h1 className="editor-title">{scriptTitle}</h1>
         {editor && (
