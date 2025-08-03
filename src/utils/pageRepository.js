@@ -1,6 +1,6 @@
 import { getSupabase } from './supabaseClient'
 
-const TABLE = 'scripts'
+const TABLE = 'pages'
 
 function handleUnauthorized(error) {
   if (error?.status === 401 || error?.message?.includes('not logged in')) {
@@ -19,7 +19,7 @@ async function getCurrentUserId(supabase) {
   return user.id
 }
 
-export async function listScripts(projectId) {
+export async function listPages(projectId) {
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
@@ -37,7 +37,7 @@ export async function listScripts(projectId) {
   }
 }
 
-export async function createScript(name, data, projectId) {
+export async function createPage(name, data, projectId) {
   try {
     const now = new Date().toISOString()
     const supabase = await getSupabase()
@@ -67,7 +67,7 @@ export async function createScript(name, data, projectId) {
   }
 }
 
-export async function readScript(name, projectId) {
+export async function readPage(name, projectId) {
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
@@ -94,9 +94,9 @@ export async function readScript(name, projectId) {
   }
 }
 
-export async function updateScript(name, data, projectId) {
+export async function updatePage(name, data, projectId) {
   try {
-    const existing = await readScript(name, projectId)
+    const existing = await readPage(name, projectId)
     if (!existing) return null
     const updated = {
       metadata: {
@@ -128,7 +128,7 @@ export async function updateScript(name, data, projectId) {
   }
 }
 
-export async function deleteScript(name, projectId) {
+export async function deletePage(name, projectId) {
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)

@@ -107,7 +107,7 @@ a {
   margin-bottom: 1rem;
 }
 
-.project-header .add-script-btn {
+.project-header .add-page-btn {
   border: none;
   background: none;
   color: var(--accent-color);
@@ -174,18 +174,18 @@ a {
   margin-left: 0.5rem;
 }
 
-.sidebar-content li.active-script {
+.sidebar-content li.active-page {
   font-weight: bold;
   color: var(--accent-color);
 }
 
-.new-script {
+.new-page {
   display: flex;
   gap: 0.25rem;
   margin-bottom: 0.5rem;
 }
 
-.new-script input {
+.new-page input {
   flex: 1;
 }
 

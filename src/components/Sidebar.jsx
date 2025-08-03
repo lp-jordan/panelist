@@ -1,10 +1,10 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import {
-  listScripts,
-  createScript,
-  readScript,
-  deleteScript,
-} from '../utils/scriptRepository'
+  listPages,
+  createPage,
+  readPage,
+  deletePage,
+} from '../utils/pageRepository'
 import {
   listProjects,
   createProject,
@@ -14,39 +14,39 @@ import {
 import { signOut } from '../utils/auth.js'
 
 function Sidebar({
-  onSelectScript,
+  onSelectPage,
   onSelectProject,
   onSelectFolder,
   renderAssets,
   onSignOut,
-  activeScript: activeScriptProp,
+  activePage: activePageProp,
 }, ref) {
   const [collapsed, setCollapsed] = useState(false)
-  const [scripts, setScripts] = useState([])
-  const [newScriptName, setNewScriptName] = useState('')
-  const [scriptError, setScriptError] = useState('')
+  const [pages, setPages] = useState([])
+  const [newPageName, setNewPageName] = useState('')
+  const [pageError, setPageError] = useState('')
   const [projects, setProjects] = useState([])
   const [newProjectName, setNewProjectName] = useState('')
   const [projectError, setProjectError] = useState('')
   const [selectedProject, setSelectedProject] = useState(null)
-  const [activeScriptState, setActiveScriptState] = useState(
-    activeScriptProp ?? null,
+  const [activePageState, setActivePageState] = useState(
+    activePageProp ?? null,
   )
-  const activeScript = activeScriptProp ?? activeScriptState
+  const activePage = activePageProp ?? activePageState
 
   useEffect(() => {
-    if (activeScriptProp !== undefined) {
-      setActiveScriptState(activeScriptProp)
+    if (activePageProp !== undefined) {
+      setActivePageState(activePageProp)
     }
-  }, [activeScriptProp])
+  }, [activePageProp])
 
-    async function refreshScripts(projectId) {
+    async function refreshPages(projectId) {
       if (!projectId) {
-        setScripts([])
+        setPages([])
         return
       }
-      const names = await listScripts(projectId)
-      setScripts(names)
+      const names = await listPages(projectId)
+      setPages(names)
     }
 
   async function refreshProjects() {
@@ -66,30 +66,30 @@ function Sidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function handleCreateScript() {
-    const name = newScriptName.trim()
+  async function handleCreatePage() {
+    const name = newPageName.trim()
     if (!name || !selectedProject) return
     try {
-      await createScript(name, {}, selectedProject.id)
-      setNewScriptName('')
-      setScriptError('')
-      refreshScripts(selectedProject.id)
+      await createPage(name, {}, selectedProject.id)
+      setNewPageName('')
+      setPageError('')
+      refreshPages(selectedProject.id)
     } catch (err) {
-      console.error('Error creating script:', err)
-      setScriptError(err.message)
+      console.error('Error creating page:', err)
+      setPageError(err.message)
     }
   }
 
-    async function handleSelectScript(name) {
-      const result = await readScript(name, selectedProject?.id)
+    async function handleSelectPage(name) {
+      const result = await readPage(name, selectedProject?.id)
       const data = result?.data ?? result
-      setActiveScriptState(name)
-      onSelectScript?.(name, data)
+      setActivePageState(name)
+      onSelectPage?.(name, data)
     }
 
-    async function handleDeleteScript(name) {
-      await deleteScript(name, selectedProject?.id)
-      refreshScripts(selectedProject?.id)
+    async function handleDeletePage(name) {
+      await deletePage(name, selectedProject?.id)
+      refreshPages(selectedProject?.id)
     }
 
   async function handleCreateProject() {
@@ -111,10 +111,10 @@ function Sidebar({
     const result = await readProject(name)
     const data = result?.data ?? result
     setSelectedProject(data)
-    setActiveScriptState(null)
+    setActivePageState(null)
     const handler = onSelectProject ?? onSelectFolder
     handler?.(name, data)
-    refreshScripts(data?.id)
+    refreshPages(data?.id)
   }
 
   async function handleDeleteProject(name) {
@@ -125,7 +125,7 @@ function Sidebar({
         handleSelectProject(names[0])
       } else {
         setSelectedProject(null)
-        setScripts([])
+        setPages([])
       }
     }
   }
@@ -136,8 +136,8 @@ function Sidebar({
   }
 
   useImperativeHandle(ref, () => ({
-    refreshScripts,
-    selectScript: handleSelectScript,
+    refreshPages,
+    selectPage: handleSelectPage,
   }))
 
   return (
@@ -185,24 +185,24 @@ function Sidebar({
           {selectedProject && <h3>{selectedProject.name}</h3>}
           {selectedProject && (
             <>
-              <div className="new-script">
+              <div className="new-page">
                 <input
-                  value={newScriptName}
-                  onChange={(e) => setNewScriptName(e.target.value)}
-                  placeholder="New script name"
+                  value={newPageName}
+                  onChange={(e) => setNewPageName(e.target.value)}
+                  placeholder="New page name"
                 />
-                <button onClick={handleCreateScript}>Add</button>
-                {scriptError && <p className="error">{scriptError}</p>}
+                <button onClick={handleCreatePage}>Add</button>
+                {pageError && <p className="error">{pageError}</p>}
               </div>
               <ul>
-                {scripts.length === 0 && <li>No scripts</li>}
-                {scripts.map((s) => (
+                {pages.length === 0 && <li>No pages</li>}
+                {pages.map((s) => (
                   <li
                     key={s}
-                    className={s === activeScript ? 'active-script' : ''}
+                    className={s === activePage ? 'active-page' : ''}
                   >
-                    <span onClick={() => handleSelectScript(s)}>{s}</span>
-                    <button onClick={() => handleDeleteScript(s)}>x</button>
+                    <span onClick={() => handleSelectPage(s)}>{s}</span>
+                    <button onClick={() => handleDeletePage(s)}>x</button>
                   </li>
                 ))}
               </ul>

@@ -14,15 +14,15 @@ import {
   NoCopy,
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
-import { createScript } from './utils/scriptRepository'
+import { createPage } from './utils/pageRepository'
 
-function ProjectHeader({ projectName, onAddScript, disabled }) {
+function ProjectHeader({ projectName, onAddPage, disabled }) {
   return (
     <div className="project-header">
       <span>{projectName ?? 'No project selected'}</span>
       <button
-        className="add-script-btn"
-        onClick={onAddScript}
+        className="add-page-btn"
+        onClick={onAddPage}
         disabled={disabled}
       >
         +
@@ -32,10 +32,10 @@ function ProjectHeader({ projectName, onAddScript, disabled }) {
 }
 
 export default function App({ onSignOut }) {
-  const [scriptTitle, setScriptTitle] = useState('Untitled Script')
+  const [pageTitle, setPageTitle] = useState('Untitled Page')
   const [activeProject, setActiveProject] = useState(null)
   const sidebarRef = useRef(null)
-  const currentScript = { content: '' }
+  const currentPage = { content: '' }
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -48,24 +48,24 @@ export default function App({ onSignOut }) {
       SmartFlow,
       SlashCommand,
     ],
-    content: currentScript.content,
+    content: currentPage.content,
   })
 
-  async function handleAddScript() {
+  async function handleAddPage() {
     if (!activeProject) return
-    const name = prompt('New script name:')?.trim()
+    const name = prompt('New page name:')?.trim()
     if (!name) return
-    await createScript(name, {}, activeProject.id)
-    await sidebarRef.current?.refreshScripts(activeProject.id)
-    await sidebarRef.current?.selectScript(name)
+    await createPage(name, {}, activeProject.id)
+    await sidebarRef.current?.refreshPages(activeProject.id)
+    await sidebarRef.current?.selectPage(name)
   }
 
   function handleSelectProject(name, data) {
     setActiveProject(data)
   }
 
-  function handleSelectScript(name, data) {
-    setScriptTitle(name)
+  function handleSelectPage(name, data) {
+    setPageTitle(name)
     editor?.commands?.setContent(data.content ?? '')
   }
 
@@ -74,16 +74,16 @@ export default function App({ onSignOut }) {
       <Sidebar
         ref={sidebarRef}
         onSelectProject={handleSelectProject}
-        onSelectScript={handleSelectScript}
+        onSelectPage={handleSelectPage}
         onSignOut={onSignOut}
       />
       <div className="editor-container">
         <ProjectHeader
           projectName={activeProject?.name}
-          onAddScript={handleAddScript}
+          onAddPage={handleAddPage}
           disabled={!activeProject}
         />
-        <h1 className="editor-title">{scriptTitle}</h1>
+        <h1 className="editor-title">{pageTitle}</h1>
         {editor && (
           <>
             <BubbleMenu
