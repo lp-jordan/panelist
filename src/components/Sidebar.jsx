@@ -201,6 +201,15 @@ function Sidebar({
               ))}
             </ul>
           </div>
+          {projectDropdownOpen && (
+            <ul className="project-dropdown">
+              {projects.map((p) => (
+                <li key={p} onClick={() => handleSelectProject(p)}>
+                  {p}
+                </li>
+              ))}
+            </ul>
+          )}
           {selectedProject && (
             <PageNavigator
               ref={pageNavigatorRef}
