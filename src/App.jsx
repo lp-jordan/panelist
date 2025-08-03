@@ -72,19 +72,23 @@ export default function App({ onSignOut }) {
   }, [editor, pageTitle, activeProject])
 
   return (
-    <div className="app-layout">
+    <div className="flex h-screen">
       <Sidebar
         onSelectProject={handleSelectProject}
         onSelectPage={handleSelectPage}
         onSignOut={onSignOut}
       />
-      <div className="editor-container">
+      <div className="flex-1 overflow-auto p-8">
         <ModeCarousel currentMode={mode} onModeChange={setMode} />
-        <h1 className="editor-title">{pageTitle}</h1>
+        <h1 className="mb-4 text-center text-2xl font-bold">{pageTitle}</h1>
         {editor && <Editor editor={editor} mode={mode} />}
-        {isSaving && <span className="saving-indicator"> saving...</span>}
+        {isSaving && (
+          <span className="text-xs text-zinc-400"> saving...</span>
+        )}
       </div>
-      <div className="app-name">Panelist v{__APP_VERSION__}</div>
+      <div className="fixed bottom-4 right-4 text-sm text-zinc-500">
+        Panelist v{__APP_VERSION__}
+      </div>
     </div>
   )
 }

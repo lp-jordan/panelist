@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
 import App from './App.jsx'
 import Login from './components/Login.jsx'
-import './style.css'
+import './index.css'
 import { supabase } from './utils/supabaseClient.js'
 
 function Root() {
