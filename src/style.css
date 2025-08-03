@@ -202,3 +202,24 @@ a {
   color: var(--text-color);
 }
 
+.additional-options {
+  border-top: 1px solid #333;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  background: #181818;
+}
+
+.additional-options h4 {
+  margin: 0 0 0.5rem 0;
+}
+
+.additional-options .export-section {
+  margin-bottom: 1rem;
+}
+
+.additional-options .export-formats {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+

@@ -31,6 +31,7 @@ function Sidebar({
     activePageProp ?? null,
   )
   const activePage = activePageProp ?? activePageState
+  const [exportScope, setExportScope] = useState('current')
 
   useEffect(() => {
     if (activePageProp !== undefined) {
@@ -118,6 +119,19 @@ function Sidebar({
     onSignOut?.()
   }
 
+  function handleExport(format) {
+    console.log(`Export ${exportScope} as ${format}`)
+  }
+
+  async function handleAccount() {
+    await handleSignOut()
+    console.log('Sign in placeholder')
+  }
+
+  function handleSettings() {
+    console.log('Settings placeholder')
+  }
+
   useImperativeHandle(ref, () => ({
     refreshPages,
     selectPage: handleSelectPage,
@@ -183,7 +197,25 @@ function Sidebar({
           )}
         </section>
         {renderAssets?.()}
-        <button onClick={handleSignOut}>Sign out</button>
+        <div className="additional-options">
+          <h4>Additional Options</h4>
+          <div className="export-section">
+            <select
+              value={exportScope}
+              onChange={(e) => setExportScope(e.target.value)}
+            >
+              <option value="current">Current Page</option>
+              <option value="selected">Selected Pages</option>
+              <option value="full">Full Document</option>
+            </select>
+            <div className="export-formats">
+              <button onClick={() => handleExport('PDF')}>PDF</button>
+              <button onClick={() => handleExport('Docx')}>Docx</button>
+            </div>
+          </div>
+          <button onClick={handleAccount}>Account</button>
+          <button onClick={handleSettings}>Settings</button>
+        </div>
       </div>
     </aside>
   )
