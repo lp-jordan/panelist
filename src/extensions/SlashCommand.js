@@ -35,9 +35,32 @@ const SlashCommand = Extension.create({
               },
             },
             {
+              title: 'Cue Label',
+              command: ({ editor, range }) => {
+                editor.chain().focus().deleteRange(range).setCueLabel().run()
+              },
+            },
+            {
+              title: 'Cue Content',
+              command: ({ editor, range }) => {
+                editor
+                  .chain()
+                  .focus()
+                  .deleteRange(range)
+                  .setCueContent()
+                  .run()
+              },
+            },
+            {
               title: 'SFX',
               command: ({ editor, range }) => {
                 editor.chain().focus().deleteRange(range).setSfx().run()
+              },
+            },
+            {
+              title: 'Notes',
+              command: ({ editor, range }) => {
+                editor.chain().focus().deleteRange(range).setNotes().run()
               },
             },
             {
