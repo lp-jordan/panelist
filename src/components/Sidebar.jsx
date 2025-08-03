@@ -187,16 +187,16 @@ function Sidebar({
             <button className="add-project" onClick={handleCreateProject}>
               +
             </button>
-            {projectDropdownOpen && (
-              <ul className="project-dropdown">
-                {projects.map((p) => (
-                  <li key={p} onClick={() => handleSelectProject(p)}>
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
+          {projectDropdownOpen && (
+            <ul className="project-dropdown">
+              {projects.map((p) => (
+                <li key={p} onClick={() => handleSelectProject(p)}>
+                  {p}
+                </li>
+              ))}
+            </ul>
+          )}
           {selectedProject && (
             <PageNavigator
               ref={pageNavigatorRef}
