@@ -42,28 +42,23 @@ const PageNavigator = forwardRef(function PageNavigator(
   useImperativeHandle(ref, () => ({ refresh }))
 
   return (
-    <div className="mt-4">
-      <h4 className="mb-2 text-sm font-semibold">Pages</h4>
-      <ul className="space-y-1">
-        {pages.length === 0 && (
-          <li className="text-sm text-zinc-400">No pages</li>
-        )}
+    <div className="page-navigator">
+      <h4 className="section-heading">Pages</h4>
+      <ul className="page-list">
+        {pages.length === 0 && <li className="empty-message">No pages</li>}
         {pages.map((p) => (
           <li
             key={p.name}
-            className={cn(
-              'cursor-pointer rounded-md p-2 text-sm hover:bg-zinc-800',
-              p.name === activePage && 'bg-zinc-800',
-            )}
+            className={cn('page-item', p.name === activePage && 'active')}
             onClick={() => onSelectPage(p.name)}
           >
             <div className="font-medium">{p.name}</div>
-            <div className="text-xs text-zinc-400">{p.preview}</div>
+            <div className="page-preview">{p.preview}</div>
           </li>
         ))}
       </ul>
       <Button
-        className="mt-2 w-full"
+        className="new-page-button full-width"
         onClick={() => console.log('New Page placeholder')}
       >
         + New Page
@@ -133,8 +128,8 @@ function Sidebar({ onSelectPage, onSelectProject, onSignOut }, ref) {
   }))
 
   return (
-    <aside className="w-64 border-r border-zinc-800 p-4">
-      <div className="flex items-center justify-between">
+    <aside className="sidebar">
+      <div className="sidebar-header">
         <div className="font-semibold">
           {selectedProject?.name ?? 'Select project'}
         </div>
@@ -142,11 +137,11 @@ function Sidebar({ onSelectPage, onSelectProject, onSignOut }, ref) {
           +
         </Button>
       </div>
-      <ul className="mt-2 space-y-1">
+      <ul className="project-list">
         {projects.map((p) => (
           <li
             key={p}
-            className="cursor-pointer rounded-md p-2 text-sm hover:bg-zinc-800"
+            className="project-item"
             onClick={() => handleSelectProject(p)}
           >
             {p}
@@ -161,8 +156,8 @@ function Sidebar({ onSelectPage, onSelectProject, onSignOut }, ref) {
           onSelectPage={handleSelectPage}
         />
       )}
-      <div className="mt-4">
-        <Button variant="ghost" className="w-full" onClick={handleSignOut}>
+      <div className="signout-container">
+        <Button variant="ghost" className="full-width" onClick={handleSignOut}>
           Sign out
         </Button>
       </div>
