@@ -121,7 +121,6 @@ export default function App({ onSignOut }) {
         <h1 className="editor-title">{pageTitle}</h1>
         {editor && <Editor editor={editor} mode={mode} />}
           {isSaving && <span className="saving-indicator"> saving...</span>}
-        </h1>
         {editor && (
           <>
             <BubbleMenu
