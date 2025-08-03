@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
 import {
   listScripts,
   createScript,
@@ -135,6 +135,11 @@ export default function Sidebar({
     onSignOut?.()
   }
 
+  useImperativeHandle(ref, () => ({
+    refreshScripts,
+    selectScript: handleSelectScript,
+  }))
+
   return (
     <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
       <button
@@ -210,4 +215,6 @@ export default function Sidebar({
     </aside>
   )
 }
+
+export default forwardRef(Sidebar)
 

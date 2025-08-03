@@ -1,6 +1,6 @@
 /* global __APP_VERSION__ */
 import { useEditor, EditorContent } from '@tiptap/react'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
 import SlashCommand from './extensions/SlashCommand'
@@ -14,13 +14,27 @@ import {
   NoCopy,
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
-import { readScript } from './utils/scriptRepository'
+import { createScript } from './utils/scriptRepository'
+
+function ProjectHeader({ projectName, onAddScript, disabled }) {
+  return (
+    <div className="project-header">
+      <span>{projectName ?? 'No project selected'}</span>
+      <button
+        className="add-script-btn"
+        onClick={onAddScript}
+        disabled={disabled}
+      >
+        +
+      </button>
+    </div>
+  )
+}
 
 export default function App({ onSignOut }) {
-  const [currentScript, setCurrentScript] = useState({
-    title: 'Untitled Script',
-    content: '',
-  })
+  const [scriptTitle, setScriptTitle] = useState('Untitled Script')
+  const [activeProject, setActiveProject] = useState(null)
+  const sidebarRef = useRef(null)
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -36,20 +50,39 @@ export default function App({ onSignOut }) {
     content: currentScript.content,
   })
 
-  async function handleScriptChange(name) {
-    const result = await readScript(name)
-    const data = result?.data ?? result
-    if (!data) return
-    const script = { ...data.metadata, content: data.content }
-    setCurrentScript(script)
-    editor?.commands.setContent(script.content)
+  async function handleAddScript() {
+    if (!activeProject) return
+    const name = prompt('New script name:')?.trim()
+    if (!name) return
+    await createScript(name, {}, activeProject.id)
+    await sidebarRef.current?.refreshScripts(activeProject.id)
+    await sidebarRef.current?.selectScript(name)
+  }
+
+  function handleSelectProject(name, data) {
+    setActiveProject(data)
+  }
+
+  function handleSelectScript(name, data) {
+    setScriptTitle(name)
+    editor?.commands?.setContent(data.content ?? '')
   }
 
   return (
     <div className="app-layout">
-      <Sidebar onSignOut={onSignOut} onSelectScript={handleScriptChange} />
+      <Sidebar
+        ref={sidebarRef}
+        onSelectProject={handleSelectProject}
+        onSelectScript={handleSelectScript}
+        onSignOut={onSignOut}
+      />
       <div className="editor-container">
-        <h1 className="editor-title">{currentScript.title}</h1>
+        <ProjectHeader
+          projectName={activeProject?.name}
+          onAddScript={handleAddScript}
+          disabled={!activeProject}
+        />
+        <h1 className="editor-title">{scriptTitle}</h1>
         {editor && (
           <>
             <BubbleMenu
