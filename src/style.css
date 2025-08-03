@@ -159,6 +159,11 @@ a {
   margin-left: 0.5rem;
 }
 
+.sidebar-content li.active-script {
+  font-weight: bold;
+  color: var(--accent-color);
+}
+
 .new-script {
   display: flex;
   gap: 0.25rem;
