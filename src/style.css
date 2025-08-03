@@ -107,6 +107,10 @@ a {
   margin-bottom: 1rem;
 }
 
+.project-dropdown {
+  margin-top: 0.5rem;
+}
+
 .project-header .add-page-btn {
   border: none;
   background: none;
