@@ -10,12 +10,23 @@ function handleUnauthorized(error) {
   return false
 }
 
+async function getCurrentUserId(supabase) {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+  if (error) throw error
+  return user.id
+}
+
 export async function listProjects() {
   try {
     const supabase = await getSupabase()
+    const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
       .select('name')
+      .eq('user_id', userId)
       .order('name')
     if (error) throw error
     return data ? data.map((row) => row.name) : []
@@ -29,17 +40,13 @@ export async function createProject(name, data = {}) {
   try {
     const now = new Date().toISOString()
     const supabase = await getSupabase()
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-    if (userError) throw userError
+    const userId = await getCurrentUserId(supabase)
     const payload = {
       name,
       created_at: now,
       updated_at: now,
-      user_id: user.id,
       ...data,
+      user_id: userId,
     }
     const { data: inserted, error } = await supabase
       .from(TABLE)
@@ -57,10 +64,12 @@ export async function createProject(name, data = {}) {
 export async function readProject(name) {
   try {
     const supabase = await getSupabase()
+    const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
       .select('*')
       .eq('name', name)
+      .eq('user_id', userId)
       .single()
     if (error) throw error
     return data
@@ -78,12 +87,15 @@ export async function updateProject(name, data) {
       ...existing,
       ...data,
       updated_at: new Date().toISOString(),
+      user_id: existing.user_id,
     }
     const supabase = await getSupabase()
+    const userId = await getCurrentUserId(supabase)
     const { data: result, error } = await supabase
       .from(TABLE)
       .update(updated)
       .eq('name', name)
+      .eq('user_id', userId)
       .select()
       .single()
     if (error) throw error
@@ -97,7 +109,12 @@ export async function updateProject(name, data) {
 export async function deleteProject(name) {
   try {
     const supabase = await getSupabase()
-    const { error } = await supabase.from(TABLE).delete().eq('name', name)
+    const userId = await getCurrentUserId(supabase)
+    const { error } = await supabase
+      .from(TABLE)
+      .delete()
+      .eq('name', name)
+      .eq('user_id', userId)
     if (error) throw error
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
