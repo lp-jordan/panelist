@@ -16,6 +16,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout latest main
+        run: |
+          git fetch origin main
+          git checkout -B main origin/main
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
