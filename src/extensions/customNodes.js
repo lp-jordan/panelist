@@ -1,5 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import Suggestion from '@tiptap/suggestion'
+import { PluginKey } from 'prosemirror-state'
 
 export const PageHeader = Node.create({
   /**
@@ -235,7 +236,13 @@ export const Character = Node.create({
     }
   },
   addProseMirrorPlugins() {
-    return [Suggestion({ editor: this.editor, ...this.options.suggestion })]
+    return [
+      Suggestion({
+        editor: this.editor,
+        pluginKey: new PluginKey('characterSuggestion'),
+        ...this.options.suggestion,
+      }),
+    ]
   },
 })
 
