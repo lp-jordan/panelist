@@ -146,6 +146,11 @@ body {
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
 }
 
+.editor-content .ProseMirror {
+  min-height: 100%;
+  height: 100%;
+}
+
 /* Login */
 .login-container {
   margin: 5rem auto 0;
