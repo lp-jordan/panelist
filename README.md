@@ -15,7 +15,7 @@ If you are developing a production application, we recommend using TypeScript wi
 
 The `SmartFlow` extension adds keyboard shortcuts for navigating script panels.
 
-1. Run `npm run dev` and open the editor.
+1. Run `npm run dev` and open the ScriptEditor.
 2. Create a `PageHeader` node. Press **Enter** to insert the next node (`PanelHeader`), then **Enter** again to continue through the flow (`Description` → `Dialogue`).
 3. Use **Tab** to move the cursor forward through nodes in the current panel.
 4. Use **Shift+Tab** to move the cursor backward within the panel.

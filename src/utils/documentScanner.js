@@ -27,7 +27,7 @@ export function scanDocument(doc) {
 }
 
 /**
- * Recalculate numbering for all page and panel headers in the editor.
+ * Recalculate numbering for all page and panel headers in the ScriptEditor.
  * Should be called after insert/delete operations.
  * @param {import('@tiptap/core').Editor} editor
  */
