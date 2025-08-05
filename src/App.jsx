@@ -27,7 +27,7 @@ export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [mode, setMode] = useState('Write')
-  const currentPage = { page_content: '' }
+  const [pageContent, setPageContent] = useState('')
   const [totalPages, setTotalPages] = useState(0)
   const [wordCount, setWordCount] = useState(0)
   const editor = useEditor({
@@ -46,7 +46,7 @@ export default function App({ onSignOut }) {
       SmartFlow,
       SlashCommand,
     ],
-    content: currentPage.page_content,
+    content: pageContent,
   })
 
   function handleSelectProject(name, data) {
@@ -102,6 +102,11 @@ export default function App({ onSignOut }) {
       editor.off('update', countHandler)
     }
   }, [editor])
+
+  useEffect(() => {
+    if (!editor) return
+    editor.commands.setContent(pageContent)
+  }, [editor, pageContent])
 
   useEffect(() => {
     if (!editor) return
