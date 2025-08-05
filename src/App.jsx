@@ -59,10 +59,11 @@ export default function App({ onSignOut }) {
 
   function handleSelectPage(name, data) {
     setPageTitle(name)
-    const content = data.page_content ?? ''
-    editor?.commands?.setContent(content)
-    const text = content.replace(/<[^>]+>/g, ' ')
-    setWordCount(countWords(text))
+    const pageContent = data.page_content ?? data.content ?? ''
+    if (editor) {
+      editor.commands.setContent(pageContent)
+      setWordCount(countWords(editor.getText()))
+    }
   }
 
   function handlePagesChange(pages) {
