@@ -23,20 +23,32 @@ const PageNavigator = forwardRef(function PageNavigator(
       onPagesChange?.([])
       return
     }
-    const names = await listScripts(id)
-    const enriched = await Promise.all(
-      names.map(async (name) => {
-        const result = await readScript(name, id)
-        const data = result?.data ?? result
-        const content = data?.page_content ?? data?.content ?? ''
-        const preview =
-          typeof content === 'string' ? content.split('\n')[0] || '' : ''
-        return { name, preview }
-      }),
-    )
-    setPages(enriched)
-    onPagesChange?.(enriched)
-    return enriched
+    try {
+      const names = await listScripts(id)
+      const enriched = await Promise.all(
+        names.map(async (name) => {
+          try {
+            const result = await readScript(name, id)
+            const data = result?.data ?? result
+            const content = data?.page_content ?? data?.content ?? ''
+            const preview =
+              typeof content === 'string' ? content.split('\n')[0] || '' : ''
+            return { name, preview }
+          } catch (err) {
+            console.error('Error reading page:', err)
+            return { name, preview: '' }
+          }
+        }),
+      )
+      setPages(enriched)
+      onPagesChange?.(enriched)
+      return enriched
+    } catch (err) {
+      console.error('Error listing pages:', err)
+      setPages([])
+      onPagesChange?.([])
+      return []
+    }
   }
 
   async function handleCreatePage() {
@@ -109,10 +121,14 @@ const Sidebar = forwardRef(function Sidebar(
   }, [])
 
   async function handleSelectPage(name) {
-    const result = await readScript(name, selectedProject?.id)
-    const data = result?.data ?? result
-    setActivePage(name)
-    onSelectPage?.(name, data)
+    try {
+      const result = await readScript(name, selectedProject?.id)
+      const data = result?.data ?? result
+      setActivePage(name)
+      onSelectPage?.(name, data)
+    } catch (err) {
+      console.error('Error reading page:', err)
+    }
   }
 
   async function handleCreateProject() {
