@@ -77,19 +77,16 @@ export default function App({ onSignOut }) {
       setIsSaving(true)
       clearTimeout(timeoutId)
       timeoutId = setTimeout(async () => {
-        try {
-          if (activeProject) {
+        if (activeProject) {
+          try {
             await updateScript(
               pageTitle,
               { page_content: editor.getJSON(), metadata: { version: 1 } },
               activeProject.id,
             )
+          } catch (err) {
+            console.error('Error saving page:', err)
           }
-        } catch (error) {
-          console.error('updateScript failed:', error.message)
-          console.warn('Autosave failed')
-        } finally {
-          setIsSaving(false)
         }
       }, 500)
     }

@@ -82,6 +82,8 @@ export async function createPage(name, data, projectId) {
 }
 
 export async function readPage(name, projectId) {
+  if (!name) throw new Error('title required')
+  if (!projectId) throw new Error('projectId required')
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
@@ -110,6 +112,8 @@ export async function readPage(name, projectId) {
 }
 
 export async function updatePage(name, data, projectId) {
+  if (!name) throw new Error('title required')
+  if (!projectId) throw new Error('projectId required')
   try {
     const existing = await readPage(name, projectId)
     if (!existing) return null
@@ -117,7 +121,7 @@ export async function updatePage(name, data, projectId) {
       metadata: {
         ...existing.metadata,
         ...data.metadata,
-        projectId: projectId ?? existing.metadata.projectId,
+        projectId: projectId,
         updated_at: new Date().toISOString(),
       },
       page_content: data.page_content ?? existing.page_content,
@@ -137,7 +141,7 @@ export async function updatePage(name, data, projectId) {
       .update(row)
       .eq('title', encodeTitle(name))
       .eq('user_id', userId)
-      .eq('project_id', projectId ?? existing.metadata.projectId)
+      .eq('project_id', projectId)
     if (error) throw error
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
@@ -145,6 +149,8 @@ export async function updatePage(name, data, projectId) {
 }
 
 export async function deletePage(name, projectId) {
+  if (!name) throw new Error('title required')
+  if (!projectId) throw new Error('projectId required')
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)

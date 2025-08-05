@@ -34,9 +34,8 @@ const PageNavigator = forwardRef(function PageNavigator(
             const preview =
               typeof content === 'string' ? content.split('\n')[0] || '' : ''
             return { name, preview }
-          } catch (error) {
-            console.error('readScript failed:', error.message)
-            console.warn('Could not load page')
+          } catch (err) {
+            console.error('Error reading page:', err)
             return { name, preview: '' }
           }
         }),
@@ -44,9 +43,8 @@ const PageNavigator = forwardRef(function PageNavigator(
       setPages(enriched)
       onPagesChange?.(enriched)
       return enriched
-    } catch (error) {
-      console.error('listScripts failed:', error.message)
-      console.warn('Could not load pages')
+    } catch (err) {
+      console.error('Error listing pages:', err)
       setPages([])
       onPagesChange?.([])
       return []
@@ -147,9 +145,8 @@ const Sidebar = forwardRef(function Sidebar(
       const data = result?.data ?? result
       setActivePage(name)
       onSelectPage?.(name, data)
-    } catch (error) {
-      console.error('readScript failed:', error.message)
-      console.warn('Could not load page')
+    } catch (err) {
+      console.error('Error reading page:', err)
     }
   }
 
