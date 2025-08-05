@@ -3,10 +3,10 @@ import { BubbleMenu } from '@tiptap/react/menus'
 import { EditorContent } from '@tiptap/react'
 import { Button } from './ui/button'
 
-export default function Editor({ editor, mode }) {
+export default function ScriptEditor({ editor, mode }) {
   useEffect(() => {
     if (mode) {
-      console.log(`Editor mode set to: ${mode}`)
+      console.log(`ScriptEditor mode set to: ${mode}`)
     }
   }, [mode])
 

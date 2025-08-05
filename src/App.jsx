@@ -17,7 +17,7 @@ import {
   Notes,
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
-import Editor from './components/Editor'
+import ScriptEditor from './components/ScriptEditor'
 import ModeCarousel from './components/ModeCarousel'
 import DevInfo from './components/DevInfo'
 import { updateScript } from './utils/scriptRepository'
@@ -151,7 +151,7 @@ export default function App({ onSignOut }) {
       <div className="main-content">
         <ModeCarousel currentMode={mode} onModeChange={setMode} />
         <h1 className="page-title">{pageTitle}</h1>
-        {editor && <Editor editor={editor} mode={mode} />}
+        {editor && <ScriptEditor editor={editor} mode={mode} />}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
       <DevInfo
