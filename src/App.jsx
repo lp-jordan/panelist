@@ -26,7 +26,7 @@ export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [mode, setMode] = useState('Write')
-  const currentPage = { content: '' }
+  const currentPage = { page_content: '' }
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -43,7 +43,7 @@ export default function App({ onSignOut }) {
       SmartFlow,
       SlashCommand,
     ],
-    content: currentPage.content,
+    content: currentPage.page_content,
   })
 
   function handleSelectProject(name, data) {
@@ -52,7 +52,7 @@ export default function App({ onSignOut }) {
 
   function handleSelectPage(name, data) {
     setPageTitle(name)
-    editor?.commands?.setContent(data.content ?? '')
+    editor?.commands?.setContent(data.page_content ?? '')
   }
 
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function App({ onSignOut }) {
         if (activeProject) {
           await updateScript(
             pageTitle,
-            { content: editor.getHTML() },
+            { page_content: editor.getJSON(), metadata: { version: 1 } },
             activeProject.id,
           )
         }

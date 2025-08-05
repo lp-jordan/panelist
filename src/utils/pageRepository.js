@@ -46,7 +46,8 @@ export async function createPage(name, data, projectId) {
       title: name,
       created_at: now,
       updated_at: now,
-      content: data.content ?? '',
+      page_content: data.page_content ?? null,
+      version: data.metadata?.version ?? 1,
       user_id: userId,
       project_id: projectId ?? null,
     }
@@ -58,8 +59,9 @@ export async function createPage(name, data, projectId) {
         projectId: payload.project_id,
         created_at: payload.created_at,
         updated_at: payload.updated_at,
+        version: payload.version,
       },
-      content: payload.content,
+      page_content: payload.page_content,
     }
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
@@ -73,7 +75,7 @@ export async function readPage(name, projectId) {
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
-      .select('title, project_id, created_at, updated_at, content')
+      .select('title, project_id, created_at, updated_at, page_content, version')
       .eq('title', name)
       .eq('user_id', userId)
       .eq('project_id', projectId)
@@ -85,8 +87,9 @@ export async function readPage(name, projectId) {
         projectId: data.project_id,
         created_at: data.created_at,
         updated_at: data.updated_at,
+        version: data.version,
       },
-      content: data.content,
+      page_content: data.page_content,
     }
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
@@ -105,14 +108,15 @@ export async function updatePage(name, data, projectId) {
         projectId: projectId ?? existing.metadata.projectId,
         updated_at: new Date().toISOString(),
       },
-      content: data.content ?? existing.content,
+      page_content: data.page_content ?? existing.page_content,
     }
     const row = {
       title: updated.metadata.title,
       project_id: updated.metadata.projectId,
       created_at: updated.metadata.created_at,
       updated_at: updated.metadata.updated_at,
-      content: updated.content,
+      page_content: updated.page_content,
+      version: updated.metadata.version,
     }
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
@@ -142,4 +146,23 @@ export async function deletePage(name, projectId) {
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
   }
+}
+
+export async function loadPageContent(name, projectId) {
+  const page = await readPage(name, projectId)
+  if (!page) return null
+  return { page_content: page.page_content, version: page.metadata.version }
+}
+
+export async function savePageContent(
+  name,
+  pageContent,
+  version,
+  projectId,
+) {
+  return updatePage(
+    name,
+    { page_content: pageContent, metadata: { version } },
+    projectId,
+  )
 }

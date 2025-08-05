@@ -27,12 +27,14 @@ const PageNavigator = forwardRef(function PageNavigator(
       names.map(async (name) => {
         const result = await readScript(name, id)
         const data = result?.data ?? result
-        const content = data?.content ?? ''
-        const preview = content.split('\n')[0] || ''
+        const content = data?.page_content ?? data?.content ?? ''
+        const preview =
+          typeof content === 'string' ? content.split('\n')[0] || '' : ''
         return { name, preview }
       }),
     )
     setPages(enriched)
+    return enriched
   }
 
   useEffect(() => {
@@ -114,7 +116,10 @@ function Sidebar({ onSelectPage, onSelectProject, onSignOut }, ref) {
     setSelectedProject(data)
     setActivePage(null)
     onSelectProject?.(name, data)
-    pageNavigatorRef.current?.refresh(data?.id)
+    const pages = await pageNavigatorRef.current?.refresh(data?.id)
+    if (pages && pages.length > 0) {
+      handleSelectPage(pages[0].name)
+    }
   }
 
   async function handleSignOut() {
