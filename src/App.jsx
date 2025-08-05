@@ -27,10 +27,9 @@ export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [mode, setMode] = useState('Write')
-  const currentPage = { page_content: '' }
+  const [pageContent, setPageContent] = useState('')
   const [totalPages, setTotalPages] = useState(0)
   const [wordCount, setWordCount] = useState(0)
-  const currentPage = { content: '' }
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -47,7 +46,7 @@ export default function App({ onSignOut }) {
       SmartFlow,
       SlashCommand,
     ],
-    content: currentPage.page_content,
+    content: pageContent,
   })
 
   function handleSelectProject(name, data) {
@@ -60,9 +59,8 @@ export default function App({ onSignOut }) {
 
   function handleSelectPage(name, data) {
     setPageTitle(name)
-    editor?.commands?.setContent(data.page_content ?? '')
-    const content = data.content ?? ''
-    editor?.commands?.setContent(content)
+    const content = data.page_content ?? data.content ?? ''
+    setPageContent(content)
     const text = content.replace(/<[^>]+>/g, ' ')
     setWordCount(countWords(text))
   }
@@ -104,6 +102,11 @@ export default function App({ onSignOut }) {
       editor.off('update', countHandler)
     }
   }, [editor])
+
+  useEffect(() => {
+    if (!editor) return
+    editor.commands.setContent(pageContent)
+  }, [editor, pageContent])
 
   useEffect(() => {
     if (!editor) return
