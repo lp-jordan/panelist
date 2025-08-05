@@ -57,7 +57,7 @@ const PageNavigator = forwardRef(function PageNavigator(
     try {
       await createScript(name, {}, projectId)
       await refresh()
-      onSelectPage(name)
+      onSelectPage(name, projectId)
     } catch (error) {
       console.error('createScript failed:', error.message)
       console.warn('Could not create page')
@@ -82,7 +82,7 @@ const PageNavigator = forwardRef(function PageNavigator(
           <li
             key={p.name}
             className={cn('page-item', p.name === activePage && 'active')}
-            onClick={() => onSelectPage(p.name)}
+            onClick={() => onSelectPage(p.name, projectId)}
           >
             <div className="font-medium">{p.name}</div>
             <div className="page-preview">{p.preview}</div>
@@ -139,9 +139,9 @@ const Sidebar = forwardRef(function Sidebar(
       })
   }, [])
 
-  async function handleSelectPage(name) {
+  async function handleSelectPage(name, projectId = selectedProject?.id) {
     try {
-      const result = await readScript(name, selectedProject?.id)
+      const result = await readScript(name, projectId)
       const data = result?.data ?? result
       setActivePage(name)
       onSelectPage?.(name, data)
@@ -175,7 +175,7 @@ const Sidebar = forwardRef(function Sidebar(
       onSelectProject?.(name, data)
       const pages = await pageNavigatorRef.current?.refresh(data?.id)
       if (pages && pages.length > 0) {
-        await handleSelectPage(pages[0].name)
+        await handleSelectPage(pages[0].name, data?.id)
       }
     } catch (error) {
       console.error('readProject failed:', error.message)
