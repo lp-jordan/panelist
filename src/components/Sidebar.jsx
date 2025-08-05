@@ -5,7 +5,12 @@ import {
   useImperativeHandle,
   useRef,
 } from 'react'
-import { listScripts, readScript, createScript } from '../utils/scriptRepository'
+import {
+  listScripts,
+  readScript,
+  createScript,
+  deleteScript,
+} from '../utils/scriptRepository'
 import { listProjects, createProject, readProject } from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
 import { Button } from './ui/button'
@@ -64,6 +69,24 @@ const PageNavigator = forwardRef(function PageNavigator(
     }
   }
 
+  async function handleDeletePage(e, name) {
+    e.stopPropagation()
+    if (!confirm(`Delete page "${name}"?`)) return
+    try {
+      await deleteScript(name, projectId)
+      const pages = await refresh()
+      if (name === activePage) {
+        if (pages && pages.length > 0) {
+          onSelectPage(pages[0].name, projectId)
+        } else {
+          onSelectPage(null, projectId)
+        }
+      }
+    } catch (err) {
+      console.error('Error deleting page:', err)
+    }
+  }
+
   useEffect(() => {
     refresh().catch((error) => {
       console.error('refresh failed:', error.message)
@@ -84,7 +107,16 @@ const PageNavigator = forwardRef(function PageNavigator(
             className={cn('page-item', p.name === activePage && 'active')}
             onClick={() => onSelectPage(p.name, projectId)}
           >
-            <div className="font-medium">{p.name}</div>
+            <div className="page-item-header">
+              <div className="font-medium">{p.name}</div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => handleDeletePage(e, p.name)}
+              >
+                🗑️
+              </Button>
+            </div>
             <div className="page-preview">{p.preview}</div>
           </li>
         ))}
@@ -140,6 +172,11 @@ const Sidebar = forwardRef(function Sidebar(
   }, [])
 
   async function handleSelectPage(name, projectId = selectedProject?.id) {
+    if (!name) {
+      setActivePage(null)
+      onSelectPage?.('', { page_content: '' })
+      return
+    }
     try {
       const result = await readScript(name, projectId)
       const data = result?.data ?? result
