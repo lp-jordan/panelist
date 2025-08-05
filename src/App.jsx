@@ -28,7 +28,7 @@ export default function App({ onSignOut }) {
   const [isSaving, setIsSaving] = useState(false)
   const [devLogs, setDevLogs] = useState([])
   const [mode, setMode] = useState('Write')
-  const [pageContent, _setPageContent] = useState('')
+  const [pageContent, setPageContent] = useState('')
   const [totalPages, setTotalPages] = useState(0)
   const [wordCount, setWordCount] = useState(0)
   const editor = useEditor({
@@ -60,9 +60,10 @@ export default function App({ onSignOut }) {
 
   function handleSelectPage(name, data) {
     setPageTitle(name)
-    const pageContent = data.page_content ?? data.content ?? ''
+    const content = data.page_content ?? data.content ?? ''
+    setPageContent(content)
     if (editor) {
-      editor.commands.setContent(pageContent)
+      editor.commands.setContent(content)
       setWordCount(countWords(editor.getText()))
     }
   }
@@ -131,6 +132,7 @@ export default function App({ onSignOut }) {
   useEffect(() => {
     if (!editor) return
     editor.commands.setContent(pageContent)
+    setWordCount(countWords(editor.getText()))
   }, [editor, pageContent])
 
   useEffect(() => {
