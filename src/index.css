@@ -25,6 +25,10 @@ body {
   text-align: center;
   font-size: 1.5rem;
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .save-indicator {
@@ -86,6 +90,12 @@ body {
 
 .page-item.active {
   background: #27272a;
+}
+
+.page-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .section-heading {

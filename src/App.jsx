@@ -1,6 +1,6 @@
 /* global __APP_VERSION__ */
 import { useEditor } from '@tiptap/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import StarterKit from '@tiptap/starter-kit'
 import SlashCommand from './extensions/SlashCommand'
 import SmartFlow from './extensions/SmartFlow'
@@ -20,7 +20,8 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import ModeCarousel from './components/ModeCarousel'
 import DevInfo from './components/DevInfo'
-import { updateScript } from './utils/scriptRepository'
+import { updateScript, deleteScript } from './utils/scriptRepository'
+import { Button } from './components/ui/button'
 
 export default function App({ onSignOut }) {
   const [pageTitle, setPageTitle] = useState('Untitled Page')
@@ -31,6 +32,7 @@ export default function App({ onSignOut }) {
   const [pageContent, setPageContent] = useState('')
   const [totalPages, setTotalPages] = useState(0)
   const [wordCount, setWordCount] = useState(0)
+  const sidebarRef = useRef(null)
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -59,8 +61,9 @@ export default function App({ onSignOut }) {
   }
 
   function handleSelectPage(name, data) {
-    setPageTitle(name)
-    const content = data.page_content ?? data.content ?? ''
+    const title = name || 'Untitled Page'
+    setPageTitle(title)
+    const content = data?.page_content ?? data?.content ?? ''
     setPageContent(content)
     if (editor) {
       editor.commands.setContent(content)
@@ -142,9 +145,26 @@ export default function App({ onSignOut }) {
     )
   }, [editor, activeProject])
 
+  async function handleDeleteCurrentPage() {
+    if (!activeProject || !pageTitle) return
+    if (!confirm(`Delete page "${pageTitle}"?`)) return
+    try {
+      await deleteScript(pageTitle, activeProject.id)
+      const pages = await sidebarRef.current?.refreshPages()
+      if (pages && pages.length > 0) {
+        await sidebarRef.current?.selectPage(pages[0].name)
+      } else {
+        await sidebarRef.current?.selectPage('')
+      }
+    } catch (err) {
+      console.error('Error deleting page:', err)
+    }
+  }
+
   return (
     <div className="app-layout">
       <Sidebar
+        ref={sidebarRef}
         onSelectProject={handleSelectProject}
         onSelectPage={handleSelectPage}
         onSignOut={onSignOut}
@@ -152,7 +172,16 @@ export default function App({ onSignOut }) {
       />
       <div className="main-content">
         <ModeCarousel currentMode={mode} onModeChange={setMode} />
-        <h1 className="page-title">{pageTitle}</h1>
+        <h1 className="page-title">
+          {pageTitle}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={handleDeleteCurrentPage}
+          >
+            🗑️
+          </Button>
+        </h1>
         {editor && <ScriptEditor editor={editor} mode={mode} />}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
