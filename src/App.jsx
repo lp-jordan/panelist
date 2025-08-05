@@ -27,7 +27,7 @@ export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [mode, setMode] = useState('Write')
-  const [pageContent, setPageContent] = useState('')
+  const [pageContent, _setPageContent] = useState('')
   const [totalPages, setTotalPages] = useState(0)
   const [wordCount, setWordCount] = useState(0)
   const editor = useEditor({
