@@ -59,8 +59,8 @@ export default function App({ onSignOut }) {
 
   function handleSelectPage(name, data) {
     setPageTitle(name)
-    const content = data.page_content ?? data.content ?? ''
-    setPageContent(content)
+    const content = data.page_content ?? ''
+    editor?.commands?.setContent(content)
     const text = content.replace(/<[^>]+>/g, ' ')
     setWordCount(countWords(text))
   }
