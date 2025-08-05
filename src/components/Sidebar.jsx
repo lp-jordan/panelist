@@ -5,7 +5,7 @@ import {
   useImperativeHandle,
   useRef,
 } from 'react'
-import { listScripts, readScript } from '../utils/scriptRepository'
+import { listScripts, readScript, createScript } from '../utils/scriptRepository'
 import { listProjects, createProject, readProject } from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
 import { Button } from './ui/button'
@@ -39,6 +39,18 @@ const PageNavigator = forwardRef(function PageNavigator(
     return enriched
   }
 
+  async function handleCreatePage() {
+    const name = prompt('New page name')?.trim()
+    if (!name) return
+    try {
+      await createScript(name, {}, projectId)
+      await refresh()
+      onSelectPage(name)
+    } catch (err) {
+      console.error('Error creating page:', err)
+    }
+  }
+
   useEffect(() => {
     refresh()
   }, [projectId])
@@ -63,7 +75,7 @@ const PageNavigator = forwardRef(function PageNavigator(
       </ul>
       <Button
         className="new-page-button full-width"
-        onClick={() => console.log('New Page placeholder')}
+        onClick={handleCreatePage}
       >
         + New Page
       </Button>

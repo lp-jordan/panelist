@@ -4,6 +4,7 @@ import {
   updatePage,
   loadPageContent,
   savePageContent,
+  createPage,
 } from './pageRepository'
 
 export async function listScripts(projectId) {
@@ -16,6 +17,10 @@ export async function readScript(name, projectId) {
 
 export async function updateScript(name, data, projectId) {
   return updatePage(name, data, projectId)
+}
+
+export async function createScript(name, data, projectId) {
+  return createPage(name, data, projectId)
 }
 
 export async function loadScriptContent(name, projectId) {
