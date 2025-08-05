@@ -12,7 +12,7 @@ import { Button } from './ui/button'
 import { cn } from '../lib/utils'
 
 const PageNavigator = forwardRef(function PageNavigator(
-  { projectId, activePage, onSelectPage },
+  { projectId, activePage, onSelectPage, onPagesChange },
   ref,
 ) {
   const [pages, setPages] = useState([])
@@ -20,6 +20,7 @@ const PageNavigator = forwardRef(function PageNavigator(
   async function refresh(id = projectId) {
     if (!id) {
       setPages([])
+      onPagesChange?.([])
       return
     }
     const names = await listScripts(id)
@@ -33,6 +34,7 @@ const PageNavigator = forwardRef(function PageNavigator(
       }),
     )
     setPages(enriched)
+    onPagesChange?.(enriched)
   }
 
   useEffect(() => {
@@ -67,7 +69,10 @@ const PageNavigator = forwardRef(function PageNavigator(
   )
 })
 
-function Sidebar({ onSelectPage, onSelectProject, onSignOut }, ref) {
+function Sidebar(
+  { onSelectPage, onSelectProject, onSignOut, onPagesChange },
+  ref,
+) {
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
   const [activePage, setActivePage] = useState(null)
@@ -154,6 +159,7 @@ function Sidebar({ onSelectPage, onSelectProject, onSignOut }, ref) {
           projectId={selectedProject.id}
           activePage={activePage}
           onSelectPage={handleSelectPage}
+          onPagesChange={onPagesChange}
         />
       )}
       <div className="signout-container">
