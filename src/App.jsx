@@ -30,7 +30,6 @@ export default function App({ onSignOut }) {
   const currentPage = { page_content: '' }
   const [totalPages, setTotalPages] = useState(0)
   const [wordCount, setWordCount] = useState(0)
-  const currentPage = { content: '' }
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -60,11 +59,11 @@ export default function App({ onSignOut }) {
 
   function handleSelectPage(name, data) {
     setPageTitle(name)
-    editor?.commands?.setContent(data.page_content ?? '')
-    const content = data.content ?? ''
-    editor?.commands?.setContent(content)
-    const text = content.replace(/<[^>]+>/g, ' ')
-    setWordCount(countWords(text))
+    const pageContent = data.page_content ?? data.content ?? ''
+    if (editor) {
+      editor.commands.setContent(pageContent)
+      setWordCount(countWords(editor.getText()))
+    }
   }
 
   function handlePagesChange(pages) {
