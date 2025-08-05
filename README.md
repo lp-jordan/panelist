@@ -41,6 +41,7 @@ create table if not exists pages (
   title text,
   page_content jsonb,
   version integer default 1,
+  project_id uuid,
   created_at timestamptz,
   updated_at timestamptz
 );
@@ -49,6 +50,13 @@ create table if not exists pages (
 Seed it with a sample row if desired:
 
 ```sql
-insert into pages (title, page_content, version, created_at, updated_at)
-values ('Example', '{}'::jsonb, 1, now(), now());
+insert into pages (
+  title,
+  page_content,
+  version,
+  project_id,
+  created_at,
+  updated_at
+)
+values ('Example', '{}'::jsonb, 1, null, now(), now());
 ```

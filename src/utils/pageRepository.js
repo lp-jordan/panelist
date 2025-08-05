@@ -2,6 +2,18 @@ import { getSupabase } from './supabaseClient'
 
 const TABLE = 'pages'
 
+function encodeTitle(name) {
+  return encodeURIComponent(name)
+}
+
+function decodeTitle(name) {
+  try {
+    return decodeURIComponent(name)
+  } catch {
+    return name
+  }
+}
+
 function handleUnauthorized(error) {
   if (error?.status === 401 || error?.message?.includes('not logged in')) {
     window.location.reload()
@@ -30,7 +42,7 @@ export async function listPages(projectId) {
       .eq('project_id', projectId)
       .order('title')
     if (error) throw error
-    return data ? data.map((row) => row.title) : []
+    return data ? data.map((row) => decodeTitle(row.title)) : []
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
     return []
@@ -43,7 +55,7 @@ export async function createPage(name, data, projectId) {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
     const payload = {
-      title: name,
+      title: encodeTitle(name),
       created_at: now,
       updated_at: now,
       page_content: data.page_content ?? null,
@@ -55,7 +67,7 @@ export async function createPage(name, data, projectId) {
     if (error) throw error
     return {
       metadata: {
-        title: payload.title,
+        title: name,
         projectId: payload.project_id,
         created_at: payload.created_at,
         updated_at: payload.updated_at,
@@ -78,14 +90,14 @@ export async function readPage(name, projectId) {
     const { data, error } = await supabase
       .from(TABLE)
       .select('title, project_id, created_at, updated_at, page_content, version')
-      .eq('title', name)
+      .eq('title', encodeTitle(name))
       .eq('user_id', userId)
       .eq('project_id', projectId)
       .single()
     if (error) throw error
     return {
       metadata: {
-        title: data.title,
+        title: decodeTitle(data.title),
         projectId: data.project_id,
         created_at: data.created_at,
         updated_at: data.updated_at,
@@ -115,7 +127,7 @@ export async function updatePage(name, data, projectId) {
       page_content: data.page_content ?? existing.page_content,
     }
     const row = {
-      title: updated.metadata.title,
+      title: encodeTitle(updated.metadata.title),
       project_id: updated.metadata.projectId,
       created_at: updated.metadata.created_at,
       updated_at: updated.metadata.updated_at,
@@ -127,7 +139,7 @@ export async function updatePage(name, data, projectId) {
     const { error } = await supabase
       .from(TABLE)
       .update(row)
-      .eq('title', name)
+      .eq('title', encodeTitle(name))
       .eq('user_id', userId)
       .eq('project_id', projectId)
     if (error) throw error
@@ -145,7 +157,7 @@ export async function deletePage(name, projectId) {
     const { error } = await supabase
       .from(TABLE)
       .delete()
-      .eq('title', name)
+      .eq('title', encodeTitle(name))
       .eq('user_id', userId)
       .eq('project_id', projectId)
     if (error) throw error

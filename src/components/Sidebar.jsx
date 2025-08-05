@@ -58,13 +58,17 @@ const PageNavigator = forwardRef(function PageNavigator(
       await createScript(name, {}, projectId)
       await refresh()
       onSelectPage(name)
-    } catch (err) {
-      console.error('Error creating page:', err)
+    } catch (error) {
+      console.error('createScript failed:', error.message)
+      console.warn('Could not create page')
     }
   }
 
   useEffect(() => {
-    refresh()
+    refresh().catch((error) => {
+      console.error('refresh failed:', error.message)
+      console.warn('Could not load pages')
+    })
   }, [projectId])
 
   useImperativeHandle(ref, () => ({ refresh }))
@@ -105,19 +109,34 @@ const Sidebar = forwardRef(function Sidebar(
   const pageNavigatorRef = useRef(null)
 
   async function refreshProjects() {
-    const result = await listProjects()
-    const list = result?.data ?? result
-    const names = list.map((p) => p.name ?? p)
-    setProjects(names)
-    return names
+    try {
+      const result = await listProjects()
+      const list = result?.data ?? result
+      const names = list.map((p) => p.name ?? p)
+      setProjects(names)
+      return names
+    } catch (error) {
+      console.error('listProjects failed:', error.message)
+      console.warn('Could not load projects')
+      setProjects([])
+      return []
+    }
   }
 
   useEffect(() => {
-    refreshProjects().then((names) => {
-      if (names.length > 0) {
-        handleSelectProject(names[0])
-      }
-    })
+    refreshProjects()
+      .then((names) => {
+        if (names.length > 0) {
+          handleSelectProject(names[0]).catch((error) => {
+            console.error('handleSelectProject failed:', error.message)
+            console.warn('Could not select project')
+          })
+        }
+      })
+      .catch((error) => {
+        console.error('refreshProjects failed:', error.message)
+        console.warn('Could not load projects')
+      })
   }, [])
 
   async function handleSelectPage(name) {
@@ -137,27 +156,41 @@ const Sidebar = forwardRef(function Sidebar(
     try {
       await createProject(name, {})
       await refreshProjects()
-      handleSelectProject(name)
-    } catch (err) {
-      console.error('Error creating project:', err)
+      handleSelectProject(name).catch((error) => {
+        console.error('handleSelectProject failed:', error.message)
+        console.warn('Could not select project')
+      })
+    } catch (error) {
+      console.error('createProject failed:', error.message)
+      console.warn('Could not create project')
     }
   }
 
   async function handleSelectProject(name) {
-    const result = await readProject(name)
-    const data = result?.data ?? result
-    setSelectedProject(data)
-    setActivePage(null)
-    onSelectProject?.(name, data)
-    const pages = await pageNavigatorRef.current?.refresh(data?.id)
-    if (pages && pages.length > 0) {
-      handleSelectPage(pages[0].name)
+    try {
+      const result = await readProject(name)
+      const data = result?.data ?? result
+      setSelectedProject(data)
+      setActivePage(null)
+      onSelectProject?.(name, data)
+      const pages = await pageNavigatorRef.current?.refresh(data?.id)
+      if (pages && pages.length > 0) {
+        await handleSelectPage(pages[0].name)
+      }
+    } catch (error) {
+      console.error('readProject failed:', error.message)
+      console.warn('Could not load project')
     }
   }
 
   async function handleSignOut() {
-    await signOut()
-    onSignOut?.()
+    try {
+      await signOut()
+      onSignOut?.()
+    } catch (error) {
+      console.error('signOut failed:', error.message)
+      console.warn('Sign out failed')
+    }
   }
 
   useImperativeHandle(ref, () => ({

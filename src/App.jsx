@@ -88,7 +88,6 @@ export default function App({ onSignOut }) {
             console.error('Error saving page:', err)
           }
         }
-        setIsSaving(false)
       }, 500)
     }
     editor.on('update', saveHandler)
