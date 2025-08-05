@@ -26,6 +26,7 @@ export default function App({ onSignOut }) {
   const [pageTitle, setPageTitle] = useState('Untitled Page')
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [devLogs, setDevLogs] = useState([])
   const [mode, setMode] = useState('Write')
   const [pageContent, _setPageContent] = useState('')
   const [totalPages, setTotalPages] = useState(0)
@@ -70,23 +71,42 @@ export default function App({ onSignOut }) {
     setTotalPages(pages.length)
   }
 
+  function logDev(message) {
+    setDevLogs((logs) => [...logs.slice(-9), message])
+  }
+
   useEffect(() => {
     if (!editor) return
     let timeoutId
     const saveHandler = () => {
       setIsSaving(true)
+      logDev(`Save triggered for "${pageTitle}"`)
       clearTimeout(timeoutId)
       timeoutId = setTimeout(async () => {
         if (activeProject) {
+          logDev(
+            `Saving "${pageTitle}" to project "${activeProject.name}"`,
+          )
           try {
-            await updateScript(
+            const result = await updateScript(
               pageTitle,
               { page_content: editor.getJSON(), metadata: { version: 1 } },
               activeProject.id,
             )
+            if (result === null) {
+              logDev('Save returned null')
+            } else {
+              logDev('Save complete')
+            }
           } catch (err) {
             console.error('Error saving page:', err)
+            logDev(`Error saving page: ${err.message}`)
+          } finally {
+            setIsSaving(false)
           }
+        } else {
+          logDev('No active project; save skipped')
+          setIsSaving(false)
         }
       }, 500)
     }
@@ -94,6 +114,7 @@ export default function App({ onSignOut }) {
     return () => {
       editor.off('update', saveHandler)
       clearTimeout(timeoutId)
+      setIsSaving(false)
     }
   }, [editor, pageTitle, activeProject])
 
@@ -138,6 +159,7 @@ export default function App({ onSignOut }) {
         currentPage={pageTitle}
         totalPages={totalPages}
         wordCount={wordCount}
+        logs={devLogs}
       />
       <div className="version">Panelist v{__APP_VERSION__}</div>
     </div>
