@@ -39,7 +39,8 @@ To create the table, run the following SQL in the Supabase SQL editor:
 create table if not exists pages (
   id uuid primary key default gen_random_uuid(),
   title text,
-  content jsonb,
+  page_content jsonb,
+  version integer default 1,
   created_at timestamptz,
   updated_at timestamptz
 );
@@ -48,6 +49,6 @@ create table if not exists pages (
 Seed it with a sample row if desired:
 
 ```sql
-insert into pages (title, content, created_at, updated_at)
-values ('Example', '{}'::jsonb, now(), now());
+insert into pages (title, page_content, version, created_at, updated_at)
+values ('Example', '{}'::jsonb, 1, now(), now());
 ```

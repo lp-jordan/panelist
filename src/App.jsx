@@ -27,6 +27,7 @@ export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [mode, setMode] = useState('Write')
+  const currentPage = { page_content: '' }
   const [totalPages, setTotalPages] = useState(0)
   const [wordCount, setWordCount] = useState(0)
   const currentPage = { content: '' }
@@ -46,7 +47,7 @@ export default function App({ onSignOut }) {
       SmartFlow,
       SlashCommand,
     ],
-    content: currentPage.content,
+    content: currentPage.page_content,
   })
 
   function handleSelectProject(name, data) {
@@ -59,6 +60,7 @@ export default function App({ onSignOut }) {
 
   function handleSelectPage(name, data) {
     setPageTitle(name)
+    editor?.commands?.setContent(data.page_content ?? '')
     const content = data.content ?? ''
     editor?.commands?.setContent(content)
     const text = content.replace(/<[^>]+>/g, ' ')
@@ -79,7 +81,7 @@ export default function App({ onSignOut }) {
         if (activeProject) {
           await updateScript(
             pageTitle,
-            { content: editor.getHTML() },
+            { page_content: editor.getJSON(), metadata: { version: 1 } },
             activeProject.id,
           )
         }

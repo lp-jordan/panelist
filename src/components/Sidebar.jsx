@@ -28,13 +28,15 @@ const PageNavigator = forwardRef(function PageNavigator(
       names.map(async (name) => {
         const result = await readScript(name, id)
         const data = result?.data ?? result
-        const content = data?.content ?? ''
-        const preview = content.split('\n')[0] || ''
+        const content = data?.page_content ?? data?.content ?? ''
+        const preview =
+          typeof content === 'string' ? content.split('\n')[0] || '' : ''
         return { name, preview }
       }),
     )
     setPages(enriched)
     onPagesChange?.(enriched)
+    return enriched
   }
 
   useEffect(() => {
@@ -69,7 +71,7 @@ const PageNavigator = forwardRef(function PageNavigator(
   )
 })
 
-function Sidebar(
+const Sidebar = forwardRef(function Sidebar(
   { onSelectPage, onSelectProject, onSignOut, onPagesChange },
   ref,
 ) {
@@ -119,7 +121,10 @@ function Sidebar(
     setSelectedProject(data)
     setActivePage(null)
     onSelectProject?.(name, data)
-    pageNavigatorRef.current?.refresh(data?.id)
+    const pages = await pageNavigatorRef.current?.refresh(data?.id)
+    if (pages && pages.length > 0) {
+      handleSelectPage(pages[0].name)
+    }
   }
 
   async function handleSignOut() {
@@ -169,6 +174,6 @@ function Sidebar(
       </div>
     </aside>
   )
-}
+})
 
-export default forwardRef(Sidebar)
+export default Sidebar
