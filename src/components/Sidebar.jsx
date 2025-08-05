@@ -11,7 +11,12 @@ import {
   createScript,
   deleteScript,
 } from '../utils/scriptRepository'
-import { listProjects, createProject, readProject } from '../utils/projectRepository'
+import {
+  listProjects,
+  createProject,
+  readProject,
+  deleteProject,
+} from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
@@ -203,6 +208,27 @@ const Sidebar = forwardRef(function Sidebar(
     }
   }
 
+  async function handleDeleteProject(e, name) {
+    e.stopPropagation()
+    if (!confirm(`Delete project "${name}"?`)) return
+    try {
+      await deleteProject(name)
+      const names = await refreshProjects()
+      if (selectedProject?.name === name) {
+        if (names.length > 0) {
+          await handleSelectProject(names[0])
+        } else {
+          setSelectedProject(null)
+          setActivePage(null)
+          onSelectProject?.('', null)
+          onSelectPage?.('', { page_content: '' })
+        }
+      }
+    } catch (err) {
+      console.error('Error deleting project:', err)
+    }
+  }
+
   async function handleSelectProject(name) {
     try {
       const result = await readProject(name)
@@ -252,7 +278,16 @@ const Sidebar = forwardRef(function Sidebar(
             className="project-item"
             onClick={() => handleSelectProject(p)}
           >
-            {p}
+            <div className="project-item-header">
+              <div className="font-medium">{p}</div>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => handleDeleteProject(e, p)}
+              >
+                🗑️
+              </Button>
+            </div>
           </li>
         ))}
       </ul>
