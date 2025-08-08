@@ -1,0 +1,219 @@
+version: "1.0"
+name: "Comic Script Styling Rules"
+audience: "AI text generator for Panelist editor"
+page:
+  size: "letter"
+  aspect_ratio: "8.5/11"
+  padding: "1in"
+  background: "#27272a"
+  text_color: "#f4f4f5"
+  tabs:
+    width_ch: 4
+    css_var: "--tab-width"
+typography:
+  base_font_smoothing: "antialiased"
+  families:
+    serif_header: "Baskerville, serif"
+    mono: "'Courier New', monospace"
+  sizes_pt:
+    header_panel: 14
+    body_mono: 12
+  weights:
+    regular: 400
+    medium: 500
+    semibold: 600
+    bold: 700
+nodes:
+  - key: panel-header
+    html_class: "panel-header"
+    role: "Section or panel heading"
+    font:
+      family: serif_header
+      size_pt: 14
+      weight: bold
+      transform: uppercase
+    spacing:
+      margin_top_px: 24
+      margin_bottom_px: 12
+    content_rules:
+      - "Short, noun-phrase titles only (no trailing punctuation)."
+
+  - key: character
+    html_class: "character"
+    role: "Character name preceding dialogue"
+    font:
+      family: mono
+      size_pt: 12
+      weight: bold
+      transform: uppercase
+    indent:
+      tabs: 2
+    spacing:
+      margin_bottom_px: 0
+    content_rules:
+      - "Only the speaking character’s name; no colon."
+      - "One line max; use parenthetical line after this if needed."
+
+  - key: dialogue
+    html_class: "dialogue"
+    role: "Dialogue spoken by preceding character"
+    font:
+      family: mono
+      size_pt: 12
+      weight: regular
+    indent:
+      tabs: 2
+    spacing:
+      margin_bottom_px: 8
+    ordering_rule: "Must follow a `character` (and optional `cue-*`) block."
+
+  - key: cue-label
+    html_class: "cue-label"
+    role: "Parenthetical cue label (e.g., BEAT, WHISPER)"
+    font:
+      family: mono
+      size_pt: 12
+      weight: bold
+      transform: uppercase
+    indent:
+      tabs: 0
+    spacing:
+      margin_bottom_px: 0
+    content_rules:
+      - "One or two words max (e.g., BEAT, ASIDE, WHISPER)."
+      - "No parentheses here; that’s for cue-content."
+
+  - key: cue-content
+    html_class: "cue-content"
+    role: "Expanded direction related to the cue"
+    font:
+      family: mono
+      size_pt: 12
+      weight: regular
+    indent:
+      tabs: 2
+    spacing:
+      margin_bottom_px: 8
+    content_rules:
+      - "Wrap in parentheses if it’s an inline performance note."
+
+  - key: sfx
+    html_class: "sfx"
+    role: "Sound effects line"
+    font:
+      family: mono
+      size_pt: 12
+      weight: regular
+      style: italic
+    indent:
+      tabs: 2
+    spacing:
+      margin_bottom_px: 8
+    content_rules:
+      - "Write the SFX itself; do not add 'SFX:' label."
+
+  - key: notes
+    html_class: "notes"
+    role: "Author/editor notes (not printed)"
+    font:
+      family: mono
+      size_pt: 12
+      weight: regular
+      style: italic
+      color_hex: "#888888"
+    indent:
+      tabs: 1
+    spacing:
+      margin_bottom_px: 8
+    content_rules:
+      - "Use for internal guidance only; keep concise."
+
+ordering:
+  block_sequences:
+    - name: "Spoken line"
+      pattern: ["character", "cue-label?", "cue-content?", "dialogue"]
+    - name: "SFX line"
+      pattern: ["sfx"]
+    - name: "Note"
+      pattern: ["notes"]
+    - name: "Section"
+      pattern: ["panel-header", "character?", "dialogue?"]
+  rules:
+    - "Never emit `dialogue` without a preceding `character` in the same sequence."
+    - "At most one `character` per spoken sequence."
+    - "`cue-label` and `cue-content` are optional and, if present, must appear between `character` and `dialogue`."
+
+capitalization:
+  character_names: "UPPERCASE"
+  panel_headers: "UPPERCASE"
+  sfx: "Mixed case allowed (emphasize by wording, not extra punctuation)."
+
+punctuation:
+  ellipses: "Three dots … (no spaced periods)."
+  emphasis: "Use wording or separate `sfx`/`cue-content`—avoid ALL CAPS mid-dialogue unless intentional."
+
+spacing:
+  paragraph_gap_px_default: 8
+  zero_gap_after:
+    - "character"
+    - "cue-label"
+accessibility:
+  line_length_guideline_chars: 80
+  avoid:
+    - "Long, multi-clause sentences in `dialogue`."
+    - "Stacked nested parentheses in `cue-content`."
+
+render_targets:
+  html:
+    wrapper_selector: ".editor-content .ProseMirror"
+    block_map:
+      panel-header: "<p class='panel-header'>{{text}}</p>"
+      character: "<p class='character'>{{text}}</p>"
+      cue-label: "<p class='cue-label'>{{text}}</p>"
+      cue-content: "<p class='cue-content'>{{text}}</p>"
+      dialogue: "<p class='dialogue'>{{text}}</p>"
+      sfx: "<p class='sfx'>{{text}}</p>"
+      notes: "<p class='notes'>{{text}}</p>"
+  markdown_hint:
+    - "Emit plain text; styling applied in HTML conversion by class mapping."
+
+validation:
+  hard_errors:
+    - id: "DIA_WITHOUT_CHAR"
+      condition: "dialogue has no preceding character in same block group"
+      message: "Dialogue must follow a CHARACTER line."
+    - id: "DOUBLE_CHARACTER"
+      condition: "more than one character before a dialogue within the same group"
+      message: "Only one CHARACTER per spoken line."
+  soft_warnings:
+    - id: "LONG_DIALOGUE"
+      condition: "dialogue length > 200 chars"
+      message: "Consider breaking long dialogue into two paragraphs."
+    - id: "OVER_CUE"
+      condition: "more than one cue-label or cue-content before a single dialogue"
+      message: "Keep cues minimal."
+
+examples:
+  - title: "Basic spoken line with cue"
+    input_intent: "Abe whispers an apology, then speaks."
+    html:
+      - "<p class='character'>ABE BONE</p>"
+      - "<p class='cue-label'>WHISPER</p>"
+      - "<p class='cue-content'>(barely audible)</p>"
+      - "<p class='dialogue'>I’m sorry.</p>"
+  - title: "SFX standalone"
+    html:
+      - "<p class='sfx'>SHUNK</p>"
+  - title: "Internal note"
+    html:
+      - "<p class='notes'>Tighten this beat if page runs long.</p>"
+
+generation_prompts:
+  do:
+    - "Use `panel-header` to mark new sections or scene beats."
+    - "Always produce `character` before `dialogue`."
+    - "Prefer concise cues; keep performance notes brief."
+  dont:
+    - "Don’t prefix SFX with 'SFX:'."
+    - "Don’t add colons after character names."
+    - "Don’t emit raw parentheses in `cue-label` (use uppercase word only)."
