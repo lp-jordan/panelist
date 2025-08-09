@@ -10,7 +10,6 @@ import {
   readProject,
   deleteProject,
 } from '../utils/projectRepository'
-import { signOut } from '../utils/auth.js'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
 import ModeCarousel from './ModeCarousel'
@@ -43,7 +42,6 @@ const Sidebar = forwardRef(function Sidebar(
     activePage = 0,
     onSelectPage,
     onSelectProject,
-    onSignOut,
     currentMode,
     onModeChange,
   },
@@ -143,16 +141,6 @@ const Sidebar = forwardRef(function Sidebar(
     }
   }
 
-  async function handleSignOut() {
-    try {
-      await signOut()
-      onSignOut?.()
-    } catch (error) {
-      console.error('signOut failed:', error?.message || error)
-      console.warn('Sign out failed')
-    }
-  }
-
   // Expose an imperative handle if the parent wants to programmatically select a page index
   useImperativeHandle(ref, () => ({ selectPage: onSelectPage }), [onSelectPage])
 
@@ -206,12 +194,6 @@ const Sidebar = forwardRef(function Sidebar(
       <PageNavigator pages={pages} activePage={activePage} onSelectPage={onSelectPage} />
 
       <ModeCarousel currentMode={currentMode} onModeChange={onModeChange} />
-
-      <div className="signout-container">
-        <Button variant="ghost" className="full-width" onClick={handleSignOut}>
-          Sign out
-        </Button>
-      </div>
     </aside>
   )
 })

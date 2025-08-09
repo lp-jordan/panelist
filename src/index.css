@@ -255,10 +255,6 @@ body {
   margin-top: var(--spacing-inner);
 }
 
-.signout-container {
-  margin-top: var(--spacing-container);
-}
-
 .font-medium {
   font-weight: 500;
 }
