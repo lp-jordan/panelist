@@ -67,11 +67,17 @@ body {
   flex: 1;
   overflow: auto;
   padding: var(--spacing-container);
-  transition: transform var(--transition);
+  transition: margin-right var(--transition);
 }
 
 .main-content.shifted {
-  transform: translateX(-15rem);
+  margin-right: 15rem;
+}
+
+@media (max-width: 60rem) {
+  .main-content.shifted {
+    margin-right: 0;
+  }
 }
 
 .page-title {
