@@ -20,7 +20,7 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import DevInfo from './components/DevInfo'
 import { listScripts, readScript, updateScript, createScript } from './utils/scriptRepository'
-import { scanDocument, recalcNumbering } from './utils/documentScanner'
+import { recalcNumbering } from './utils/documentScanner'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
 import { cn } from './lib/utils'
@@ -31,7 +31,9 @@ export default function App({ onSignOut }) {
   const [devLogs, setDevLogs] = useState([])
   const [mode, setMode] = useState('Script')
   const [pages, setPages] = useState([])
+  const [pageDocs, setPageDocs] = useState([])
   const [activePage, setActivePage] = useState(0)
+  const activePageRef = useRef(0)
   const [wordCount, setWordCount] = useState(0)
   const sidebarRef = useRef(null)
   const existingPagesRef = useRef([])
@@ -66,6 +68,10 @@ export default function App({ onSignOut }) {
   }, [theme])
 
   useEffect(() => {
+    activePageRef.current = activePage
+  }, [activePage])
+
+  useEffect(() => {
     document.documentElement.style.setProperty('--accent', accentColor)
   }, [accentColor])
 
@@ -89,35 +95,22 @@ export default function App({ onSignOut }) {
       const pagesData = await Promise.all(
         names.map(n => readScript(n, projectId).catch(() => ({ page_content: null })))
       )
-      const contentNodes = []
-      pagesData.forEach((p) => {
-        const doc = p?.page_content ?? { type: 'doc', content: [] }
-        const json = typeof doc === 'string' ? JSON.parse(doc) : doc
-        if (json?.content) contentNodes.push(...json.content)
+      const docs = pagesData.map((p) => {
+        const doc = p?.page_content ?? { type: 'doc', content: [{ type: 'pageHeader' }] }
+        return typeof doc === 'string' ? JSON.parse(doc) : doc
       })
-      editor?.commands.setContent({ type: 'doc', content: contentNodes })
-      const titles = names
-      setPages(titles)
+      setPages(names)
+      setPageDocs(docs)
+      activePageRef.current = 0
       setActivePage(0)
+      const first = docs[0] ?? { type: 'doc', content: [{ type: 'pageHeader' }] }
+      editor?.commands.setContent(first)
       setWordCount(countWords(editor?.getText() ?? ''))
     } catch (err) {
       console.error('Error loading project pages:', err)
     }
   }
 
-  function splitDocument(doc) {
-    const pages = []
-    let current = { type: 'doc', content: [] }
-    ;(doc.content || []).forEach((node) => {
-      if (node.type === 'pageHeader' && current.content.length > 0) {
-        pages.push(current)
-        current = { type: 'doc', content: [] }
-      }
-      current.content.push(node)
-    })
-    if (current.content.length > 0) pages.push(current)
-    return pages
-  }
 
   function extractTitle(pageDoc) {
     const header = pageDoc.content?.[0]
@@ -137,33 +130,36 @@ export default function App({ onSignOut }) {
     if (!editor) return
     let timeoutId
     const saveHandler = () => {
+      recalcNumbering(editor)
+      setWordCount(countWords(editor.getText()))
       setIsSaving(true)
       clearTimeout(timeoutId)
       timeoutId = setTimeout(async () => {
         if (activeProject) {
           try {
             const doc = editor.getJSON()
-            const pageDocs = splitDocument(doc)
-            const titles = []
-            for (const pageDoc of pageDocs) {
-              const title = extractTitle(pageDoc)
-              titles.push(title)
-              try {
-                if (existingPagesRef.current.includes(title)) {
-                  await updateScript(title, { page_content: pageDoc, metadata: { version: 1 } }, activeProject.id)
-                } else {
-                  await createScript(title, { page_content: pageDoc, metadata: { version: 1 } }, activeProject.id)
-                }
-              } catch (err) {
-                console.error('Error saving page:', err)
-                logDev(`Error saving page: ${err.message}`)
-              }
+            const title = extractTitle(doc)
+            const idx = activePageRef.current
+            setPages(prev => {
+              const next = [...prev]
+              next[idx] = title
+              return next
+            })
+            setPageDocs(prev => {
+              const next = [...prev]
+              next[idx] = doc
+              return next
+            })
+            if (existingPagesRef.current.includes(title)) {
+              await updateScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
+            } else {
+              await createScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
+              existingPagesRef.current.push(title)
             }
-            existingPagesRef.current = titles
             logDev('Save complete')
           } catch (err) {
-            console.error('Error saving document:', err)
-            logDev(`Error saving document: ${err.message}`)
+            console.error('Error saving page:', err)
+            logDev(`Error saving page: ${err.message}`)
           } finally {
             setIsSaving(false)
           }
@@ -179,45 +175,9 @@ export default function App({ onSignOut }) {
       clearTimeout(timeoutId)
       setIsSaving(false)
     }
-  }, [editor, activeProject])
+  }, [editor, activeProject, activePage])
 
-  useEffect(() => {
-    if (!editor) return
-    const updateHandler = () => {
-      recalcNumbering(editor)
-      const doc = editor.state.doc
-      const info = scanDocument(doc)
-      const titles = info.map(p => {
-        const node = doc.nodeAt(p.pagePos)
-        return node?.textContent || `Page ${p.pageNumber}`
-      })
-      setPages(titles)
-      const pos = editor.state.selection.from
-      let idx = 0
-      for (let i = 0; i < info.length; i++) {
-        const next = info[i + 1]?.pagePos ?? Infinity
-        if (pos >= info[i].pagePos && pos < next) {
-          idx = i
-          break
-        }
-      }
-      setActivePage(idx)
-      setWordCount(countWords(editor.getText()))
-      if (
-        editor.state.selection.from === doc.content.size &&
-        doc.lastChild?.type.name !== 'pageHeader'
-      ) {
-        editor.chain().focus().insertContent({ type: 'pageHeader' }).run()
-      }
-    }
-    editor.on('update', updateHandler)
-    editor.on('selectionUpdate', updateHandler)
-    updateHandler()
-    return () => {
-      editor.off('update', updateHandler)
-      editor.off('selectionUpdate', updateHandler)
-    }
-  }, [editor])
+  // No additional update handler; saving effect handles state updates
 
   useEffect(() => {
     if (!editor) return
@@ -228,18 +188,29 @@ export default function App({ onSignOut }) {
 
   function handleNavigatePage(index) {
     if (!editor) return
-    const info = scanDocument(editor.state.doc)
-    const pos = info[index]?.pagePos
-    if (typeof pos === 'number') {
-      editor.chain().focus().setTextSelection(pos + 1).run()
-    }
+    const currentDoc = editor.getJSON()
+    const nextDoc = pageDocs[index] ?? { type: 'doc', content: [{ type: 'pageHeader' }] }
+    setPageDocs(prev => {
+      const docs = [...prev]
+      docs[activePageRef.current] = currentDoc
+      return docs
+    })
+    activePageRef.current = index
+    setActivePage(index)
+    editor.commands.setContent(nextDoc)
+    setWordCount(countWords(editor.getText()))
   }
 
   function handleCreatePage() {
     if (!editor) return
-    const endPos = editor.state.doc.content.size
-    editor.chain().insertContentAt(endPos, { type: 'pageHeader' }).run()
-    handleNavigatePage(pages.length)
+    const newDoc = { type: 'doc', content: [{ type: 'pageHeader' }] }
+    const newIndex = pages.length
+    setPages(prev => [...prev, 'Untitled Page'])
+    setPageDocs(prev => [...prev, newDoc])
+    activePageRef.current = newIndex
+    setActivePage(newIndex)
+    editor.commands.setContent(newDoc)
+    setWordCount(countWords(editor.getText()))
   }
 
   return (
