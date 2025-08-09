@@ -4,7 +4,6 @@ import { signOut } from '../utils/auth.js'
 
 export default function SettingsSidebar({
   open,
-  onClose,
   theme,
   setTheme,
   accentColor,
@@ -26,9 +25,6 @@ export default function SettingsSidebar({
     <aside className={cn('settings-sidebar', open && 'open')}>
       <div className="settings-header">
         <div className="font-semibold">Settings</div>
-        <Button size="sm" variant="ghost" onClick={onClose}>
-          ✖️
-        </Button>
       </div>
       <div>
         <h4 className="section-heading">Display</h4>
