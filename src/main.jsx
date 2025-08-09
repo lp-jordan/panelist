@@ -11,21 +11,29 @@ function Root() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      console.log('Initial auth session:', data.session)
       setSession(data.session)
     })
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed:', event, session)
       setSession(session)
     })
     return () => subscription.unsubscribe()
   }, [])
 
   if (!session) {
-    return <Login onLogin={setSession} />
+    return <Login onLogin={(s) => {
+      console.log('Login successful, session set')
+      setSession(s)
+    }} />
   }
 
-  return <App onSignOut={() => setSession(null)} />
+  return <App onSignOut={() => {
+    console.log('User signed out from App')
+    setSession(null)
+  }} />
 }
 
 export default Root
