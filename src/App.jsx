@@ -20,6 +20,7 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import ModeCarousel from './components/ModeCarousel'
 import DevInfo from './components/DevInfo'
+import SettingsSidebar from './components/SettingsSidebar'
 import { updateScript, deleteScript } from './utils/scriptRepository'
 import { Button } from './components/ui/button'
 
@@ -33,6 +34,10 @@ export default function App({ onSignOut }) {
   const [totalPages, setTotalPages] = useState(0)
   const [wordCount, setWordCount] = useState(0)
   const sidebarRef = useRef(null)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [theme, setTheme] = useState('light')
+  const [accentColor, setAccentColor] = useState('#2563eb')
+  const [showDevInfo, setShowDevInfo] = useState(false)
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -51,6 +56,14 @@ export default function App({ onSignOut }) {
     ],
     content: pageContent,
   })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent', accentColor)
+  }, [accentColor])
 
   function handleSelectProject(name, data) {
     setActiveProject(data)
@@ -185,14 +198,35 @@ export default function App({ onSignOut }) {
         {editor && <ScriptEditor editor={editor} mode={mode} />}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
-      <DevInfo
-        projectName={activeProject?.name}
-        currentPage={pageTitle}
-        totalPages={totalPages}
-        wordCount={wordCount}
-        logs={devLogs}
-      />
+      {showDevInfo && (
+        <DevInfo
+          projectName={activeProject?.name}
+          currentPage={pageTitle}
+          totalPages={totalPages}
+          wordCount={wordCount}
+          logs={devLogs}
+        />
+      )}
       <div className="version">Panelist v{__APP_VERSION__}</div>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="settings-button"
+        onClick={() => setSettingsOpen(true)}
+      >
+        ⚙️
+      </Button>
+      <SettingsSidebar
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        theme={theme}
+        setTheme={setTheme}
+        accentColor={accentColor}
+        setAccentColor={setAccentColor}
+        onSignOut={onSignOut}
+        showDevInfo={showDevInfo}
+        setShowDevInfo={setShowDevInfo}
+      />
     </div>
   )
 }
