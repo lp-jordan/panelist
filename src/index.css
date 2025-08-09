@@ -210,6 +210,18 @@ body {
   z-index: 10;
 }
 
+.project-dropdown {
+  position: absolute;
+  left: 0;
+  top: 100%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  margin-top: 0.25rem;
+  z-index: 10;
+  padding: var(--spacing-inner);
+}
+
 .project-menu-item {
   justify-content: flex-start;
 }

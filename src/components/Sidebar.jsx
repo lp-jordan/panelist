@@ -1,6 +1,7 @@
 import React, {
   useState,
   useEffect,
+  useRef,
   forwardRef,
   useImperativeHandle,
 } from 'react'
@@ -56,6 +57,14 @@ const Sidebar = forwardRef(function Sidebar(
   const [selectedProjectName, setSelectedProjectName] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    if (dropdownOpen) {
+      dropdownRef.current?.focus()
+    }
+  }, [dropdownOpen])
 
   async function refreshProjects() {
     try {
@@ -152,11 +161,33 @@ const Sidebar = forwardRef(function Sidebar(
     <aside className="sidebar">
       <div className="sidebar-header">
         <div
-          className="font-semibold"
-          style={{ cursor: 'pointer' }}
-          onClick={() => setDropdownOpen((o) => !o)}
+          style={{ position: 'relative' }}
+          tabIndex={0}
+          ref={dropdownRef}
+          onBlur={() => setDropdownOpen(false)}
         >
-          {selectedProjectName || 'Select project'}
+          <div
+            className="font-semibold"
+            style={{ cursor: 'pointer' }}
+            onClick={() => setDropdownOpen((o) => !o)}
+          >
+            {selectedProjectName || 'Select project'}
+          </div>
+          {dropdownOpen && (
+            <div className="project-dropdown">
+              <ul className="project-list">
+                {projects.map((p) => (
+                  <li
+                    key={p}
+                    className="project-item"
+                    onClick={() => handleSelectProject(p)}
+                  >
+                    <div className="font-medium">{p}</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         <div style={{ position: 'relative' }}>
           <Button size="sm" variant="ghost" onClick={() => setMenuOpen((o) => !o)}>
@@ -184,16 +215,6 @@ const Sidebar = forwardRef(function Sidebar(
           )}
         </div>
       </div>
-
-      {dropdownOpen && (
-        <ul className="project-list">
-          {projects.map((p) => (
-            <li key={p} className="project-item" onClick={() => handleSelectProject(p)}>
-              <div className="font-medium">{p}</div>
-            </li>
-          ))}
-        </ul>
-      )}
 
       <PageNavigator
         pages={pages}
