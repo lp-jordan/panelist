@@ -22,7 +22,6 @@ export default function App({ onSignOut }) {
   const activePageRef = useRef(0)
   const [wordCount, setWordCount] = useState(0)
   const sidebarRef = useRef(null)
-  const existingPagesRef = useRef([])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [theme, setTheme] = useState('light')
   const [accentColor, setAccentColor] = useState('#2563eb')
@@ -31,7 +30,7 @@ export default function App({ onSignOut }) {
   const saveTimeoutsRef = useRef({})
   const [zoom, setZoom] = useState(1)
 
-  const pageTitle = pages[activePage] ?? ''
+  const pageTitle = pages[activePage]?.title ?? ''
   const totalPages = pages.length
 
   useEffect(() => {
@@ -80,16 +79,15 @@ export default function App({ onSignOut }) {
 
   async function loadProjectPages(projectId) {
     try {
-      const names = await listScripts(projectId)
-      existingPagesRef.current = names
+      const pageList = await listScripts(projectId)
       const pagesData = await Promise.all(
-        names.map(n => readScript(n, projectId).catch(() => ({ page_content: null })))
+        pageList.map(p => readScript(p.id, projectId).catch(() => ({ page_content: null })))
       )
       const docs = pagesData.map((p) => {
         const doc = p?.page_content ?? { type: 'doc', content: [{ type: 'pageHeader' }] }
         return typeof doc === 'string' ? JSON.parse(doc) : doc
       })
-      setPages(names)
+      setPages(pageList)
       setPageDocs(docs)
       activePageRef.current = 0
       setActivePage(0)
@@ -115,12 +113,14 @@ export default function App({ onSignOut }) {
   }
 
   function handlePageUpdate(index, doc, text) {
-    const title = extractTitle(doc)
-    setPages(prev => {
-      const next = [...prev]
-      next[index] = title
-      return next
-    })
+      const title = extractTitle(doc)
+      const current = pages[index] || {}
+      setPages(prev => {
+        const next = [...prev]
+        const page = next[index] || {}
+        next[index] = { ...page, title }
+        return next
+      })
     setPageDocs(prev => {
       const next = [...prev]
       next[index] = doc
@@ -134,11 +134,24 @@ export default function App({ onSignOut }) {
     saveTimeoutsRef.current[index] = setTimeout(async () => {
       if (activeProject) {
         try {
-          if (existingPagesRef.current.includes(title)) {
-            await updateScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
+          if (current.id) {
+            await updateScript(
+              current.id,
+              { page_content: doc, metadata: { title, version: 1 } },
+              activeProject.id,
+            )
           } else {
-            await createScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
-            existingPagesRef.current.push(title)
+            const newId = await createScript(
+              title,
+              { page_content: doc, metadata: { version: 1 } },
+              activeProject.id,
+            )
+            setPages(prev => {
+              const next = [...prev]
+              const page = next[index] || {}
+              next[index] = { ...page, id: newId, title }
+              return next
+            })
           }
           logDev('Save complete')
         } catch (err) {
@@ -170,7 +183,7 @@ export default function App({ onSignOut }) {
   function handleCreatePage() {
     const newDoc = { type: 'doc', content: [{ type: 'pageHeader' }] }
     const newIndex = pages.length
-    setPages(prev => [...prev, 'Untitled Page'])
+    setPages(prev => [...prev, { id: null, title: 'Untitled Page' }])
     setPageDocs(prev => [...prev, newDoc])
     setTimeout(() => {
       const el = pageRefs.current[newIndex]
@@ -182,7 +195,7 @@ export default function App({ onSignOut }) {
     <div className="app-layout">
       <Sidebar
         ref={sidebarRef}
-        pages={pages}
+        pages={pages.map(p => p.title)}
         activePage={activePage}
         onSelectProject={handleSelectProject}
         onSelectPage={handleNavigatePage}

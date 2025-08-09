@@ -37,12 +37,14 @@ export async function listPages(projectId) {
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
-      .select('title')
+      .select('id, title')
       .eq('user_id', userId)
       .eq('project_id', projectId)
-      .order('title')
+      .order('created_at')
     if (error) throw error
-    return data ? data.map((row) => decodeTitle(row.title)) : []
+    return data
+      ? data.map((row) => ({ id: row.id, title: decodeTitle(row.title) }))
+      : []
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
     return []
@@ -63,40 +65,36 @@ export async function createPage(name, data, projectId) {
       user_id: userId,
       project_id: projectId ?? null,
     }
-    const { error } = await supabase.from(TABLE).insert(payload)
+    const { data: inserted, error } = await supabase
+      .from(TABLE)
+      .insert(payload)
+      .select('id')
+      .single()
     if (error) throw error
-    return {
-      metadata: {
-        title: name,
-        projectId: payload.project_id,
-        created_at: payload.created_at,
-        updated_at: payload.updated_at,
-        version: payload.version,
-      },
-      page_content: payload.page_content,
-    }
+    return inserted?.id ?? null
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
     return null
   }
 }
 
-export async function readPage(name, projectId) {
-  if (!name) throw new Error('title required')
+export async function readPage(id, projectId) {
+  if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
   try {
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
-      .select('title, project_id, created_at, updated_at, page_content, version')
-      .eq('title', encodeTitle(name))
+      .select('id, title, project_id, created_at, updated_at, page_content, version')
+      .eq('id', id)
       .eq('user_id', userId)
       .eq('project_id', projectId)
       .single()
     if (error) throw error
     return {
       metadata: {
+        id: data.id,
         title: decodeTitle(data.title),
         projectId: data.project_id,
         created_at: data.created_at,
@@ -111,11 +109,11 @@ export async function readPage(name, projectId) {
   }
 }
 
-export async function updatePage(name, data, projectId) {
-  if (!name) throw new Error('title required')
+export async function updatePage(id, data, projectId) {
+  if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
   try {
-    const existing = await readPage(name, projectId)
+    const existing = await readPage(id, projectId)
     if (!existing) return null
     const updated = {
       metadata: {
@@ -139,7 +137,7 @@ export async function updatePage(name, data, projectId) {
     const { error } = await supabase
       .from(TABLE)
       .update(row)
-      .eq('title', encodeTitle(name))
+      .eq('id', id)
       .eq('user_id', userId)
       .eq('project_id', projectId)
     if (error) throw error
@@ -148,8 +146,8 @@ export async function updatePage(name, data, projectId) {
   }
 }
 
-export async function deletePage(name, projectId) {
-  if (!name) throw new Error('title required')
+export async function deletePage(id, projectId) {
+  if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
   try {
     const supabase = await getSupabase()
@@ -157,7 +155,7 @@ export async function deletePage(name, projectId) {
     const { error } = await supabase
       .from(TABLE)
       .delete()
-      .eq('title', encodeTitle(name))
+      .eq('id', id)
       .eq('user_id', userId)
       .eq('project_id', projectId)
     if (error) throw error
@@ -166,20 +164,20 @@ export async function deletePage(name, projectId) {
   }
 }
 
-export async function loadPageContent(name, projectId) {
-  const page = await readPage(name, projectId)
+export async function loadPageContent(id, projectId) {
+  const page = await readPage(id, projectId)
   if (!page) return null
   return { page_content: page.page_content, version: page.metadata.version }
 }
 
 export async function savePageContent(
-  name,
+  id,
   pageContent,
   version,
   projectId,
 ) {
   return updatePage(
-    name,
+    id,
     { page_content: pageContent, metadata: { version } },
     projectId,
   )

@@ -12,26 +12,26 @@ export async function listScripts(projectId) {
   return listPages(projectId)
 }
 
-export async function readScript(name, projectId) {
-  return readPage(name, projectId)
+export async function readScript(id, projectId) {
+  return readPage(id, projectId)
 }
 
-export async function updateScript(name, data, projectId) {
-  return updatePage(name, data, projectId)
+export async function updateScript(id, data, projectId) {
+  return updatePage(id, data, projectId)
 }
 
 export async function createScript(name, data, projectId) {
   return createPage(name, data, projectId)
 }
 
-export async function loadScriptContent(name, projectId) {
-  return loadPageContent(name, projectId)
+export async function loadScriptContent(id, projectId) {
+  return loadPageContent(id, projectId)
 }
 
-export async function saveScriptContent(name, pageContent, version, projectId) {
-  return savePageContent(name, pageContent, version, projectId)
+export async function saveScriptContent(id, pageContent, version, projectId) {
+  return savePageContent(id, pageContent, version, projectId)
 }
 
-export async function deleteScript(name, projectId) {
-  return deletePage(name, projectId)
+export async function deleteScript(id, projectId) {
+  return deletePage(id, projectId)
 }
