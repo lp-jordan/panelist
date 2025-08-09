@@ -243,7 +243,6 @@ export default function App({ onSignOut }) {
         activePage={activePage}
         onSelectProject={handleSelectProject}
         onSelectPage={handleNavigatePage}
-        onSignOut={onSignOut}
         currentMode={mode}
         onModeChange={setMode}
       />
