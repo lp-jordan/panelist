@@ -1,26 +1,9 @@
 /* global __APP_VERSION__ */
-import { useEditor } from '@tiptap/react'
 import { useState, useEffect, useRef } from 'react'
-import StarterKit from '@tiptap/starter-kit'
-import SlashCommand from './extensions/SlashCommand'
-import SmartFlow from './extensions/SmartFlow'
-import {
-  PageHeader,
-  PanelHeader,
-  Description,
-  Character,
-  Dialogue,
-  Sfx,
-  NoCopy,
-  CueLabel,
-  CueContent,
-  Notes,
-} from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import DevInfo from './components/DevInfo'
 import { listScripts, readScript, updateScript, createScript } from './utils/scriptRepository'
-import { recalcNumbering } from './utils/documentScanner'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
 import { cn } from './lib/utils'
@@ -41,24 +24,8 @@ export default function App({ onSignOut }) {
   const [theme, setTheme] = useState('light')
   const [accentColor, setAccentColor] = useState('#2563eb')
   const [showDevInfo, setShowDevInfo] = useState(false)
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      PageHeader,
-      PanelHeader,
-      Description,
-      Character,
-      Dialogue,
-      Sfx,
-      NoCopy,
-      CueLabel,
-      CueContent,
-      Notes,
-      SmartFlow,
-      SlashCommand,
-    ],
-    content: '',
-  })
+  const pageRefs = useRef([])
+  const saveTimeoutsRef = useRef({})
 
   const pageTitle = pages[activePage] ?? ''
   const totalPages = pages.length
@@ -103,9 +70,7 @@ export default function App({ onSignOut }) {
       setPageDocs(docs)
       activePageRef.current = 0
       setActivePage(0)
-      const first = docs[0] ?? { type: 'doc', content: [{ type: 'pageHeader' }] }
-      editor?.commands.setContent(first)
-      setWordCount(countWords(editor?.getText() ?? ''))
+      setWordCount(0)
     } catch (err) {
       console.error('Error loading project pages:', err)
     }
@@ -126,91 +91,68 @@ export default function App({ onSignOut }) {
     setDevLogs((logs) => [...logs.slice(-9), message])
   }
 
-  useEffect(() => {
-    if (!editor) return
-    let timeoutId
-    const saveHandler = () => {
-      recalcNumbering(editor)
-      setWordCount(countWords(editor.getText()))
-      setIsSaving(true)
-      clearTimeout(timeoutId)
-      timeoutId = setTimeout(async () => {
-        if (activeProject) {
-          try {
-            const doc = editor.getJSON()
-            const title = extractTitle(doc)
-            const idx = activePageRef.current
-            setPages(prev => {
-              const next = [...prev]
-              next[idx] = title
-              return next
-            })
-            setPageDocs(prev => {
-              const next = [...prev]
-              next[idx] = doc
-              return next
-            })
-            if (existingPagesRef.current.includes(title)) {
-              await updateScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
-            } else {
-              await createScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
-              existingPagesRef.current.push(title)
-            }
-            logDev('Save complete')
-          } catch (err) {
-            console.error('Error saving page:', err)
-            logDev(`Error saving page: ${err.message}`)
-          } finally {
-            setIsSaving(false)
+  function handlePageUpdate(index, doc, text) {
+    const title = extractTitle(doc)
+    setPages(prev => {
+      const next = [...prev]
+      next[index] = title
+      return next
+    })
+    setPageDocs(prev => {
+      const next = [...prev]
+      next[index] = doc
+      return next
+    })
+    if (index === activePageRef.current) {
+      setWordCount(countWords(text))
+    }
+    setIsSaving(true)
+    clearTimeout(saveTimeoutsRef.current[index])
+    saveTimeoutsRef.current[index] = setTimeout(async () => {
+      if (activeProject) {
+        try {
+          if (existingPagesRef.current.includes(title)) {
+            await updateScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
+          } else {
+            await createScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
+            existingPagesRef.current.push(title)
           }
-        } else {
-          logDev('No active project; save skipped')
+          logDev('Save complete')
+        } catch (err) {
+          console.error('Error saving page:', err)
+          logDev(`Error saving page: ${err.message}`)
+        } finally {
           setIsSaving(false)
         }
-      }, 500)
-    }
-    editor.on('update', saveHandler)
-    return () => {
-      editor.off('update', saveHandler)
-      clearTimeout(timeoutId)
-      setIsSaving(false)
-    }
-  }, [editor, activeProject, activePage])
+      } else {
+        logDev('No active project; save skipped')
+        setIsSaving(false)
+      }
+    }, 500)
+  }
 
-  // No additional update handler; saving effect handles state updates
-
-  useEffect(() => {
-    if (!editor) return
-    editor.commands.setCharacterSuggestions(
-      activeProject?.characters ?? [],
-    )
-  }, [editor, activeProject])
-
-  function handleNavigatePage(index) {
-    if (!editor) return
-    const currentDoc = editor.getJSON()
-    const nextDoc = pageDocs[index] ?? { type: 'doc', content: [{ type: 'pageHeader' }] }
-    setPageDocs(prev => {
-      const docs = [...prev]
-      docs[activePageRef.current] = currentDoc
-      return docs
-    })
+  function handlePageInView(index, editor) {
     activePageRef.current = index
     setActivePage(index)
-    editor.commands.setContent(nextDoc)
     setWordCount(countWords(editor.getText()))
   }
 
+  function handleNavigatePage(index) {
+    const el = pageRefs.current[index]
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   function handleCreatePage() {
-    if (!editor) return
     const newDoc = { type: 'doc', content: [{ type: 'pageHeader' }] }
     const newIndex = pages.length
     setPages(prev => [...prev, 'Untitled Page'])
     setPageDocs(prev => [...prev, newDoc])
-    activePageRef.current = newIndex
-    setActivePage(newIndex)
-    editor.commands.setContent(newDoc)
-    setWordCount(countWords(editor.getText()))
+    setTimeout(() => {
+      const el = pageRefs.current[newIndex]
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
   }
 
   return (
@@ -227,7 +169,18 @@ export default function App({ onSignOut }) {
         onModeChange={setMode}
       />
       <div className={cn('main-content', settingsOpen && 'shifted')}>
-        {editor && <ScriptEditor editor={editor} mode={mode} />}
+        {pageDocs.map((doc, idx) => (
+          <ScriptEditor
+            key={idx}
+            ref={el => (pageRefs.current[idx] = el)}
+            content={doc}
+            mode={mode}
+            pageIndex={idx}
+            onUpdate={handlePageUpdate}
+            onInView={handlePageInView}
+            characters={activeProject?.characters ?? []}
+          />
+        ))}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
       {showDevInfo && (

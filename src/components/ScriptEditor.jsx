@@ -1,19 +1,87 @@
-import { useEffect } from 'react'
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { BubbleMenu } from '@tiptap/react/menus'
-import { EditorContent } from '@tiptap/react'
+import { EditorContent, useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import SlashCommand from '../extensions/SlashCommand'
+import SmartFlow from '../extensions/SmartFlow'
+import {
+  PageHeader,
+  PanelHeader,
+  Description,
+  Character,
+  Dialogue,
+  Sfx,
+  NoCopy,
+  CueLabel,
+  CueContent,
+  Notes,
+} from '../extensions/customNodes'
 import { Button } from './ui/button'
+import { recalcNumbering } from '../utils/documentScanner'
 
-export default function ScriptEditor({ editor, mode }) {
+const ScriptEditor = forwardRef(function ScriptEditor(
+  { content, mode, pageIndex, onUpdate, onInView, characters = [] },
+  ref,
+) {
+  const containerRef = useRef(null)
+  useImperativeHandle(ref, () => containerRef.current)
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      PageHeader,
+      PanelHeader,
+      Description,
+      Character,
+      Dialogue,
+      Sfx,
+      NoCopy,
+      CueLabel,
+      CueContent,
+      Notes,
+      SmartFlow,
+      SlashCommand,
+    ],
+    content,
+    onUpdate: ({ editor }) => {
+      recalcNumbering(editor)
+      onUpdate?.(pageIndex, editor.getJSON(), editor.getText())
+    },
+  })
+
   useEffect(() => {
     if (mode) {
       console.log(`ScriptEditor mode set to: ${mode}`)
     }
   }, [mode])
 
+  useEffect(() => {
+    if (editor) {
+      editor.commands.setCharacterSuggestions(characters)
+    }
+  }, [editor, characters])
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el || !onInView) return
+    const observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            onInView(pageIndex, editor)
+          }
+        })
+      },
+      { threshold: 0.6 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [onInView, pageIndex, editor])
+
   if (!editor) return null
 
   return (
-    <>
+    <div ref={containerRef} className="page-wrapper">
       <BubbleMenu className="editor-bubble-menu" editor={editor}>
         <Button
           size="sm"
@@ -38,6 +106,9 @@ export default function ScriptEditor({ editor, mode }) {
         </Button>
       </BubbleMenu>
       <EditorContent editor={editor} className="editor-content" />
-    </>
+    </div>
   )
-}
+})
+
+export default ScriptEditor
+
