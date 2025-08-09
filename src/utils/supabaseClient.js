@@ -14,6 +14,7 @@ export const supabase = createClient(url, key)
 
 // cache the session after first retrieval
 let sessionCache = null
+let sessionPromise = null
 
 export async function getSupabase() {
   if (sessionCache) {
@@ -23,13 +24,18 @@ export async function getSupabase() {
     return supabase
   }
 
-  if (import.meta.env.DEV) {
-    console.debug('Fetching current Supabase session')
+  if (!sessionPromise) {
+    if (import.meta.env.DEV) {
+      console.debug('Fetching current Supabase session')
+    }
+    sessionPromise = supabase.auth.getSession()
   }
+
   const {
     data: { session },
     error,
-  } = await supabase.auth.getSession()
+  } = await sessionPromise
+  sessionPromise = null
   if (error) {
     console.error('Error retrieving session:', error)
     throw error
