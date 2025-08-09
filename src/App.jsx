@@ -234,9 +234,6 @@ export default function App({ onSignOut }) {
     }
   }
 
-  const pageTitle = pages[activePage] || ''
-  const totalPages = pages.length
-
   return (
     <div className="app-layout">
       <Sidebar
