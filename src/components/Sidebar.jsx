@@ -143,6 +143,8 @@ const Sidebar = forwardRef(function Sidebar(
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
   const [activePage, setActivePage] = useState(null)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const pageNavigatorRef = useRef(null)
 
   async function refreshProjects() {
@@ -198,6 +200,7 @@ const Sidebar = forwardRef(function Sidebar(
     try {
       await createProject(name, {})
       await refreshProjects()
+      setMenuOpen(false)
       handleSelectProject(name).catch((error) => {
         console.error('handleSelectProject failed:', error.message)
         console.warn('Could not select project')
@@ -208,8 +211,9 @@ const Sidebar = forwardRef(function Sidebar(
     }
   }
 
-  async function handleDeleteProject(e, name) {
-    e.stopPropagation()
+  async function handleDeleteProject(e, name = selectedProject?.name) {
+    e?.stopPropagation()
+    if (!name) return
     if (!confirm(`Delete project "${name}"?`)) return
     try {
       await deleteProject(name)
@@ -224,6 +228,7 @@ const Sidebar = forwardRef(function Sidebar(
           onSelectPage?.('', { page_content: '' })
         }
       }
+      setMenuOpen(false)
     } catch (err) {
       console.error('Error deleting project:', err)
     }
@@ -240,6 +245,7 @@ const Sidebar = forwardRef(function Sidebar(
       if (pages && pages.length > 0) {
         await handleSelectPage(pages[0].name, data?.id)
       }
+      setDropdownOpen(false)
     } catch (error) {
       console.error('readProject failed:', error.message)
       console.warn('Could not load project')
@@ -264,33 +270,56 @@ const Sidebar = forwardRef(function Sidebar(
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <div className="font-semibold">
+        <div
+          className="font-semibold"
+          style={{ cursor: 'pointer' }}
+          onClick={() => setDropdownOpen((o) => !o)}
+        >
           {selectedProject?.name ?? 'Select project'}
         </div>
-        <Button size="sm" onClick={handleCreateProject}>
-          +
-        </Button>
-      </div>
-      <ul className="project-list">
-        {projects.map((p) => (
-          <li
-            key={p}
-            className="project-item"
-            onClick={() => handleSelectProject(p)}
+        <div style={{ position: 'relative' }}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setMenuOpen((o) => !o)}
           >
-            <div className="project-item-header">
-              <div className="font-medium">{p}</div>
+            ⋮
+          </Button>
+          {menuOpen && (
+            <div className="project-menu">
               <Button
-                size="sm"
                 variant="ghost"
-                onClick={(e) => handleDeleteProject(e, p)}
+                className="project-menu-item"
+                onClick={handleCreateProject}
               >
-                🗑️
+                Create project
               </Button>
+              {selectedProject && (
+                <Button
+                  variant="ghost"
+                  className="project-menu-item"
+                  onClick={(e) => handleDeleteProject(e)}
+                >
+                  Delete project
+                </Button>
+              )}
             </div>
-          </li>
-        ))}
-      </ul>
+          )}
+        </div>
+      </div>
+      {dropdownOpen && (
+        <ul className="project-list">
+          {projects.map((p) => (
+            <li
+              key={p}
+              className="project-item"
+              onClick={() => handleSelectProject(p)}
+            >
+              <div className="font-medium">{p}</div>
+            </li>
+          ))}
+        </ul>
+      )}
       {selectedProject && (
         <PageNavigator
           ref={pageNavigatorRef}
