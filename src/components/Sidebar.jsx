@@ -15,7 +15,7 @@ import { Button } from './ui/button'
 import { cn } from '../lib/utils'
 import ModeCarousel from './ModeCarousel'
 
-function PageNavigator({ pages = [], activePage = 0, onSelectPage }) {
+function PageNavigator({ pages = [], activePage = 0, onSelectPage, onCreatePage }) {
   return (
     <div className="page-navigator">
       <h4 className="section-heading">Pages</h4>
@@ -33,6 +33,9 @@ function PageNavigator({ pages = [], activePage = 0, onSelectPage }) {
           </li>
         ))}
       </ul>
+      <Button className="new-page-button" onClick={onCreatePage}>
+        New page
+      </Button>
     </div>
   )
 }
@@ -42,6 +45,7 @@ const Sidebar = forwardRef(function Sidebar(
     pages = [],
     activePage = 0,
     onSelectPage,
+    onCreatePage,
     onSelectProject,
     onSignOut,
     currentMode,
@@ -203,7 +207,12 @@ const Sidebar = forwardRef(function Sidebar(
         </ul>
       )}
 
-      <PageNavigator pages={pages} activePage={activePage} onSelectPage={onSelectPage} />
+      <PageNavigator
+        pages={pages}
+        activePage={activePage}
+        onSelectPage={onSelectPage}
+        onCreatePage={onCreatePage}
+      />
 
       <ModeCarousel currentMode={currentMode} onModeChange={onModeChange} />
 

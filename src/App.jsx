@@ -230,8 +230,15 @@ export default function App({ onSignOut }) {
     const info = scanDocument(editor.state.doc)
     const pos = info[index]?.pagePos
     if (typeof pos === 'number') {
-      editor.chain().focus().setTextSelection(pos).run()
+      editor.chain().focus().setTextSelection(pos + 1).run()
     }
+  }
+
+  function handleCreatePage() {
+    if (!editor) return
+    const endPos = editor.state.doc.content.size
+    editor.chain().insertContentAt(endPos, { type: 'pageHeader' }).run()
+    handleNavigatePage(pages.length)
   }
 
   return (
@@ -242,6 +249,7 @@ export default function App({ onSignOut }) {
         activePage={activePage}
         onSelectProject={handleSelectProject}
         onSelectPage={handleNavigatePage}
+        onCreatePage={handleCreatePage}
         onSignOut={onSignOut}
         currentMode={mode}
         onModeChange={setMode}
