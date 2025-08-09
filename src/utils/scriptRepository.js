@@ -7,7 +7,7 @@ import {
   savePageContent,
   createPage,
   deletePage,
-} from './pagesRepository' // <-- change to './pageRepository' if that's your filename
+} from './pageRepository' // <-- change to './pageRepository' if that's your filename
 
 // List pages for a project (returns [{ id, title }])
 export async function listScripts(projectId: string) {
