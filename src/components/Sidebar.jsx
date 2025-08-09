@@ -51,6 +51,7 @@ const Sidebar = forwardRef(function Sidebar(
 ) {
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
+  const [selectedProjectName, setSelectedProjectName] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -72,6 +73,7 @@ const Sidebar = forwardRef(function Sidebar(
   const handleSelectProject = React.useCallback(
     async (name) => {
       try {
+        setSelectedProjectName(name)
         const result = await readProject(name)
         const data = result?.data ?? result
         setSelectedProject(data)
@@ -119,18 +121,19 @@ const Sidebar = forwardRef(function Sidebar(
     }
   }
 
-  async function handleDeleteProject(e, name = selectedProject?.name) {
+  async function handleDeleteProject(e, name = selectedProjectName) {
     e?.stopPropagation()
     if (!name) return
     if (!confirm(`Delete project "${name}"?`)) return
     try {
       await deleteProject(name)
       const names = await refreshProjects()
-      if (selectedProject?.name === name) {
+      if (selectedProjectName === name) {
         if (names.length > 0) {
           await handleSelectProject(names[0])
         } else {
           setSelectedProject(null)
+          setSelectedProjectName('')
           onSelectProject?.('', null)
         }
       }
@@ -161,7 +164,7 @@ const Sidebar = forwardRef(function Sidebar(
           style={{ cursor: 'pointer' }}
           onClick={() => setDropdownOpen((o) => !o)}
         >
-          {selectedProject?.name ?? 'Select project'}
+          {selectedProjectName || 'Select project'}
         </div>
         <div style={{ position: 'relative' }}>
           <Button size="sm" variant="ghost" onClick={() => setMenuOpen((o) => !o)}>
@@ -200,9 +203,7 @@ const Sidebar = forwardRef(function Sidebar(
         </ul>
       )}
 
-      {selectedProject && (
-        <PageNavigator pages={pages} activePage={activePage} onSelectPage={onSelectPage} />
-      )}
+      <PageNavigator pages={pages} activePage={activePage} onSelectPage={onSelectPage} />
 
       <ModeCarousel currentMode={currentMode} onModeChange={onModeChange} />
 
