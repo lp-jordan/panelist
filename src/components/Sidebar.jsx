@@ -13,6 +13,7 @@ import {
 import { signOut } from '../utils/auth.js'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
+import ModeCarousel from './ModeCarousel'
 
 function PageNavigator({ pages = [], activePage = 0, onSelectPage }) {
   return (
@@ -37,7 +38,15 @@ function PageNavigator({ pages = [], activePage = 0, onSelectPage }) {
 }
 
 const Sidebar = forwardRef(function Sidebar(
-  { pages = [], activePage = 0, onSelectPage, onSelectProject, onSignOut },
+  {
+    pages = [],
+    activePage = 0,
+    onSelectPage,
+    onSelectProject,
+    onSignOut,
+    currentMode,
+    onModeChange,
+  },
   ref,
 ) {
   const [projects, setProjects] = useState([])
@@ -194,6 +203,8 @@ const Sidebar = forwardRef(function Sidebar(
       {selectedProject && (
         <PageNavigator pages={pages} activePage={activePage} onSelectPage={onSelectPage} />
       )}
+
+      <ModeCarousel currentMode={currentMode} onModeChange={onModeChange} />
 
       <div className="signout-container">
         <Button variant="ghost" className="full-width" onClick={handleSignOut}>

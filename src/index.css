@@ -86,10 +86,40 @@ body {
 
 /* Mode carousel */
 .mode-carousel {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  margin-bottom: var(--spacing-inner);
+  position: relative;
+  height: 2.5rem;
+  margin-top: var(--spacing-container);
+}
+
+.mode-carousel .mode-button {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: transform var(--transition) ease, filter var(--transition) ease,
+    opacity var(--transition) ease;
+}
+
+.mode-carousel .mode-button.active {
+  z-index: 2;
+  transform: translateX(-50%) scale(1.1);
+}
+
+.mode-carousel .mode-button.prev {
+  transform: translateX(-150%) scale(0.9);
+  filter: blur(1px);
+  opacity: 0.6;
+}
+
+.mode-carousel .mode-button.next {
+  transform: translateX(50%) scale(0.9);
+  filter: blur(1px);
+  opacity: 0.6;
+}
+
+.mode-carousel .mode-button.hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* Sidebar */
