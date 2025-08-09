@@ -20,7 +20,7 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import ModeCarousel from './components/ModeCarousel'
 import DevInfo from './components/DevInfo'
-import { listScripts, readScript, updateScript, createScript, deleteScript } from './utils/scriptRepository'
+import { listScripts, readScript, updateScript, createScript } from './utils/scriptRepository'
 import { scanDocument, recalcNumbering } from './utils/documentScanner'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
@@ -57,6 +57,9 @@ export default function App({ onSignOut }) {
     ],
     content: '',
   })
+
+  const pageTitle = pages[activePage] ?? ''
+  const totalPages = pages.length
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
