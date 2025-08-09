@@ -97,6 +97,23 @@ body {
   margin-bottom: var(--spacing-inner);
 }
 
+.project-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.project-menu-item {
+  justify-content: flex-start;
+}
+
 .project-list,
 .page-list {
   margin-top: var(--spacing-inner);
