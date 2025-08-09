@@ -20,8 +20,10 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import ModeCarousel from './components/ModeCarousel'
 import DevInfo from './components/DevInfo'
-import { listScripts, readScript, updateScript, createScript } from './utils/scriptRepository'
+import { listScripts, readScript, updateScript, createScript, deleteScript } from './utils/scriptRepository'
 import { scanDocument, recalcNumbering } from './utils/documentScanner'
+import SettingsSidebar from './components/SettingsSidebar'
+import { Button } from './components/ui/button'
 
 export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
@@ -33,6 +35,10 @@ export default function App({ onSignOut }) {
   const [wordCount, setWordCount] = useState(0)
   const sidebarRef = useRef(null)
   const existingPagesRef = useRef([])
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [theme, setTheme] = useState('light')
+  const [accentColor, setAccentColor] = useState('#2563eb')
+  const [showDevInfo, setShowDevInfo] = useState(false)
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -51,6 +57,14 @@ export default function App({ onSignOut }) {
     ],
     content: '',
   })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
+  useEffect(() => {
+    document.documentElement.style.setProperty('--accent', accentColor)
+  }, [accentColor])
 
   function handleSelectProject(name, data) {
     setActiveProject(data)
@@ -233,14 +247,35 @@ export default function App({ onSignOut }) {
         {editor && <ScriptEditor editor={editor} mode={mode} />}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
-      <DevInfo
-        projectName={activeProject?.name}
-        currentPage={pages[activePage]}
-        totalPages={pages.length}
-        wordCount={wordCount}
-        logs={devLogs}
-      />
+      {showDevInfo && (
+        <DevInfo
+          projectName={activeProject?.name}
+          currentPage={pageTitle}
+          totalPages={totalPages}
+          wordCount={wordCount}
+          logs={devLogs}
+        />
+      )}
       <div className="version">Panelist v{__APP_VERSION__}</div>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="settings-button"
+        onClick={() => setSettingsOpen(true)}
+      >
+        ⚙️
+      </Button>
+      <SettingsSidebar
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        theme={theme}
+        setTheme={setTheme}
+        accentColor={accentColor}
+        setAccentColor={setAccentColor}
+        onSignOut={onSignOut}
+        showDevInfo={showDevInfo}
+        setShowDevInfo={setShowDevInfo}
+      />
     </div>
   )
 }

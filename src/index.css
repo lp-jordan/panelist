@@ -21,6 +21,16 @@
   --hover-bg: #eff1f5;
 }
 
+:root[data-theme='dark'] {
+  --bg-base: #18181b;
+  --bg-panel: #202022;
+  --text-primary: #f5f5f7;
+  --text-muted: #a1a1aa;
+  --accent: #3b82f6;
+  --border-color: #3f3f46;
+  --hover-bg: #2a2a2d;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-base: #18181b;
@@ -90,11 +100,71 @@ body {
   padding: var(--spacing-container);
 }
 
+.settings-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 15rem;
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border-color);
+  padding: var(--spacing-container);
+  transform: translateX(100%);
+  transition: transform var(--transition);
+}
+
+.settings-sidebar.open {
+  transform: translateX(0);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-inner);
+}
+
+.settings-button {
+  position: fixed;
+  top: var(--spacing-inner);
+  right: var(--spacing-inner);
+  z-index: 50;
+}
+
+.settings-section {
+  margin-top: var(--spacing-container);
+}
+
+.setting-item {
+  margin-bottom: var(--spacing-inner);
+  font-size: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
 .sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--spacing-inner);
+}
+
+.project-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+}
+
+.project-menu-item {
+  justify-content: flex-start;
 }
 
 .project-list,
