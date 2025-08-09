@@ -92,7 +92,8 @@ body {
   background: #27272a;
 }
 
-.page-item-header {
+.page-item-header,
+.project-item-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
