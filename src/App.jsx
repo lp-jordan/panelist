@@ -20,20 +20,21 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import ModeCarousel from './components/ModeCarousel'
 import DevInfo from './components/DevInfo'
+import { listScripts, readScript, updateScript, createScript, deleteScript } from './utils/scriptRepository'
+import { scanDocument, recalcNumbering } from './utils/documentScanner'
 import SettingsSidebar from './components/SettingsSidebar'
-import { updateScript, deleteScript } from './utils/scriptRepository'
 import { Button } from './components/ui/button'
 
 export default function App({ onSignOut }) {
-  const [pageTitle, setPageTitle] = useState('Untitled Page')
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [devLogs, setDevLogs] = useState([])
   const [mode, setMode] = useState('Write')
-  const [pageContent, setPageContent] = useState('')
-  const [totalPages, setTotalPages] = useState(0)
+  const [pages, setPages] = useState([])
+  const [activePage, setActivePage] = useState(0)
   const [wordCount, setWordCount] = useState(0)
   const sidebarRef = useRef(null)
+  const existingPagesRef = useRef([])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [theme, setTheme] = useState('light')
   const [accentColor, setAccentColor] = useState('#2563eb')
@@ -54,7 +55,7 @@ export default function App({ onSignOut }) {
       SmartFlow,
       SlashCommand,
     ],
-    content: pageContent,
+    content: '',
   })
 
   useEffect(() => {
@@ -67,25 +68,62 @@ export default function App({ onSignOut }) {
 
   function handleSelectProject(name, data) {
     setActiveProject(data)
+    if (data) {
+      loadProjectPages(data.id).catch(err => {
+        console.error('loadProjectPages failed:', err)
+      })
+    }
   }
 
   function countWords(text) {
     return text ? text.trim().split(/\s+/).filter(Boolean).length : 0
   }
 
-  function handleSelectPage(name, data) {
-    const title = name || 'Untitled Page'
-    setPageTitle(title)
-    const content = data?.page_content ?? data?.content ?? ''
-    setPageContent(content)
-    if (editor) {
-      editor.commands.setContent(content)
-      setWordCount(countWords(editor.getText()))
+  async function loadProjectPages(projectId) {
+    try {
+      const names = await listScripts(projectId)
+      existingPagesRef.current = names
+      const pagesData = await Promise.all(
+        names.map(n => readScript(n, projectId).catch(() => ({ page_content: null })))
+      )
+      const contentNodes = []
+      pagesData.forEach((p) => {
+        const doc = p?.page_content ?? { type: 'doc', content: [] }
+        const json = typeof doc === 'string' ? JSON.parse(doc) : doc
+        if (json?.content) contentNodes.push(...json.content)
+      })
+      editor?.commands.setContent({ type: 'doc', content: contentNodes })
+      const titles = names
+      setPages(titles)
+      setActivePage(0)
+      setWordCount(countWords(editor?.getText() ?? ''))
+    } catch (err) {
+      console.error('Error loading project pages:', err)
     }
   }
 
-  function handlePagesChange(pages) {
-    setTotalPages(pages.length)
+  function splitDocument(doc) {
+    const pages = []
+    let current = { type: 'doc', content: [] }
+    ;(doc.content || []).forEach((node) => {
+      if (node.type === 'pageHeader' && current.content.length > 0) {
+        pages.push(current)
+        current = { type: 'doc', content: [] }
+      }
+      current.content.push(node)
+    })
+    if (current.content.length > 0) pages.push(current)
+    return pages
+  }
+
+  function extractTitle(pageDoc) {
+    const header = pageDoc.content?.[0]
+    if (!header) return 'Untitled Page'
+    const text = (header.content || [])
+      .map((c) => c.text || '')
+      .join('')
+      .trim()
+    return text || 'Untitled Page'
   }
 
   function logDev(message) {
@@ -97,27 +135,32 @@ export default function App({ onSignOut }) {
     let timeoutId
     const saveHandler = () => {
       setIsSaving(true)
-      logDev(`Save triggered for "${pageTitle}"`)
       clearTimeout(timeoutId)
       timeoutId = setTimeout(async () => {
         if (activeProject) {
-          logDev(
-            `Saving "${pageTitle}" to project "${activeProject.name}"`,
-          )
           try {
-            const result = await updateScript(
-              pageTitle,
-              { page_content: editor.getJSON(), metadata: { version: 1 } },
-              activeProject.id,
-            )
-            if (result === null) {
-              logDev('Save returned null')
-            } else {
-              logDev('Save complete')
+            const doc = editor.getJSON()
+            const pageDocs = splitDocument(doc)
+            const titles = []
+            for (const pageDoc of pageDocs) {
+              const title = extractTitle(pageDoc)
+              titles.push(title)
+              try {
+                if (existingPagesRef.current.includes(title)) {
+                  await updateScript(title, { page_content: pageDoc, metadata: { version: 1 } }, activeProject.id)
+                } else {
+                  await createScript(title, { page_content: pageDoc, metadata: { version: 1 } }, activeProject.id)
+                }
+              } catch (err) {
+                console.error('Error saving page:', err)
+                logDev(`Error saving page: ${err.message}`)
+              }
             }
+            existingPagesRef.current = titles
+            logDev('Save complete')
           } catch (err) {
-            console.error('Error saving page:', err)
-            logDev(`Error saving page: ${err.message}`)
+            console.error('Error saving document:', err)
+            logDev(`Error saving document: ${err.message}`)
           } finally {
             setIsSaving(false)
           }
@@ -133,23 +176,45 @@ export default function App({ onSignOut }) {
       clearTimeout(timeoutId)
       setIsSaving(false)
     }
-  }, [editor, pageTitle, activeProject])
+  }, [editor, activeProject])
 
   useEffect(() => {
     if (!editor) return
-    const countHandler = () => setWordCount(countWords(editor.getText()))
-    editor.on('update', countHandler)
-    countHandler()
+    const updateHandler = () => {
+      recalcNumbering(editor)
+      const doc = editor.state.doc
+      const info = scanDocument(doc)
+      const titles = info.map(p => {
+        const node = doc.nodeAt(p.pagePos)
+        return node?.textContent || `Page ${p.pageNumber}`
+      })
+      setPages(titles)
+      const pos = editor.state.selection.from
+      let idx = 0
+      for (let i = 0; i < info.length; i++) {
+        const next = info[i + 1]?.pagePos ?? Infinity
+        if (pos >= info[i].pagePos && pos < next) {
+          idx = i
+          break
+        }
+      }
+      setActivePage(idx)
+      setWordCount(countWords(editor.getText()))
+      if (
+        editor.state.selection.from === doc.content.size &&
+        doc.lastChild?.type.name !== 'pageHeader'
+      ) {
+        editor.chain().focus().insertContent({ type: 'pageHeader' }).run()
+      }
+    }
+    editor.on('update', updateHandler)
+    editor.on('selectionUpdate', updateHandler)
+    updateHandler()
     return () => {
-      editor.off('update', countHandler)
+      editor.off('update', updateHandler)
+      editor.off('selectionUpdate', updateHandler)
     }
   }, [editor])
-
-  useEffect(() => {
-    if (!editor) return
-    editor.commands.setContent(pageContent)
-    setWordCount(countWords(editor.getText()))
-  }, [editor, pageContent])
 
   useEffect(() => {
     if (!editor) return
@@ -158,19 +223,12 @@ export default function App({ onSignOut }) {
     )
   }, [editor, activeProject])
 
-  async function handleDeleteCurrentPage() {
-    if (!activeProject || !pageTitle) return
-    if (!confirm(`Delete page "${pageTitle}"?`)) return
-    try {
-      await deleteScript(pageTitle, activeProject.id)
-      const pages = await sidebarRef.current?.refreshPages()
-      if (pages && pages.length > 0) {
-        await sidebarRef.current?.selectPage(pages[0].name)
-      } else {
-        await sidebarRef.current?.selectPage('')
-      }
-    } catch (err) {
-      console.error('Error deleting page:', err)
+  function handleNavigatePage(index) {
+    if (!editor) return
+    const info = scanDocument(editor.state.doc)
+    const pos = info[index]?.pagePos
+    if (typeof pos === 'number') {
+      editor.chain().focus().setTextSelection(pos).run()
     }
   }
 
@@ -178,23 +236,14 @@ export default function App({ onSignOut }) {
     <div className="app-layout">
       <Sidebar
         ref={sidebarRef}
+        pages={pages}
+        activePage={activePage}
         onSelectProject={handleSelectProject}
-        onSelectPage={handleSelectPage}
+        onSelectPage={handleNavigatePage}
         onSignOut={onSignOut}
-        onPagesChange={handlePagesChange}
       />
       <div className="main-content">
         <ModeCarousel currentMode={mode} onModeChange={setMode} />
-        <h1 className="page-title">
-          {pageTitle}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={handleDeleteCurrentPage}
-          >
-            🗑️
-          </Button>
-        </h1>
         {editor && <ScriptEditor editor={editor} mode={mode} />}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
