@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient.js'
+import { clearCachedUserId } from './authCache.js'
 
 export async function signUp(email, password) {
   try {
@@ -41,9 +42,11 @@ export async function signOut() {
     } else {
       console.log('signOut success')
     }
+    clearCachedUserId()
     return result
   } catch (error) {
     console.error('unexpected signOut error:', error)
+    clearCachedUserId()
     return { error }
   }
 }

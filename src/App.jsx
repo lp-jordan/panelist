@@ -17,13 +17,12 @@ export default function App({ onSignOut }) {
   const [isSaving, setIsSaving] = useState(false)
   const [devLogs, setDevLogs] = useState([])
   const [mode, setMode] = useState('Script')
-  const [pages, setPages] = useState([])
-  const [pageDocs, setPageDocs] = useState([])
+  const [pages, setPages] = useState([])         // [{ id, title, ... }]
+  const [pageDocs, setPageDocs] = useState([])   // ProseMirror JSON per page
   const [activePage, setActivePage] = useState(0)
   const activePageRef = useRef(0)
   const [wordCount, setWordCount] = useState(0)
   const sidebarRef = useRef(null)
-  const existingPagesRef = useRef([])
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [theme, setTheme] = useState('light')
   const [accentColor, setAccentColor] = useState('#2563eb')
@@ -33,7 +32,7 @@ export default function App({ onSignOut }) {
   const [zoom, setZoom] = useState(1)
   const [supabase, setSupabase] = useState(null)
 
-  const pageTitle = pages[activePage] ?? ''
+  const pageTitle = pages[activePage]?.title ?? ''
   const totalPages = pages.length
 
   useEffect(() => {
@@ -78,9 +77,9 @@ export default function App({ onSignOut }) {
     setZoom(z => z / 1.1)
   }
 
-  function handleSelectProject(name, data) {
+  function handleSelectProject(_name, data) {
     setActiveProject(data)
-    if (data) {
+    if (data?.id) {
       loadProjectPages(data.id).catch(err => {
         console.error('loadProjectPages failed:', err)
       })
@@ -92,20 +91,19 @@ export default function App({ onSignOut }) {
   }
 
   async function loadProjectPages(projectId) {
-    if (!supabase) return
     try {
-      const names = await listScripts(supabase, projectId)
-      existingPagesRef.current = names
+      // ID-based list
+      const pageList = await listScripts(projectId) // [{ id, title, ... }]
       const pagesData = await Promise.all(
-        names.map((n) =>
-          readScript(supabase, n, projectId).catch(() => ({ page_content: null })),
+        pageList.map(p =>
+          readScript(p.id, projectId).catch(() => ({ page_content: null })),
         )
       )
       const docs = pagesData.map((p) => {
         const doc = p?.page_content ?? { type: 'doc', content: [{ type: 'pageHeader' }] }
         return typeof doc === 'string' ? JSON.parse(doc) : doc
       })
-      setPages(names)
+      setPages(pageList)
       setPageDocs(docs)
       activePageRef.current = 0
       setActivePage(0)
@@ -115,9 +113,8 @@ export default function App({ onSignOut }) {
     }
   }
 
-
   function extractTitle(pageDoc) {
-    const header = pageDoc.content?.[0]
+    const header = pageDoc?.content?.[0]
     if (!header) return 'Untitled Page'
     const text = (header.content || [])
       .map((c) => c.text || '')
@@ -132,9 +129,12 @@ export default function App({ onSignOut }) {
 
   function handlePageUpdate(index, doc, text) {
     const title = extractTitle(doc)
+    const current = pages[index] || {}
+
+    // Update local page list + doc immediately
     setPages(prev => {
       const next = [...prev]
-      next[index] = title
+      next[index] = { ...(next[index] || {}), title }
       return next
     })
     setPageDocs(prev => {
@@ -145,36 +145,42 @@ export default function App({ onSignOut }) {
     if (index === activePageRef.current) {
       setWordCount(countWords(text))
     }
+
+    // Debounced save
     setIsSaving(true)
     clearTimeout(saveTimeoutsRef.current[index])
     saveTimeoutsRef.current[index] = setTimeout(async () => {
-      if (activeProject) {
-        try {
-          if (existingPagesRef.current.includes(title)) {
-            await updateScript(
-              supabase,
-              title,
-              { page_content: doc, metadata: { version: 1 } },
-              activeProject.id,
-            )
-          } else {
-            await createScript(
-              supabase,
-              title,
-              { page_content: doc, metadata: { version: 1 } },
-              activeProject.id,
-            )
-            existingPagesRef.current.push(title)
-          }
-          logDev('Save complete')
-        } catch (err) {
-          console.error('Error saving page:', err)
-          logDev(`Error saving page: ${err.message}`)
-        } finally {
-          setIsSaving(false)
-        }
-      } else {
+      if (!activeProject?.id) {
         logDev('No active project; save skipped')
+        setIsSaving(false)
+        return
+      }
+      try {
+        if (current.id) {
+          // ID-based update
+          await updateScript(
+            current.id,
+            { page_content: doc, metadata: { title, version: 1 } },
+            activeProject.id,
+          )
+        } else {
+          // Create, then store returned ID so subsequent saves are stable
+          const newId = await createScript(
+            title,
+            { page_content: doc, metadata: { title, version: 1 } },
+            activeProject.id,
+          )
+          setPages(prev => {
+            const next = [...prev]
+            next[index] = { ...(next[index] || {}), id: newId, title }
+            return next
+          })
+        }
+        logDev('Save complete')
+      } catch (err) {
+        console.error('Error saving page:', err)
+        logDev(`Error saving page: ${err.message}`)
+      } finally {
         setIsSaving(false)
       }
     }, 500)
@@ -196,7 +202,7 @@ export default function App({ onSignOut }) {
   function handleCreatePage() {
     const newDoc = { type: 'doc', content: [{ type: 'pageHeader' }] }
     const newIndex = pages.length
-    setPages(prev => [...prev, 'Untitled Page'])
+    setPages(prev => [...prev, { id: null, title: 'Untitled Page' }])
     setPageDocs(prev => [...prev, newDoc])
     setTimeout(() => {
       const el = pageRefs.current[newIndex]
@@ -208,7 +214,7 @@ export default function App({ onSignOut }) {
     <div className="app-layout">
       <Sidebar
         ref={sidebarRef}
-        pages={pages}
+        pages={pages.map(p => p.title)}
         activePage={activePage}
         onSelectProject={handleSelectProject}
         onSelectPage={handleNavigatePage}
@@ -218,6 +224,7 @@ export default function App({ onSignOut }) {
         onModeChange={setMode}
         supabase={supabase}
       />
+
       <div className={cn('main-content', settingsOpen && 'shifted')}>
         {pageDocs.map((doc, idx) => (
           <ScriptEditor
@@ -234,6 +241,7 @@ export default function App({ onSignOut }) {
         ))}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
+
       {showDevInfo && (
         <DevInfo
           projectName={activeProject?.name}
@@ -243,16 +251,15 @@ export default function App({ onSignOut }) {
           logs={devLogs}
         />
       )}
+
       <div className="zoom-controls">
-        <Button size="sm" variant="ghost" onClick={handleZoomOut}>
-          -
-        </Button>
+        <Button size="sm" variant="ghost" onClick={handleZoomOut}>-</Button>
         <span>{Math.round(zoom * 100)}%</span>
-        <Button size="sm" variant="ghost" onClick={handleZoomIn}>
-          +
-        </Button>
+        <Button size="sm" variant="ghost" onClick={handleZoomIn}>+</Button>
       </div>
+
       <div className="version">Panelist v{__APP_VERSION__}</div>
+
       <Button
         size="sm"
         variant="ghost"
@@ -261,6 +268,7 @@ export default function App({ onSignOut }) {
       >
         ⚙️
       </Button>
+
       <SettingsSidebar
         open={settingsOpen}
         theme={theme}

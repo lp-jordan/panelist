@@ -1,62 +1,80 @@
+// utils/projectsRepository.ts
+import { getSupabase } from './supabaseClient'
+import { getCurrentUserId, clearCachedUserId } from './authCache'
+
 const TABLE = 'projects'
 
-function handleUnauthorized(error) {
+function handleUnauthorized(error: any) {
   if (error?.status === 401 || error?.message?.includes('not logged in')) {
+    clearCachedUserId()
     window.location.reload()
     return true
   }
   return false
 }
 
-async function getCurrentUserId(supabase) {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  if (error) throw error
-  return user.id
+async function getClient() {
+  const supabase = await getSupabase()
+  return supabase
 }
 
-export async function listProjects(supabase) {
+/**
+ * List all projects for the current user.
+ * Returns [{ id, name, created_at, updated_at }]
+ */
+export async function listProjects() {
   try {
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
-      .select('name')
+      .select('id, name, created_at, updated_at')
       .eq('user_id', userId)
-      .order('name')
+      .order('name', { ascending: true })
+
     if (error) throw error
-    return data ? data.map((row) => row.name) : []
+    return data ?? []
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
     return []
   }
 }
 
-export async function createProject(supabase, name, data = {}) {
+/**
+ * Create a new project (enforces unique name per user).
+ * Returns the inserted row { id, name, created_at, updated_at, user_id, ... }.
+ */
+export async function createProject(name: string, data: Record<string, any> = {}) {
   try {
+    const supabase = await getClient()
     const now = new Date().toISOString()
     const userId = await getCurrentUserId(supabase)
+
+    // Enforce uniqueness per (user_id, name) before insert
     const { data: existing, error: existingError } = await supabase
       .from(TABLE)
       .select('id')
       .eq('name', name)
       .eq('user_id', userId)
       .maybeSingle()
+
     if (existingError) throw existingError
     if (existing) throw new Error('Project name must be unique')
+
     const payload = {
       name,
       created_at: now,
       updated_at: now,
-      ...data,
       user_id: userId,
+      ...data,
     }
+
     const { data: inserted, error } = await supabase
       .from(TABLE)
       .insert(payload)
-      .select()
+      .select('*')
       .single()
+
     if (error) throw error
     return inserted
   } catch (error) {
@@ -65,15 +83,21 @@ export async function createProject(supabase, name, data = {}) {
   }
 }
 
-export async function readProject(supabase, name) {
+/**
+ * Read a project by ID (scoped to current user).
+ */
+export async function readProject(id: string) {
+  if (!id) throw new Error('id required')
   try {
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
       .select('*')
-      .eq('name', name)
+      .eq('id', id)
       .eq('user_id', userId)
       .single()
+
     if (error) throw error
     return data
   } catch (error) {
@@ -82,24 +106,36 @@ export async function readProject(supabase, name) {
   }
 }
 
-export async function updateProject(supabase, name, data) {
+/**
+ * Update a project by ID (name, etc.). Returns updated row.
+ */
+export async function updateProject(id: string, data: Record<string, any>) {
+  if (!id) throw new Error('id required')
   try {
-    const existing = await readProject(supabase, name)
-    if (!existing) return null
-    const updated = {
-      ...existing,
-      ...data,
-      updated_at: new Date().toISOString(),
-      user_id: existing.user_id,
-    }
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
+
+    // If name is changing, enforce per-user uniqueness
+    if (typeof data.name === 'string' && data.name.trim()) {
+      const { data: existing, error: existingError } = await supabase
+        .from(TABLE)
+        .select('id')
+        .eq('name', data.name)
+        .eq('user_id', userId)
+        .neq('id', id)
+        .maybeSingle()
+      if (existingError) throw existingError
+      if (existing) throw new Error('Project name must be unique')
+    }
+
     const { data: result, error } = await supabase
       .from(TABLE)
-      .update(updated)
-      .eq('name', name)
+      .update({ ...data, updated_at: new Date().toISOString() })
+      .eq('id', id)
       .eq('user_id', userId)
-      .select()
+      .select('*')
       .single()
+
     if (error) throw error
     return result
   } catch (error) {
@@ -108,16 +144,24 @@ export async function updateProject(supabase, name, data) {
   }
 }
 
-export async function deleteProject(supabase, name) {
+/**
+ * Delete a project by ID.
+ */
+export async function deleteProject(id: string) {
+  if (!id) throw new Error('id required')
   try {
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     const { error } = await supabase
       .from(TABLE)
       .delete()
-      .eq('name', name)
+      .eq('id', id)
       .eq('user_id', userId)
+
     if (error) throw error
+    return true
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
+    return false
   }
 }

@@ -1,10 +1,15 @@
+// utils/pagesRepository.ts
+import { getSupabase } from './supabaseClient'
+import { getCurrentUserId, clearCachedUserId } from './authCache'
+
 const TABLE = 'pages'
 
-function encodeTitle(name) {
+// NOTE: These helpers exist to preserve legacy stored titles if you already saved them encoded.
+// They do NOT affect ID-based selectors.
+function encodeTitle(name: string) {
   return encodeURIComponent(name)
 }
-
-function decodeTitle(name) {
+function decodeTitle(name: string) {
   try {
     return decodeURIComponent(name)
   } catch {
@@ -12,42 +17,56 @@ function decodeTitle(name) {
   }
 }
 
-function handleUnauthorized(error) {
+function handleUnauthorized(error: any) {
   if (error?.status === 401 || error?.message?.includes('not logged in')) {
+    clearCachedUserId()
     window.location.reload()
     return true
   }
   return false
 }
 
-async function getCurrentUserId(supabase) {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  if (error) throw error
-  return user.id
+async function getClient() {
+  const supabase = await getSupabase()
+  return supabase
 }
 
-export async function listPages(supabase, projectId) {
+/**
+ * List pages for a project (ID-based everywhere else).
+ * Returns [{ id, title }]
+ */
+export async function listPages(projectId: string) {
   try {
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
-      .select('title')
+      .select('id, title')
       .eq('user_id', userId)
       .eq('project_id', projectId)
-      .order('title')
+      .order('created_at', { ascending: true })
+
     if (error) throw error
-    return data ? data.map((row) => decodeTitle(row.title)) : []
+    return (data ?? []).map((row: any) => ({
+      id: row.id,
+      title: decodeTitle(row.title),
+    }))
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
     return []
   }
 }
 
-export async function createPage(supabase, name, data, projectId) {
+/**
+ * Create a page; returns new page id.
+ */
+export async function createPage(
+  name: string,
+  data: { page_content?: any; metadata?: { version?: number } },
+  projectId: string,
+) {
   try {
+    const supabase = await getClient()
     const now = new Date().toISOString()
     const userId = await getCurrentUserId(supabase)
     const payload = {
@@ -59,39 +78,43 @@ export async function createPage(supabase, name, data, projectId) {
       user_id: userId,
       project_id: projectId ?? null,
     }
-    const { error } = await supabase.from(TABLE).insert(payload)
+    const { data: inserted, error } = await supabase
+      .from(TABLE)
+      .insert(payload)
+      .select('id')
+      .single()
+
     if (error) throw error
-    return {
-      metadata: {
-        title: name,
-        projectId: payload.project_id,
-        created_at: payload.created_at,
-        updated_at: payload.updated_at,
-        version: payload.version,
-      },
-      page_content: payload.page_content,
-    }
+    return inserted?.id ?? null
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
     return null
   }
 }
 
-export async function readPage(supabase, name, projectId) {
-  if (!name) throw new Error('title required')
+/**
+ * Read a page by ID (scoped to project + user).
+ */
+export async function readPage(id: string, projectId: string) {
+  if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
+
   try {
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
-      .select('title, project_id, created_at, updated_at, page_content, version')
-      .eq('title', encodeTitle(name))
+      .select('id, title, project_id, created_at, updated_at, page_content, version')
+      .eq('id', id)
       .eq('user_id', userId)
       .eq('project_id', projectId)
       .single()
+
     if (error) throw error
+
     return {
       metadata: {
+        id: data.id,
         title: decodeTitle(data.title),
         projectId: data.project_id,
         created_at: data.created_at,
@@ -106,76 +129,99 @@ export async function readPage(supabase, name, projectId) {
   }
 }
 
-export async function updatePage(supabase, name, data, projectId) {
-  if (!name) throw new Error('title required')
+/**
+ * Update a page by ID.
+ */
+export async function updatePage(
+  id: string,
+  data: { page_content?: any; metadata?: { title?: string; version?: number } },
+  projectId: string,
+) {
+  if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
+
   try {
-    const existing = await readPage(supabase, name, projectId)
+    const supabase = await getClient()
+    const existing = await readPage(id, projectId)
     if (!existing) return null
+
     const updated = {
       metadata: {
         ...existing.metadata,
         ...data.metadata,
-        projectId: projectId,
+        projectId,
         updated_at: new Date().toISOString(),
       },
       page_content: data.page_content ?? existing.page_content,
     }
+
     const row = {
-      title: encodeTitle(updated.metadata.title),
+      title: encodeTitle(updated.metadata.title ?? existing.metadata.title),
       project_id: updated.metadata.projectId,
       created_at: updated.metadata.created_at,
       updated_at: updated.metadata.updated_at,
       page_content: updated.page_content,
       version: updated.metadata.version,
     }
+
     const userId = await getCurrentUserId(supabase)
     const { error } = await supabase
       .from(TABLE)
       .update(row)
-      .eq('title', encodeTitle(name))
+      .eq('id', id)
       .eq('user_id', userId)
       .eq('project_id', projectId)
+
     if (error) throw error
+    return true
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
+    return false
   }
 }
 
-export async function deletePage(supabase, name, projectId) {
-  if (!name) throw new Error('title required')
+/**
+ * Delete a page by ID.
+ */
+export async function deletePage(id: string, projectId: string) {
+  if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
+
   try {
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     const { error } = await supabase
       .from(TABLE)
       .delete()
-      .eq('title', encodeTitle(name))
+      .eq('id', id)
       .eq('user_id', userId)
       .eq('project_id', projectId)
+
     if (error) throw error
+    return true
   } catch (error) {
     if (!handleUnauthorized(error)) throw error
+    return false
   }
 }
 
-export async function loadPageContent(supabase, name, projectId) {
-  const page = await readPage(supabase, name, projectId)
+/**
+ * Convenience: load only content + version by ID.
+ */
+export async function loadPageContent(id: string, projectId: string) {
+  const page = await readPage(id, projectId)
   if (!page) return null
   return { page_content: page.page_content, version: page.metadata.version }
 }
 
+/**
+ * Convenience: update only content + version by ID.
+ */
 export async function savePageContent(
-  supabase,
-  name,
-  pageContent,
-  version,
-  projectId,
+  id: string,
+  pageContent: any,
+  version: number,
+  projectId: string,
 ) {
-  return updatePage(
-    supabase,
-    name,
-    { page_content: pageContent, metadata: { version } },
-    projectId,
-  )
+  return updatePage(id, { page_content: pageContent, metadata: { version } }, projectId)
 }
