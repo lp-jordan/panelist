@@ -264,13 +264,12 @@ export default function App({ onSignOut }) {
         size="sm"
         variant="ghost"
         className="settings-button"
-        onClick={() => setSettingsOpen(true)}
+        onClick={() => setSettingsOpen((open) => !open)}
       >
         ⚙️
       </Button>
       <SettingsSidebar
         open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
         theme={theme}
         setTheme={setTheme}
         accentColor={accentColor}
