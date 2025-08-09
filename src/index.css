@@ -67,6 +67,11 @@ body {
   flex: 1;
   overflow: auto;
   padding: var(--spacing-container);
+  transition: transform var(--transition);
+}
+
+.main-content.shifted {
+  transform: translateX(-15rem);
 }
 
 .page-title {

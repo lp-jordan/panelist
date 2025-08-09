@@ -23,6 +23,7 @@ import { listScripts, readScript, updateScript, createScript } from './utils/scr
 import { scanDocument, recalcNumbering } from './utils/documentScanner'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
+import { cn } from './lib/utils'
 
 export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
@@ -246,7 +247,7 @@ export default function App({ onSignOut }) {
         currentMode={mode}
         onModeChange={setMode}
       />
-      <div className="main-content">
+      <div className={cn('main-content', settingsOpen && 'shifted')}>
         {editor && <ScriptEditor editor={editor} mode={mode} />}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
