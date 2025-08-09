@@ -8,6 +8,9 @@ import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
 import { cn } from './lib/utils'
 
+const PAGE_WIDTH = 816
+const PAGE_HEIGHT = 1056
+
 export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -26,6 +29,7 @@ export default function App({ onSignOut }) {
   const [showDevInfo, setShowDevInfo] = useState(false)
   const pageRefs = useRef([])
   const saveTimeoutsRef = useRef({})
+  const [zoom, setZoom] = useState(1)
 
   const pageTitle = pages[activePage] ?? ''
   const totalPages = pages.length
@@ -41,6 +45,25 @@ export default function App({ onSignOut }) {
   useEffect(() => {
     document.documentElement.style.setProperty('--accent', accentColor)
   }, [accentColor])
+
+  useEffect(() => {
+    function updateZoom() {
+      const widthScale = (window.innerWidth - 32) / PAGE_WIDTH
+      const heightScale = (window.innerHeight - 32) / PAGE_HEIGHT
+      setZoom(Math.min(widthScale, heightScale))
+    }
+    updateZoom()
+    window.addEventListener('resize', updateZoom)
+    return () => window.removeEventListener('resize', updateZoom)
+  }, [])
+
+  function handleZoomIn() {
+    setZoom(z => z * 1.1)
+  }
+
+  function handleZoomOut() {
+    setZoom(z => z / 1.1)
+  }
 
   function handleSelectProject(name, data) {
     setActiveProject(data)
@@ -179,6 +202,7 @@ export default function App({ onSignOut }) {
             onUpdate={handlePageUpdate}
             onInView={handlePageInView}
             characters={activeProject?.characters ?? []}
+            zoom={zoom}
           />
         ))}
         {isSaving && <span className="save-indicator"> saving...</span>}
@@ -192,6 +216,15 @@ export default function App({ onSignOut }) {
           logs={devLogs}
         />
       )}
+      <div className="zoom-controls">
+        <Button size="sm" variant="ghost" onClick={handleZoomOut}>
+          -
+        </Button>
+        <span>{Math.round(zoom * 100)}%</span>
+        <Button size="sm" variant="ghost" onClick={handleZoomIn}>
+          +
+        </Button>
+      </div>
       <div className="version">Panelist v{__APP_VERSION__}</div>
       <Button
         size="sm"

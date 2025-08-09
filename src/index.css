@@ -311,11 +311,11 @@ body {
 }
 
 .editor-content {
-  height: 90vh;
-  aspect-ratio: 8.5 / 11;
-  width: calc(90vh * 8.5 / 11);
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
   background: var(--bg-panel);
-  margin: 0 auto;
+  margin: 0;
   padding: 1in;
   overflow: hidden;
   border-radius: 0;
@@ -328,7 +328,7 @@ body {
 }
 
 .page-wrapper {
-  margin-bottom: var(--spacing-container);
+  margin: 0 auto var(--spacing-container);
 }
 
 /* Login */
@@ -524,4 +524,17 @@ body {
 
 .dev-log-entry {
   margin-bottom: 0.25rem;
+}
+
+.zoom-controls {
+  position: fixed;
+  bottom: var(--spacing-inner);
+  left: var(--spacing-inner);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius);
 }

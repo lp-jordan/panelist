@@ -19,8 +19,19 @@ import {
 import { Button } from './ui/button'
 import { recalcNumbering } from '../utils/documentScanner'
 
+const PAGE_WIDTH = 816
+const PAGE_HEIGHT = 1056
+
 const ScriptEditor = forwardRef(function ScriptEditor(
-  { content, mode, pageIndex, onUpdate, onInView, characters = [] },
+  {
+    content,
+    mode,
+    pageIndex,
+    onUpdate,
+    onInView,
+    characters = [],
+    zoom = 1,
+  },
   ref,
 ) {
   const containerRef = useRef(null)
@@ -81,31 +92,44 @@ const ScriptEditor = forwardRef(function ScriptEditor(
   if (!editor) return null
 
   return (
-    <div ref={containerRef} className="page-wrapper">
-      <BubbleMenu className="editor-bubble-menu" editor={editor}>
-        <Button
-          size="sm"
-          variant={editor.isActive('bold') ? 'default' : 'ghost'}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        >
-          B
-        </Button>
-        <Button
-          size="sm"
-          variant={editor.isActive('italic') ? 'default' : 'ghost'}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        >
-          I
-        </Button>
-        <Button
-          size="sm"
-          variant={editor.isActive('underline') ? 'default' : 'ghost'}
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-        >
-          U
-        </Button>
-      </BubbleMenu>
-      <EditorContent editor={editor} className="editor-content" />
+    <div
+      ref={containerRef}
+      className="page-wrapper"
+      style={{ width: PAGE_WIDTH * zoom, height: PAGE_HEIGHT * zoom }}
+    >
+      <div
+        style={{
+          width: PAGE_WIDTH,
+          height: PAGE_HEIGHT,
+          transform: `scale(${zoom})`,
+          transformOrigin: 'top left',
+        }}
+      >
+        <BubbleMenu className="editor-bubble-menu" editor={editor}>
+          <Button
+            size="sm"
+            variant={editor.isActive('bold') ? 'default' : 'ghost'}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          >
+            B
+          </Button>
+          <Button
+            size="sm"
+            variant={editor.isActive('italic') ? 'default' : 'ghost'}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          >
+            I
+          </Button>
+          <Button
+            size="sm"
+            variant={editor.isActive('underline') ? 'default' : 'ghost'}
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+          >
+            U
+          </Button>
+        </BubbleMenu>
+        <EditorContent editor={editor} className="editor-content" />
+      </div>
     </div>
   )
 })
