@@ -10,8 +10,11 @@
   --spacing-inner: 0.75rem; /* 12px */
   --radius: 0.5rem; /* 8px */
   --transition: 0.2s ease;
+}
 
-  /* light theme */
+
+/* Light theme */
+:root[data-theme='light'] {
   --bg-base: #f9f9fb;
   --bg-panel: #ffffff;
   --text-primary: #1a1a1d;
@@ -21,6 +24,7 @@
   --hover-bg: #eff1f5;
 }
 
+/* Dark theme */
 :root[data-theme='dark'] {
   --bg-base: #18181b;
   --bg-panel: #202022;
@@ -31,8 +35,9 @@
   --hover-bg: #2a2a2d;
 }
 
+/* Respect user's system preference when no theme is set */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg-base: #18181b;
     --bg-panel: #202022;
     --text-primary: #f5f5f7;

@@ -57,6 +57,9 @@ export default function App({ onSignOut }) {
     content: '',
   })
 
+  const pageTitle = pages[activePage] ?? ''
+  const totalPages = pages.length
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
