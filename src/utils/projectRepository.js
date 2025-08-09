@@ -1,22 +1,15 @@
 import { getSupabase } from './supabaseClient'
+import { getCurrentUserId, clearCachedUserId } from './authCache'
 
 const TABLE = 'projects'
 
 function handleUnauthorized(error) {
   if (error?.status === 401 || error?.message?.includes('not logged in')) {
+    clearCachedUserId()
     window.location.reload()
     return true
   }
   return false
-}
-
-async function getCurrentUserId(supabase) {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser()
-  if (error) throw error
-  return user.id
 }
 
 export async function listProjects() {
