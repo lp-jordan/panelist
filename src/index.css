@@ -140,6 +140,10 @@ body {
 
 /* Sidebar */
 .sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  align-self: flex-start;
   width: 15rem;
   background: var(--bg-panel);
   border-right: 1px solid var(--border-color);
