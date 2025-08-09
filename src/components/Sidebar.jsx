@@ -1,5 +1,15 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react'
-import { listProjects, createProject, readProject, deleteProject } from '../utils/projectRepository'
+import React, {
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from 'react'
+import {
+  listProjects,
+  createProject,
+  readProject,
+  deleteProject,
+} from '../utils/projectRepository'
 import { signOut } from '../utils/auth.js'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
@@ -32,38 +42,56 @@ const Sidebar = forwardRef(function Sidebar(
 ) {
   const [projects, setProjects] = useState([])
   const [selectedProject, setSelectedProject] = useState(null)
-  const [activePage, setActivePage] = useState(null)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const pageNavigatorRef = useRef(null)
 
   async function refreshProjects() {
     try {
       const result = await listProjects()
       const list = result?.data ?? result
-      const names = list.map(p => p.name ?? p)
+      const names = list.map((p) => p.name ?? p)
       setProjects(names)
       return names
     } catch (error) {
-      console.error('listProjects failed:', error.message)
+      console.error('listProjects failed:', error?.message || error)
       console.warn('Could not load projects')
       setProjects([])
       return []
     }
   }
 
+  const handleSelectProject = React.useCallback(
+    async (name) => {
+      try {
+        const result = await readProject(name)
+        const data = result?.data ?? result
+        setSelectedProject(data)
+        onSelectProject?.(name, data)
+
+        // Auto-select the first page in this project by index (if any)
+        if (Array.isArray(pages) && pages.length > 0) {
+          onSelectPage?.(0)
+        }
+
+        setDropdownOpen(false)
+      } catch (error) {
+        console.error('readProject failed:', error?.message || error)
+        console.warn('Could not load project')
+      }
+    },
+    [onSelectProject, onSelectPage, pages],
+  )
+
   useEffect(() => {
+    // Initial load: fetch and select first project if available
     refreshProjects()
-      .then(names => {
+      .then((names) => {
         if (names.length > 0) {
-          handleSelectProject(names[0]).catch(error => {
-            console.error('handleSelectProject failed:', error.message)
-            console.warn('Could not select project')
-          })
+          return handleSelectProject(names[0])
         }
       })
-      .catch(error => {
-        console.error('refreshProjects failed:', error.message)
+      .catch((error) => {
+        console.error('refreshProjects failed:', error?.message || error)
         console.warn('Could not load projects')
       })
   }, [handleSelectProject])
@@ -75,12 +103,9 @@ const Sidebar = forwardRef(function Sidebar(
       await createProject(name, {})
       await refreshProjects()
       setMenuOpen(false)
-      handleSelectProject(name).catch((error) => {
-        console.error('handleSelectProject failed:', error.message)
-        console.warn('Could not select project')
-      })
+      await handleSelectProject(name)
     } catch (error) {
-      console.error('createProject failed:', error.message)
+      console.error('createProject failed:', error?.message || error)
       console.warn('Could not create project')
     }
   }
@@ -102,38 +127,22 @@ const Sidebar = forwardRef(function Sidebar(
       }
       setMenuOpen(false)
     } catch (err) {
-      console.error('Error deleting project:', err)
+      console.error('Error deleting project:', err?.message || err)
     }
   }
-
-  const handleSelectProject = React.useCallback(async (name) => {
-    try {
-      const result = await readProject(name)
-      const data = result?.data ?? result
-      setSelectedProject(data)
-      onSelectProject?.(name, data)
-      const pages = await pageNavigatorRef.current?.refresh(data?.id)
-      if (pages && pages.length > 0) {
-        await handleSelectPage(pages[0].name, data?.id)
-      }
-      setDropdownOpen(false)
-    } catch (error) {
-      console.error('readProject failed:', error.message)
-      console.warn('Could not load project')
-    }
-  }, [onSelectProject])
 
   async function handleSignOut() {
     try {
       await signOut()
       onSignOut?.()
     } catch (error) {
-      console.error('signOut failed:', error.message)
+      console.error('signOut failed:', error?.message || error)
       console.warn('Sign out failed')
     }
   }
 
-  useImperativeHandle(ref, () => ({ selectPage: onSelectPage }))
+  // Expose an imperative handle if the parent wants to programmatically select a page index
+  useImperativeHandle(ref, () => ({ selectPage: onSelectPage }), [onSelectPage])
 
   return (
     <aside className="sidebar">
@@ -146,11 +155,7 @@ const Sidebar = forwardRef(function Sidebar(
           {selectedProject?.name ?? 'Select project'}
         </div>
         <div style={{ position: 'relative' }}>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setMenuOpen((o) => !o)}
-          >
+          <Button size="sm" variant="ghost" onClick={() => setMenuOpen((o) => !o)}>
             ⋮
           </Button>
           {menuOpen && (
@@ -175,26 +180,21 @@ const Sidebar = forwardRef(function Sidebar(
           )}
         </div>
       </div>
+
       {dropdownOpen && (
         <ul className="project-list">
           {projects.map((p) => (
-            <li
-              key={p}
-              className="project-item"
-              onClick={() => handleSelectProject(p)}
-            >
+            <li key={p} className="project-item" onClick={() => handleSelectProject(p)}>
               <div className="font-medium">{p}</div>
             </li>
           ))}
         </ul>
       )}
+
       {selectedProject && (
-        <PageNavigator
-          pages={pages}
-          activePage={activePage}
-          onSelectPage={onSelectPage}
-        />
+        <PageNavigator pages={pages} activePage={activePage} onSelectPage={onSelectPage} />
       )}
+
       <div className="signout-container">
         <Button variant="ghost" className="full-width" onClick={handleSignOut}>
           Sign out
