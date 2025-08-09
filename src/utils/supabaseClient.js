@@ -12,8 +12,20 @@ if (!key) {
 
 export const supabase = createClient(url, key)
 
+// cache the session after first retrieval
+let sessionCache = null
+
 export async function getSupabase() {
-  console.log('Fetching current Supabase session')
+  if (sessionCache) {
+    if (import.meta.env.DEV) {
+      console.debug('Using cached Supabase session')
+    }
+    return supabase
+  }
+
+  if (import.meta.env.DEV) {
+    console.debug('Fetching current Supabase session')
+  }
   const {
     data: { session },
     error,
@@ -26,6 +38,12 @@ export async function getSupabase() {
     console.warn('No active session found')
     throw new Error('User is not logged in')
   }
-  console.log('Supabase session found for user', session.user?.id)
+
+  sessionCache = session
+
+  if (import.meta.env.DEV) {
+    console.debug('Supabase session found for user', session.user?.id)
+  }
+
   return supabase
 }
