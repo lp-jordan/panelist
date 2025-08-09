@@ -18,9 +18,8 @@ import {
 } from './extensions/customNodes'
 import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
-import ModeCarousel from './components/ModeCarousel'
 import DevInfo from './components/DevInfo'
-import { listScripts, readScript, updateScript, createScript, deleteScript } from './utils/scriptRepository'
+import { listScripts, readScript, updateScript, createScript } from './utils/scriptRepository'
 import { scanDocument, recalcNumbering } from './utils/documentScanner'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
@@ -29,7 +28,7 @@ export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [devLogs, setDevLogs] = useState([])
-  const [mode, setMode] = useState('Write')
+  const [mode, setMode] = useState('Script')
   const [pages, setPages] = useState([])
   const [activePage, setActivePage] = useState(0)
   const [wordCount, setWordCount] = useState(0)
@@ -232,6 +231,9 @@ export default function App({ onSignOut }) {
     }
   }
 
+  const pageTitle = pages[activePage] || ''
+  const totalPages = pages.length
+
   return (
     <div className="app-layout">
       <Sidebar
@@ -241,9 +243,10 @@ export default function App({ onSignOut }) {
         onSelectProject={handleSelectProject}
         onSelectPage={handleNavigatePage}
         onSignOut={onSignOut}
+        currentMode={mode}
+        onModeChange={setMode}
       />
       <div className="main-content">
-        <ModeCarousel currentMode={mode} onModeChange={setMode} />
         {editor && <ScriptEditor editor={editor} mode={mode} />}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
