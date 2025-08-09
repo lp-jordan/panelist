@@ -1,5 +1,3 @@
-import { getSupabase } from './supabaseClient'
-
 const TABLE = 'projects'
 
 function handleUnauthorized(error) {
@@ -19,9 +17,8 @@ async function getCurrentUserId(supabase) {
   return user.id
 }
 
-export async function listProjects() {
+export async function listProjects(supabase) {
   try {
-    const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
@@ -36,10 +33,9 @@ export async function listProjects() {
   }
 }
 
-export async function createProject(name, data = {}) {
+export async function createProject(supabase, name, data = {}) {
   try {
     const now = new Date().toISOString()
-    const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
     const { data: existing, error: existingError } = await supabase
       .from(TABLE)
@@ -69,9 +65,8 @@ export async function createProject(name, data = {}) {
   }
 }
 
-export async function readProject(name) {
+export async function readProject(supabase, name) {
   try {
-    const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
@@ -87,9 +82,9 @@ export async function readProject(name) {
   }
 }
 
-export async function updateProject(name, data) {
+export async function updateProject(supabase, name, data) {
   try {
-    const existing = await readProject(name)
+    const existing = await readProject(supabase, name)
     if (!existing) return null
     const updated = {
       ...existing,
@@ -97,7 +92,6 @@ export async function updateProject(name, data) {
       updated_at: new Date().toISOString(),
       user_id: existing.user_id,
     }
-    const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
     const { data: result, error } = await supabase
       .from(TABLE)
@@ -114,9 +108,8 @@ export async function updateProject(name, data) {
   }
 }
 
-export async function deleteProject(name) {
+export async function deleteProject(supabase, name) {
   try {
-    const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
     const { error } = await supabase
       .from(TABLE)

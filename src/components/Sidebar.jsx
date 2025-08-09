@@ -49,6 +49,7 @@ const Sidebar = forwardRef(function Sidebar(
     onSelectProject,
     currentMode,
     onModeChange,
+    supabase,
   },
   ref,
 ) {
@@ -66,9 +67,10 @@ const Sidebar = forwardRef(function Sidebar(
     }
   }, [dropdownOpen])
 
-  async function refreshProjects() {
+  const refreshProjects = React.useCallback(async () => {
+    if (!supabase) return []
     try {
-      const result = await listProjects()
+      const result = await listProjects(supabase)
       const list = result?.data ?? result
       const names = list.map((p) => p.name ?? p)
       setProjects(names)
@@ -79,13 +81,14 @@ const Sidebar = forwardRef(function Sidebar(
       setProjects([])
       return []
     }
-  }
+  }, [supabase])
 
   const handleSelectProject = React.useCallback(
     async (name) => {
       try {
         setSelectedProjectName(name)
-        const result = await readProject(name)
+        if (!supabase) return
+        const result = await readProject(supabase, name)
         const data = result?.data ?? result
         setSelectedProject(data)
         onSelectProject?.(name, data)
@@ -101,10 +104,11 @@ const Sidebar = forwardRef(function Sidebar(
         console.warn('Could not load project')
       }
     },
-    [onSelectProject, onSelectPage, pages],
+    [onSelectProject, onSelectPage, pages, supabase],
   )
 
   useEffect(() => {
+    if (!supabase) return
     // Initial load: fetch and select first project if available
     refreshProjects()
       .then((names) => {
@@ -116,7 +120,7 @@ const Sidebar = forwardRef(function Sidebar(
         console.error('refreshProjects failed:', error?.message || error)
         console.warn('Could not load projects')
       })
-  }, [handleSelectProject])
+  }, [supabase, refreshProjects, handleSelectProject])
 
   async function handleCreateProject() {
     const name = prompt('New project name')?.trim()
@@ -126,7 +130,8 @@ const Sidebar = forwardRef(function Sidebar(
       return
     }
     try {
-      await createProject(name, {})
+      if (!supabase) return
+      await createProject(supabase, name, {})
       await refreshProjects()
       setMenuOpen(false)
       await handleSelectProject(name)
@@ -144,7 +149,8 @@ const Sidebar = forwardRef(function Sidebar(
     if (!name) return
     if (!confirm(`Delete project "${name}"?`)) return
     try {
-      await deleteProject(name)
+      if (!supabase) return
+      await deleteProject(supabase, name)
       const names = await refreshProjects()
       if (selectedProjectName === name) {
         if (names.length > 0) {

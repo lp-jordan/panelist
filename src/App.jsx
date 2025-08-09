@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import DevInfo from './components/DevInfo'
 import { listScripts, readScript, updateScript, createScript } from './utils/scriptRepository'
+import { getSupabase } from './utils/supabaseClient'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
 import { cn } from './lib/utils'
@@ -30,6 +31,7 @@ export default function App({ onSignOut }) {
   const pageRefs = useRef([])
   const saveTimeoutsRef = useRef({})
   const [zoom, setZoom] = useState(1)
+  const [supabase, setSupabase] = useState(null)
 
   const pageTitle = pages[activePage] ?? ''
   const totalPages = pages.length
@@ -37,6 +39,17 @@ export default function App({ onSignOut }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const client = await getSupabase()
+        setSupabase(client)
+      } catch (err) {
+        console.error('Failed to initialize Supabase:', err)
+      }
+    })()
+  }, [])
 
   useEffect(() => {
     activePageRef.current = activePage
@@ -79,11 +92,14 @@ export default function App({ onSignOut }) {
   }
 
   async function loadProjectPages(projectId) {
+    if (!supabase) return
     try {
-      const names = await listScripts(projectId)
+      const names = await listScripts(supabase, projectId)
       existingPagesRef.current = names
       const pagesData = await Promise.all(
-        names.map(n => readScript(n, projectId).catch(() => ({ page_content: null })))
+        names.map((n) =>
+          readScript(supabase, n, projectId).catch(() => ({ page_content: null })),
+        )
       )
       const docs = pagesData.map((p) => {
         const doc = p?.page_content ?? { type: 'doc', content: [{ type: 'pageHeader' }] }
@@ -135,9 +151,19 @@ export default function App({ onSignOut }) {
       if (activeProject) {
         try {
           if (existingPagesRef.current.includes(title)) {
-            await updateScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
+            await updateScript(
+              supabase,
+              title,
+              { page_content: doc, metadata: { version: 1 } },
+              activeProject.id,
+            )
           } else {
-            await createScript(title, { page_content: doc, metadata: { version: 1 } }, activeProject.id)
+            await createScript(
+              supabase,
+              title,
+              { page_content: doc, metadata: { version: 1 } },
+              activeProject.id,
+            )
             existingPagesRef.current.push(title)
           }
           logDev('Save complete')
@@ -190,6 +216,7 @@ export default function App({ onSignOut }) {
         onSignOut={onSignOut}
         currentMode={mode}
         onModeChange={setMode}
+        supabase={supabase}
       />
       <div className={cn('main-content', settingsOpen && 'shifted')}>
         {pageDocs.map((doc, idx) => (
