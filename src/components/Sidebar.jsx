@@ -121,12 +121,19 @@ const Sidebar = forwardRef(function Sidebar(
   async function handleCreateProject() {
     const name = prompt('New project name')?.trim()
     if (!name) return
+    if (projects.some((p) => p.toLowerCase() === name.toLowerCase())) {
+      alert('Project already exists')
+      return
+    }
     try {
       await createProject(name, {})
       await refreshProjects()
       setMenuOpen(false)
       await handleSelectProject(name)
     } catch (error) {
+      if (error?.message?.includes('unique')) {
+        alert('Project already exists')
+      }
       console.error('createProject failed:', error?.message || error)
       console.warn('Could not create project')
     }

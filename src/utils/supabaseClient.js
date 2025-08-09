@@ -26,7 +26,6 @@ export async function getSupabase() {
   if (import.meta.env.DEV) {
     console.debug('Fetching current Supabase session')
   }
-
   const {
     data: { session },
     error,

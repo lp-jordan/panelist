@@ -41,6 +41,14 @@ export async function createProject(name, data = {}) {
     const now = new Date().toISOString()
     const supabase = await getSupabase()
     const userId = await getCurrentUserId(supabase)
+    const { data: existing, error: existingError } = await supabase
+      .from(TABLE)
+      .select('id')
+      .eq('name', name)
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (existingError) throw existingError
+    if (existing) throw new Error('Project name must be unique')
     const payload = {
       name,
       created_at: now,
