@@ -55,7 +55,6 @@ export default function App({ onSignOut }) {
   const [accentColor, setAccentColor] = useState('#2563eb')
   const [showDevInfo, setShowDevInfo] = useState(false)
   const pageRefs = useRef([])
-  const pageTextsRef = useRef([])
   const saveTimeoutsRef = useRef({})
   const [zoom, setZoom] = useState(1)
 
@@ -191,18 +190,6 @@ export default function App({ onSignOut }) {
     }, 500)
   }, [logDev])
 
-  const handlePageInView = useCallback((index, editor) => {
-    if (isNavigatingRef.current) return
-    if (activePageRef.current !== index) {
-      activePageRef.current = index
-      setActivePage(index)
-    }
-    const text = editor?.getText ? editor.getText() : ''
-    wordCountsRef.current[index] = countWords(text)
-    const total = wordCountsRef.current.reduce((sum, c) => sum + c, 0)
-    setWordCount(total)
-  }, [])
-
   const throttledHandlePageUpdate = useMemo(
     () => throttle(handlePageUpdate, 200),
     [handlePageUpdate],
@@ -231,10 +218,10 @@ export default function App({ onSignOut }) {
       activePageRatioRef.current = ratio
       setActivePage(index)
     }
-    const text = editor?.getText?.() ?? ''
-    pageTextsRef.current[index] = text
-    const words = text.trim().split(/\s+/).filter(Boolean)
-    setWordCount(words.length)
+    const text = editor?.getText ? editor.getText() : ''
+    wordCountsRef.current[index] = countWords(text)
+    const total = wordCountsRef.current.reduce((sum, c) => sum + c, 0)
+    setWordCount(total)
   }
 
   async function handleCreatePage() {
