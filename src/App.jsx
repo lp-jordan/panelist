@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import DevInfo from './components/DevInfo'
 import { listScripts, readScript, updateScript, createScript } from './utils/scriptRepository'
+import { getSupabase } from './utils/supabaseClient'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
 import { cn } from './lib/utils'
@@ -16,8 +17,8 @@ export default function App({ onSignOut }) {
   const [isSaving, setIsSaving] = useState(false)
   const [devLogs, setDevLogs] = useState([])
   const [mode, setMode] = useState('Script')
-  const [pages, setPages] = useState([])
-  const [pageDocs, setPageDocs] = useState([])
+  const [pages, setPages] = useState([])         // [{ id, title, ... }]
+  const [pageDocs, setPageDocs] = useState([])   // ProseMirror JSON per page
   const [activePage, setActivePage] = useState(0)
   const activePageRef = useRef(0)
   const [wordCount, setWordCount] = useState(0)
@@ -29,6 +30,7 @@ export default function App({ onSignOut }) {
   const pageRefs = useRef([])
   const saveTimeoutsRef = useRef({})
   const [zoom, setZoom] = useState(1)
+  const [supabase, setSupabase] = useState(null)
 
   const pageTitle = pages[activePage]?.title ?? ''
   const totalPages = pages.length
@@ -36,6 +38,17 @@ export default function App({ onSignOut }) {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    ;(async () => {
+      try {
+        const client = await getSupabase()
+        setSupabase(client)
+      } catch (err) {
+        console.error('Failed to initialize Supabase:', err)
+      }
+    })()
+  }, [])
 
   useEffect(() => {
     activePageRef.current = activePage
@@ -64,9 +77,9 @@ export default function App({ onSignOut }) {
     setZoom(z => z / 1.1)
   }
 
-  function handleSelectProject(name, data) {
+  function handleSelectProject(_name, data) {
     setActiveProject(data)
-    if (data) {
+    if (data?.id) {
       loadProjectPages(data.id).catch(err => {
         console.error('loadProjectPages failed:', err)
       })
@@ -101,7 +114,6 @@ export default function App({ onSignOut }) {
       console.error('Error loading project pages:', err)
     }
   }
-
 
   function extractTitle(pageDoc) {
     const header = pageDoc.content?.[0]
@@ -139,6 +151,8 @@ export default function App({ onSignOut }) {
     if (index === activePageRef.current) {
       setWordCount(countWords(text))
     }
+
+    // Debounced save
     setIsSaving(true)
     clearTimeout(saveTimeoutsRef.current[index])
     saveTimeoutsRef.current[index] = setTimeout(async () => {
@@ -158,6 +172,35 @@ export default function App({ onSignOut }) {
         }
       } else {
         logDev('No active project or page id; save skipped')
+        setIsSaving(false)
+        return
+      }
+      try {
+        if (current.id) {
+          // ID-based update
+          await updateScript(
+            current.id,
+            { page_content: doc, metadata: { title, version: 1 } },
+            activeProject.id,
+          )
+        } else {
+          // Create, then store returned ID so subsequent saves are stable
+          const newId = await createScript(
+            title,
+            { page_content: doc, metadata: { title, version: 1 } },
+            activeProject.id,
+          )
+          setPages(prev => {
+            const next = [...prev]
+            next[index] = { ...(next[index] || {}), id: newId, title }
+            return next
+          })
+        }
+        logDev('Save complete')
+      } catch (err) {
+        console.error('Error saving page:', err)
+        logDev(`Error saving page: ${err.message}`)
+      } finally {
         setIsSaving(false)
       }
     }, 500)
@@ -212,7 +255,9 @@ export default function App({ onSignOut }) {
         onSignOut={onSignOut}
         currentMode={mode}
         onModeChange={setMode}
+        supabase={supabase}
       />
+
       <div className={cn('main-content', settingsOpen && 'shifted')}>
         {pageDocs.map((doc, idx) => (
           <ScriptEditor
@@ -229,6 +274,7 @@ export default function App({ onSignOut }) {
         ))}
         {isSaving && <span className="save-indicator"> saving...</span>}
       </div>
+
       {showDevInfo && (
         <DevInfo
           projectName={activeProject?.name}
@@ -238,16 +284,15 @@ export default function App({ onSignOut }) {
           logs={devLogs}
         />
       )}
+
       <div className="zoom-controls">
-        <Button size="sm" variant="ghost" onClick={handleZoomOut}>
-          -
-        </Button>
+        <Button size="sm" variant="ghost" onClick={handleZoomOut}>-</Button>
         <span>{Math.round(zoom * 100)}%</span>
-        <Button size="sm" variant="ghost" onClick={handleZoomIn}>
-          +
-        </Button>
+        <Button size="sm" variant="ghost" onClick={handleZoomIn}>+</Button>
       </div>
+
       <div className="version">Panelist v{__APP_VERSION__}</div>
+
       <Button
         size="sm"
         variant="ghost"
@@ -256,6 +301,7 @@ export default function App({ onSignOut }) {
       >
         ⚙️
       </Button>
+
       <SettingsSidebar
         open={settingsOpen}
         theme={theme}
