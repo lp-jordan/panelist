@@ -31,6 +31,7 @@ export default function App({ onSignOut }) {
   const [pageDocs, setPageDocs] = useState([])   // ProseMirror JSON per page
   const [activePage, setActivePage] = useState(0)
   const activePageRef = useRef(0)
+  const activePageRatioRef = useRef(0)
   const isNavigatingRef = useRef(false)
   const [wordCount, setWordCount] = useState(0)
   const sidebarRef = useRef(null)
@@ -178,17 +179,21 @@ export default function App({ onSignOut }) {
     if (!el) return
     isNavigatingRef.current = true
     activePageRef.current = index
+    activePageRatioRef.current = 1
     setActivePage(index)
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setTimeout(() => {
       isNavigatingRef.current = false
     }, 300)
   }
 
-  function handlePageInView(index, editor) {
+  function handlePageInView(index, editor, ratio) {
     if (isNavigatingRef.current) return
-    if (index !== activePageRef.current) {
+    if (index === activePageRef.current) {
+      activePageRatioRef.current = ratio
+    } else if (ratio > 0.6 || ratio > activePageRatioRef.current) {
       activePageRef.current = index
+      activePageRatioRef.current = ratio
       setActivePage(index)
     }
     const text = editor?.getText?.() ?? ''
