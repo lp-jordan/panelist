@@ -23,7 +23,11 @@ const SmartFlow = Extension.create({
         const currentType = $from.parent.type.name
         const nextType = flowMap[currentType]
         if (!nextType) return false
-        this.editor.chain().focus().insertContent({ type: nextType }).run()
+        this.editor
+          .chain()
+          .focus(undefined, { scrollIntoView: false })
+          .insertContent({ type: nextType })
+          .run()
         return true
       },
       Tab: () => {
@@ -33,11 +37,15 @@ const SmartFlow = Extension.create({
         const nextPos = $from.after()
         const nextNode = this.editor.state.doc.nodeAt(nextPos)
         if (nextNode && !isBoundary(nextNode.type.name)) {
-          this.editor.commands.focus(nextPos)
+          this.editor.commands.focus(nextPos, { scrollIntoView: false })
           return true
         }
         if (!nextType) return false
-        this.editor.chain().focus().insertContent({ type: nextType }).run()
+        this.editor
+          .chain()
+          .focus(undefined, { scrollIntoView: false })
+          .insertContent({ type: nextType })
+          .run()
         return true
       },
       'Shift-Tab': () => {
@@ -45,7 +53,7 @@ const SmartFlow = Extension.create({
         const prevPos = $from.before()
         const prevNode = this.editor.state.doc.nodeAt(prevPos)
         if (!prevNode || isBoundary(prevNode.type.name) && prevNode.type.name !== 'panelHeader') return false
-        this.editor.commands.focus(prevPos)
+        this.editor.commands.focus(prevPos, { scrollIntoView: false })
         return true
       },
     }
@@ -60,7 +68,7 @@ const SmartFlow = Extension.create({
         })
         const number = count + 1
         chain()
-          .focus()
+          .focus(undefined, { scrollIntoView: false })
           .deleteRange(range)
           .insertContent([
             {

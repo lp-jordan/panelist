@@ -14,37 +14,67 @@ const SlashCommand = Extension.create({
             {
               title: 'Page Header',
               command: ({ editor, range }) => {
-                editor.chain().focus().deleteRange(range).setPageHeader().run()
+                editor
+                  .chain()
+                  .focus(undefined, { scrollIntoView: false })
+                  .deleteRange(range)
+                  .setPageHeader()
+                  .run()
               },
             },
             {
               title: 'Panel Header',
               command: ({ editor, range }) => {
-                editor.chain().focus().deleteRange(range).setPanelHeader().run()
+                editor
+                  .chain()
+                  .focus(undefined, { scrollIntoView: false })
+                  .deleteRange(range)
+                  .setPanelHeader()
+                  .run()
               },
             },
             {
               title: 'Description',
               command: ({ editor, range }) => {
-                editor.chain().focus().deleteRange(range).setDescription().run()
+                editor
+                  .chain()
+                  .focus(undefined, { scrollIntoView: false })
+                  .deleteRange(range)
+                  .setDescription()
+                  .run()
               },
             },
             {
               title: 'Character',
               command: ({ editor, range }) => {
-                editor.chain().focus().deleteRange(range).setCharacter().run()
+                editor
+                  .chain()
+                  .focus(undefined, { scrollIntoView: false })
+                  .deleteRange(range)
+                  .setCharacter()
+                  .run()
               },
             },
             {
               title: 'Dialogue',
               command: ({ editor, range }) => {
-                editor.chain().focus().deleteRange(range).setDialogue().run()
+                editor
+                  .chain()
+                  .focus(undefined, { scrollIntoView: false })
+                  .deleteRange(range)
+                  .setDialogue()
+                  .run()
               },
             },
             {
               title: 'Cue Label',
               command: ({ editor, range }) => {
-                editor.chain().focus().deleteRange(range).setCueLabel().run()
+                editor
+                  .chain()
+                  .focus(undefined, { scrollIntoView: false })
+                  .deleteRange(range)
+                  .setCueLabel()
+                  .run()
               },
             },
             {
@@ -52,7 +82,7 @@ const SlashCommand = Extension.create({
               command: ({ editor, range }) => {
                 editor
                   .chain()
-                  .focus()
+                  .focus(undefined, { scrollIntoView: false })
                   .deleteRange(range)
                   .setCueContent()
                   .run()
@@ -61,19 +91,34 @@ const SlashCommand = Extension.create({
             {
               title: 'SFX',
               command: ({ editor, range }) => {
-                editor.chain().focus().deleteRange(range).setSfx().run()
+                editor
+                  .chain()
+                  .focus(undefined, { scrollIntoView: false })
+                  .deleteRange(range)
+                  .setSfx()
+                  .run()
               },
             },
             {
               title: 'Notes',
               command: ({ editor, range }) => {
-                editor.chain().focus().deleteRange(range).setNotes().run()
+                editor
+                  .chain()
+                  .focus(undefined, { scrollIntoView: false })
+                  .deleteRange(range)
+                  .setNotes()
+                  .run()
               },
             },
             {
               title: 'No Copy',
               command: ({ editor, range }) => {
-                editor.chain().focus().deleteRange(range).setNoCopy().run()
+                editor
+                  .chain()
+                  .focus(undefined, { scrollIntoView: false })
+                  .deleteRange(range)
+                  .setNoCopy()
+                  .run()
               },
             },
           ].filter(item =>
