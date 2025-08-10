@@ -106,7 +106,7 @@ const ScriptEditor = forwardRef(function ScriptEditor(
       entries => {
         for (const e of entries) {
           if (e.isIntersecting) {
-            onInViewRef.current?.(pageIndex, editor)
+            onInViewRef.current?.(pageIndex, editor, e.intersectionRatio)
             break
           }
         }
