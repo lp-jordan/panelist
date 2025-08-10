@@ -22,6 +22,20 @@ function extractTitle(pageDoc) {
   return text || null
 }
 
+function countWords(text) {
+  if (!text) return 0
+  return text.trim().split(/\s+/).filter(Boolean).length
+}
+
+function getTextFromDoc(node) {
+  if (!node) return ''
+  if (node.text) return node.text
+  if (Array.isArray(node.content)) {
+    return node.content.map(getTextFromDoc).join(' ')
+  }
+  return ''
+}
+
 export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -34,6 +48,7 @@ export default function App({ onSignOut }) {
   const activePageRatioRef = useRef(0)
   const isNavigatingRef = useRef(false)
   const [wordCount, setWordCount] = useState(0)
+  const wordCountsRef = useRef([])
   const sidebarRef = useRef(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [theme, setTheme] = useState('light')
@@ -108,9 +123,12 @@ export default function App({ onSignOut }) {
       }))
       setPages(pageInfo)
       setPageDocs(docs)
+      const counts = docs.map(d => countWords(getTextFromDoc(d)))
+      wordCountsRef.current = counts
+      const total = counts.reduce((sum, c) => sum + c, 0)
       activePageRef.current = 0
       setActivePage(0)
-      setWordCount(0)
+      setWordCount(total)
     } catch (err) {
       console.error('Error loading project pages:', err)
     }
@@ -123,7 +141,7 @@ export default function App({ onSignOut }) {
     setDevLogs(logs => [...logs.slice(-9), message])
   }, [])
 
-  const handlePageUpdate = useCallback((index, doc) => {
+  const handlePageUpdate = useCallback((index, doc, editor) => {
     const current = pagesRef.current[index] || {}
     const extracted = extractTitle(doc)
     const pageId = current.id
@@ -142,6 +160,11 @@ export default function App({ onSignOut }) {
       next[index] = doc
       return next
     })
+
+    const text = editor?.getText ? editor.getText() : getTextFromDoc(doc)
+    wordCountsRef.current[index] = countWords(text)
+    const total = wordCountsRef.current.reduce((sum, c) => sum + c, 0)
+    setWordCount(total)
 
     setIsSaving(true)
     clearTimeout(saveTimeoutsRef.current[index])
@@ -167,6 +190,18 @@ export default function App({ onSignOut }) {
       }
     }, 500)
   }, [logDev])
+
+  const handlePageInView = useCallback((index, editor) => {
+    if (isNavigatingRef.current) return
+    if (activePageRef.current !== index) {
+      activePageRef.current = index
+      setActivePage(index)
+    }
+    const text = editor?.getText ? editor.getText() : ''
+    wordCountsRef.current[index] = countWords(text)
+    const total = wordCountsRef.current.reduce((sum, c) => sum + c, 0)
+    setWordCount(total)
+  }, [])
 
   const throttledHandlePageUpdate = useMemo(
     () => throttle(handlePageUpdate, 200),
@@ -220,13 +255,15 @@ export default function App({ onSignOut }) {
     }
     setPages(prev => [...prev, { id: newId, title }])
     setPageDocs(prev => [...prev, newDoc])
+    wordCountsRef.current[newIndex] = 0
     setTimeout(() => {
       const el = pageRefs.current[newIndex]
       if (el && activePageRef.current !== newIndex) {
         isNavigatingRef.current = true
         activePageRef.current = newIndex
         setActivePage(newIndex)
-        setWordCount(0)
+        const total = wordCountsRef.current.reduce((sum, c) => sum + c, 0)
+        setWordCount(total)
         el.scrollIntoView({ behavior: 'smooth', block: 'start' })
         setTimeout(() => {
           isNavigatingRef.current = false
