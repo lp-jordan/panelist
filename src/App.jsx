@@ -61,6 +61,34 @@ export default function App({ onSignOut }) {
     return () => window.removeEventListener('resize', updateZoom)
   }, [])
 
+  function throttle(fn, wait = 150) {
+    let last = 0
+    let timeout = null
+    let lastArgs = null
+  return function throttled(...args) {
+    const now = Date.now()
+    const remaining = wait - (now - last)
+    lastArgs = args
+    if (remaining <= 0) {
+      last = now
+      if (timeout) {
+        clearTimeout(timeout)
+        timeout = null
+      }
+      fn(...lastArgs)
+      lastArgs = null
+    } else if (!timeout) {
+      timeout = setTimeout(() => {
+        last = Date.now()
+        timeout = null
+        fn(...(lastArgs || []))
+        lastArgs = null
+      }, remaining)
+    }
+  }
+}
+
+  
   function handleZoomIn() {
     setZoom(z => z * 1.1)
   }
