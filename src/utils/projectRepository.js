@@ -1,10 +1,10 @@
-// utils/projectsRepository.ts
+// utils/projectRepository.js
 import { getSupabase } from './supabaseClient'
 import { getCurrentUserId, clearCachedUserId } from './authCache'
 
 const TABLE = 'projects'
 
-function handleUnauthorized(error: any) {
+function handleUnauthorized(error) {
   if (error?.status === 401 || error?.message?.includes('not logged in')) {
     clearCachedUserId()
     window.location.reload()
@@ -18,10 +18,7 @@ async function getClient() {
   return supabase
 }
 
-/**
- * List all projects for the current user.
- * Returns [{ id, name, created_at, updated_at }]
- */
+// List all projects for the current user.
 export async function listProjects() {
   try {
     const supabase = await getClient()
@@ -40,11 +37,8 @@ export async function listProjects() {
   }
 }
 
-/**
- * Create a new project (enforces unique name per user).
- * Returns the inserted row { id, name, created_at, updated_at, user_id, ... }.
- */
-export async function createProject(name: string, data: Record<string, any> = {}) {
+// Create a new project (enforces unique name per user).
+export async function createProject(name, data = {}) {
   try {
     const supabase = await getClient()
     const now = new Date().toISOString()
@@ -83,10 +77,8 @@ export async function createProject(name: string, data: Record<string, any> = {}
   }
 }
 
-/**
- * Read a project by ID (scoped to current user).
- */
-export async function readProject(id: string) {
+// Read a project by ID (scoped to current user).
+export async function readProject(id) {
   if (!id) throw new Error('id required')
   try {
     const supabase = await getClient()
@@ -106,10 +98,8 @@ export async function readProject(id: string) {
   }
 }
 
-/**
- * Update a project by ID (name, etc.). Returns updated row.
- */
-export async function updateProject(id: string, data: Record<string, any>) {
+// Update a project by ID (name, etc.). Returns updated row.
+export async function updateProject(id, data) {
   if (!id) throw new Error('id required')
   try {
     const supabase = await getClient()
@@ -144,10 +134,8 @@ export async function updateProject(id: string, data: Record<string, any>) {
   }
 }
 
-/**
- * Delete a project by ID.
- */
-export async function deleteProject(id: string) {
+// Delete a project by ID.
+export async function deleteProject(id) {
   if (!id) throw new Error('id required')
   try {
     const supabase = await getClient()
