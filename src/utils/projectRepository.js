@@ -1,5 +1,5 @@
 // utils/projectRepository.js
-import { getSupabase } from './supabaseClient'
+import { supabase } from './supabaseClient'
 import { getCurrentUserId, clearCachedUserId } from './authCache'
 
 const TABLE = 'projects'
@@ -13,15 +13,14 @@ function handleUnauthorized(error) {
   return false
 }
 
-async function getClient() {
-  const supabase = await getSupabase()
+function getClient() {
   return supabase
 }
 
 // List all projects for the current user.
 export async function listProjects() {
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
@@ -40,7 +39,7 @@ export async function listProjects() {
 // Create a new project (enforces unique name per user).
 export async function createProject(name, data = {}) {
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const now = new Date().toISOString()
     const userId = await getCurrentUserId(supabase)
 
@@ -81,7 +80,7 @@ export async function createProject(name, data = {}) {
 export async function readProject(id) {
   if (!id) throw new Error('id required')
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
@@ -102,7 +101,7 @@ export async function readProject(id) {
 export async function updateProject(id, data) {
   if (!id) throw new Error('id required')
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
 
     // If name is changing, enforce per-user uniqueness
@@ -138,7 +137,7 @@ export async function updateProject(id, data) {
 export async function deleteProject(id) {
   if (!id) throw new Error('id required')
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
     const { error } = await supabase
       .from(TABLE)

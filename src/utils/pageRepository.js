@@ -1,5 +1,5 @@
 // utils/pageRepository.js
-import { getSupabase } from './supabaseClient'
+import { supabase } from './supabaseClient'
 import { getCurrentUserId, clearCachedUserId } from './authCache'
 
 const TABLE = 'pages'
@@ -25,15 +25,14 @@ function handleUnauthorized(error) {
   return false
 }
 
-async function getClient() {
-  const supabase = await getSupabase()
+function getClient() {
   return supabase
 }
 
 // List pages for a project (returns [{ id, title }])
 export async function listPages(projectId) {
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
@@ -56,7 +55,7 @@ export async function listPages(projectId) {
 // Create a page; returns new page id.
 export async function createPage(name, data, projectId) {
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const now = new Date().toISOString()
     const userId = await getCurrentUserId(supabase)
     const payload = {
@@ -88,7 +87,7 @@ export async function readPage(id, projectId) {
   if (!projectId) throw new Error('projectId required')
 
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
@@ -123,7 +122,7 @@ export async function updatePage(id, data, projectId) {
   if (!projectId) throw new Error('projectId required')
 
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const existing = await readPage(id, projectId)
     if (!existing) return null
 
@@ -168,7 +167,7 @@ export async function deletePage(id, projectId) {
   if (!projectId) throw new Error('projectId required')
 
   try {
-    const supabase = await getClient()
+    const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
     const { error } = await supabase
       .from(TABLE)
