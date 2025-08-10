@@ -25,7 +25,7 @@ function PageNavigator({ pages = [], activePage = 0, onSelectPage, onCreatePage 
           <li
             key={page.id ?? idx}
             className={cn('page-item', idx === activePage && 'active')}
-            onClick={() => onSelectPage?.(idx)}
+            onClick={() => onSelectPage?.(idx, true)}
           >
             <div className="page-item-header">
               <div className="font-medium">{page.title}</div>
@@ -93,7 +93,7 @@ const Sidebar = forwardRef(function Sidebar(
 
         // Auto-select the first page in this project by index (if any)
         if (Array.isArray(pages) && pages.length > 0) {
-          onSelectPage?.(0)
+          onSelectPage?.(0, true)
         }
 
         setDropdownOpen(false)
@@ -167,7 +167,11 @@ const Sidebar = forwardRef(function Sidebar(
   }
 
   // Expose an imperative handle if the parent wants to programmatically select a page index
-  useImperativeHandle(ref, () => ({ selectPage: onSelectPage }), [onSelectPage])
+  useImperativeHandle(
+    ref,
+    () => ({ selectPage: (idx, userInitiated = false) => onSelectPage?.(idx, userInitiated) }),
+    [onSelectPage],
+  )
 
   return (
     <aside className="sidebar">
