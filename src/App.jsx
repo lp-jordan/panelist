@@ -39,6 +39,7 @@ export default function App({ onSignOut }) {
   const [accentColor, setAccentColor] = useState('#2563eb')
   const [showDevInfo, setShowDevInfo] = useState(false)
   const pageRefs = useRef([])
+  const pageTextsRef = useRef([])
   const saveTimeoutsRef = useRef({})
   const [zoom, setZoom] = useState(1)
 
@@ -171,6 +172,31 @@ export default function App({ onSignOut }) {
     [handlePageUpdate],
   )
 
+  function handleNavigatePage(index, userInitiated) {
+    if (!userInitiated) return
+    const el = pageRefs.current[index]
+    if (!el) return
+    isNavigatingRef.current = true
+    activePageRef.current = index
+    setActivePage(index)
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setTimeout(() => {
+      isNavigatingRef.current = false
+    }, 300)
+  }
+
+  function handlePageInView(index, editor) {
+    if (isNavigatingRef.current) return
+    if (index !== activePageRef.current) {
+      activePageRef.current = index
+      setActivePage(index)
+    }
+    const text = editor?.getText?.() ?? ''
+    pageTextsRef.current[index] = text
+    const words = text.trim().split(/\s+/).filter(Boolean)
+    setWordCount(words.length)
+  }
+
   async function handleCreatePage() {
     const newDoc = { type: 'doc', content: [{ type: 'pageHeader' }] }
     const newIndex = pages.length
@@ -210,6 +236,7 @@ export default function App({ onSignOut }) {
         ref={sidebarRef}
         pages={pages}
         activePage={activePage}
+        onSelectPage={handleNavigatePage}
         onSelectProject={handleSelectProject}
         onCreatePage={handleCreatePage}
         onSignOut={onSignOut}
@@ -227,6 +254,7 @@ export default function App({ onSignOut }) {
             mode={mode}
             pageIndex={idx}
             onUpdate={throttledHandlePageUpdate}
+            onInView={handlePageInView}
             characters={activeProject?.characters ?? []}
             zoom={zoom}
           />
