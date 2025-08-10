@@ -175,36 +175,8 @@ export default function App({ onSignOut }) {
         setIsSaving(false)
         return
       }
-      try {
-        if (current.id) {
-          // ID-based update
-          await updateScript(
-            current.id,
-            { page_content: doc, metadata: { title, version: 1 } },
-            activeProject.id,
-          )
-        } else {
-          // Create, then store returned ID so subsequent saves are stable
-          const newId = await createScript(
-            title,
-            { page_content: doc, metadata: { title, version: 1 } },
-            activeProject.id,
-          )
-          setPages(prev => {
-            const next = [...prev]
-            next[index] = { ...(next[index] || {}), id: newId, title }
-            return next
-          })
-        }
-        logDev('Save complete')
-      } catch (err) {
-        console.error('Error saving page:', err)
-        logDev(`Error saving page: ${err.message}`)
-      } finally {
-        setIsSaving(false)
-      }
-    }, 500)
-  }
+      }, 500)
+    }
 
   function handlePageInView(index, editor) {
     activePageRef.current = index

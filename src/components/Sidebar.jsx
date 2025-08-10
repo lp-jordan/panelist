@@ -70,11 +70,9 @@ const Sidebar = forwardRef(function Sidebar(
   const refreshProjects = React.useCallback(async () => {
     if (!supabase) return []
     try {
-      const result = await listProjects(supabase)
-      const list = result?.data ?? result
-      const names = list.map((p) => p.name ?? p)
-      setProjects(names)
-      return names
+      const list = await listProjects()
+      setProjects(list)
+      return list
     } catch (error) {
       console.error('listProjects failed:', error?.message || error)
       console.warn('Could not load projects')
@@ -84,14 +82,14 @@ const Sidebar = forwardRef(function Sidebar(
   }, [supabase])
 
   const handleSelectProject = React.useCallback(
-    async (name) => {
+    async (project) => {
       try {
-        setSelectedProjectName(name)
+        if (!project) return
+        setSelectedProjectName(project.name)
         if (!supabase) return
-        const result = await readProject(supabase, name)
-        const data = result?.data ?? result
+        const data = await readProject(project.id)
         setSelectedProject(data)
-        onSelectProject?.(name, data)
+        onSelectProject?.(project.id, data)
 
         // Auto-select the first page in this project by index (if any)
         if (Array.isArray(pages) && pages.length > 0) {
@@ -111,9 +109,9 @@ const Sidebar = forwardRef(function Sidebar(
     if (!supabase) return
     // Initial load: fetch and select first project if available
     refreshProjects()
-      .then((names) => {
-        if (names.length > 0) {
-          return handleSelectProject(names[0])
+      .then((list) => {
+        if (list.length > 0) {
+          return handleSelectProject(list[0])
         }
       })
       .catch((error) => {
@@ -125,16 +123,17 @@ const Sidebar = forwardRef(function Sidebar(
   async function handleCreateProject() {
     const name = prompt('New project name')?.trim()
     if (!name) return
-    if (projects.some((p) => p.toLowerCase() === name.toLowerCase())) {
+    if (projects.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
       alert('Project already exists')
       return
     }
     try {
       if (!supabase) return
-      await createProject(supabase, name, {})
-      await refreshProjects()
+      await createProject(name, {})
+      const list = await refreshProjects()
       setMenuOpen(false)
-      await handleSelectProject(name)
+      const newProj = list.find((p) => p.name === name)
+      if (newProj) await handleSelectProject(newProj)
     } catch (error) {
       if (error?.message?.includes('unique')) {
         alert('Project already exists')
@@ -144,17 +143,17 @@ const Sidebar = forwardRef(function Sidebar(
     }
   }
 
-  async function handleDeleteProject(e, name = selectedProjectName) {
+  async function handleDeleteProject(e, project = selectedProject) {
     e?.stopPropagation()
-    if (!name) return
-    if (!confirm(`Delete project "${name}"?`)) return
+    if (!project) return
+    if (!confirm(`Delete project "${project.name}"?`)) return
     try {
       if (!supabase) return
-      await deleteProject(supabase, name)
-      const names = await refreshProjects()
-      if (selectedProjectName === name) {
-        if (names.length > 0) {
-          await handleSelectProject(names[0])
+      await deleteProject(project.id)
+      const list = await refreshProjects()
+      if (selectedProject?.id === project.id) {
+        if (list.length > 0) {
+          await handleSelectProject(list[0])
         } else {
           setSelectedProject(null)
           setSelectedProjectName('')
@@ -191,11 +190,11 @@ const Sidebar = forwardRef(function Sidebar(
               <ul className="project-list">
                 {projects.map((p) => (
                   <li
-                    key={p}
+                    key={p.id}
                     className="project-item"
                     onClick={() => handleSelectProject(p)}
                   >
-                    <div className="font-medium">{p}</div>
+                    <div className="font-medium">{p.name}</div>
                   </li>
                 ))}
               </ul>
