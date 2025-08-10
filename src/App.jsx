@@ -92,18 +92,20 @@ export default function App({ onSignOut }) {
 
   async function loadProjectPages(projectId) {
     try {
-      // ID-based list
-      const pageList = await listScripts(projectId) // [{ id, title, ... }]
+      const pageList = await listScripts(projectId)
+      const ids = pageList.map(p => (typeof p === 'object' ? p.id : p))
       const pagesData = await Promise.all(
-        pageList.map(p =>
-          readScript(p.id, projectId).catch(() => ({ page_content: null })),
-        )
+        ids.map(id => readScript(id, projectId).catch(() => ({ page_content: null, metadata: {} }))),
       )
-      const docs = pagesData.map((p) => {
+      const docs = pagesData.map(p => {
         const doc = p?.page_content ?? { type: 'doc', content: [{ type: 'pageHeader' }] }
         return typeof doc === 'string' ? JSON.parse(doc) : doc
       })
-      setPages(pageList)
+      const pageInfo = pagesData.map((p, idx) => ({
+        id: ids[idx],
+        title: p?.metadata?.title ?? `Page ${idx + 1}`,
+      }))
+      setPages(pageInfo)
       setPageDocs(docs)
       activePageRef.current = 0
       setActivePage(0)
@@ -114,13 +116,13 @@ export default function App({ onSignOut }) {
   }
 
   function extractTitle(pageDoc) {
-    const header = pageDoc?.content?.[0]
-    if (!header) return 'Untitled Page'
+    const header = pageDoc.content?.[0]
+    if (!header) return null
     const text = (header.content || [])
-      .map((c) => c.text || '')
+      .map(c => c.text || '')
       .join('')
       .trim()
-    return text || 'Untitled Page'
+    return text || null
   }
 
   function logDev(message) {
@@ -128,13 +130,17 @@ export default function App({ onSignOut }) {
   }
 
   function handlePageUpdate(index, doc, text) {
-    const title = extractTitle(doc)
     const current = pages[index] || {}
+    const extracted = extractTitle(doc)
+    const pageId = current.id
+    const finalTitle = extracted !== null ? extracted : current.title
 
-    // Update local page list + doc immediately
     setPages(prev => {
       const next = [...prev]
-      next[index] = { ...(next[index] || {}), title }
+      const page = next[index] || {}
+      if (extracted !== null) {
+        next[index] = { ...page, title: extracted }
+      }
       return next
     })
     setPageDocs(prev => {
@@ -150,8 +156,22 @@ export default function App({ onSignOut }) {
     setIsSaving(true)
     clearTimeout(saveTimeoutsRef.current[index])
     saveTimeoutsRef.current[index] = setTimeout(async () => {
-      if (!activeProject?.id) {
-        logDev('No active project; save skipped')
+      if (activeProject && pageId) {
+        try {
+          await updateScript(
+            pageId,
+            { page_content: doc, metadata: { title: finalTitle, version: 1 } },
+            activeProject.id,
+          )
+          logDev('Save complete')
+        } catch (err) {
+          console.error('Error saving page:', err)
+          logDev(`Error saving page: ${err.message}`)
+        } finally {
+          setIsSaving(false)
+        }
+      } else {
+        logDev('No active project or page id; save skipped')
         setIsSaving(false)
         return
       }
@@ -199,10 +219,23 @@ export default function App({ onSignOut }) {
     }
   }
 
-  function handleCreatePage() {
+  async function handleCreatePage() {
     const newDoc = { type: 'doc', content: [{ type: 'pageHeader' }] }
     const newIndex = pages.length
-    setPages(prev => [...prev, { id: null, title: 'Untitled Page' }])
+    const title = `Page ${newIndex + 1}`
+    let newId = null
+    if (activeProject) {
+      try {
+        newId = await createScript(
+          title,
+          { page_content: newDoc, metadata: { title, version: 1 } },
+          activeProject.id,
+        )
+      } catch (err) {
+        console.error('Error creating page:', err)
+      }
+    }
+    setPages(prev => [...prev, { id: newId, title }])
     setPageDocs(prev => [...prev, newDoc])
     setTimeout(() => {
       const el = pageRefs.current[newIndex]
@@ -214,7 +247,7 @@ export default function App({ onSignOut }) {
     <div className="app-layout">
       <Sidebar
         ref={sidebarRef}
-        pages={pages.map(p => p.title)}
+        pages={pages}
         activePage={activePage}
         onSelectProject={handleSelectProject}
         onSelectPage={handleNavigatePage}

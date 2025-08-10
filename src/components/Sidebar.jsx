@@ -21,14 +21,14 @@ function PageNavigator({ pages = [], activePage = 0, onSelectPage, onCreatePage 
       <h4 className="section-heading">Pages</h4>
       <ul className="page-list">
         {pages.length === 0 && <li className="empty-message">No pages</li>}
-        {pages.map((title, idx) => (
+        {pages.map((page, idx) => (
           <li
-            key={idx}
+            key={page.id ?? idx}
             className={cn('page-item', idx === activePage && 'active')}
             onClick={() => onSelectPage?.(idx)}
           >
             <div className="page-item-header">
-              <div className="font-medium">{title}</div>
+              <div className="font-medium">{page.title}</div>
             </div>
           </li>
         ))}
