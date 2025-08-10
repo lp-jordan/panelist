@@ -148,7 +148,7 @@ export const Character = Node.create({
         command: ({ editor, range, props }) => {
           editor
             .chain()
-            .focus()
+            .focus(undefined, { scrollIntoView: false })
             .deleteRange(range)
             .insertContent(props)
             .run()

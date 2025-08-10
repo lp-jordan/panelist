@@ -149,7 +149,13 @@ const ScriptEditor = forwardRef(function ScriptEditor(
           {/* Keep your existing buttons; example for underline */}
           <button
             className={`btn ${editor.isActive('underline') ? 'active' : ''}`}
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            onClick={() =>
+              editor
+                .chain()
+                .focus(undefined, { scrollIntoView: false })
+                .toggleUnderline()
+                .run()
+            }
             type="button"
           >
             U
