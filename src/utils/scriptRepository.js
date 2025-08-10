@@ -1,4 +1,4 @@
-// utils/scriptRepository.ts
+// utils/scriptRepository.js
 import {
   listPages,
   readPage,
@@ -7,52 +7,39 @@ import {
   savePageContent,
   createPage,
   deletePage,
-} from './pageRepository' // <-- change to './pageRepository' if that's your filename
+} from './pageRepository' // keep this path matching your filename
 
 // List pages for a project (returns [{ id, title }])
-export async function listScripts(projectId: string) {
+export async function listScripts(projectId) {
   return listPages(projectId)
 }
 
 // Read one script by page ID
-export async function readScript(id: string, projectId: string) {
+export async function readScript(id, projectId) {
   return readPage(id, projectId)
 }
 
 // Update a script by page ID
-export async function updateScript(
-  id: string,
-  data: { page_content?: any; metadata?: { title?: string; version?: number } },
-  projectId: string,
-) {
+export async function updateScript(id, data, projectId) {
   return updatePage(id, data, projectId)
 }
 
 // Create a new script; returns new page ID
-export async function createScript(
-  title: string,
-  data: { page_content?: any; metadata?: { version?: number } },
-  projectId: string,
-) {
+export async function createScript(title, data, projectId) {
   return createPage(title, data, projectId)
 }
 
 // Load only content + version
-export async function loadScriptContent(id: string, projectId: string) {
+export async function loadScriptContent(id, projectId) {
   return loadPageContent(id, projectId)
 }
 
 // Save only content + version
-export async function saveScriptContent(
-  id: string,
-  pageContent: any,
-  version: number,
-  projectId: string,
-) {
+export async function saveScriptContent(id, pageContent, version, projectId) {
   return savePageContent(id, pageContent, version, projectId)
 }
 
 // Delete by page ID
-export async function deleteScript(id: string, projectId: string) {
+export async function deleteScript(id, projectId) {
   return deletePage(id, projectId)
 }
