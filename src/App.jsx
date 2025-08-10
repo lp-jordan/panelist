@@ -4,7 +4,7 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import DevInfo from './components/DevInfo'
 import { listScripts, readScript, updateScript, createScript } from './utils/scriptRepository'
-import { getSupabase } from './utils/supabaseClient'
+import { supabase } from './utils/supabaseClient'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
 import { cn } from './lib/utils'
@@ -30,7 +30,6 @@ export default function App({ onSignOut }) {
   const pageRefs = useRef([])
   const saveTimeoutsRef = useRef({})
   const [zoom, setZoom] = useState(1)
-  const [supabase, setSupabase] = useState(null)
 
   const pageTitle = pages[activePage]?.title ?? ''
   const totalPages = pages.length
@@ -39,16 +38,6 @@ export default function App({ onSignOut }) {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
-  useEffect(() => {
-    ;(async () => {
-      try {
-        const client = await getSupabase()
-        setSupabase(client)
-      } catch (err) {
-        console.error('Failed to initialize Supabase:', err)
-      }
-    })()
-  }, [])
 
   useEffect(() => {
     activePageRef.current = activePage
