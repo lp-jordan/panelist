@@ -23,6 +23,8 @@ export default function App({ onSignOut }) {
   const activePageRef = useRef(0)
   const isNavigatingRef = useRef(false)
   const [wordCount, setWordCount] = useState(0)
+  const lastTextRef = useRef('')
+  const wordCountTimeoutRef = useRef(null)
   const sidebarRef = useRef(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [theme, setTheme] = useState('light')
@@ -119,7 +121,7 @@ export default function App({ onSignOut }) {
     setDevLogs((logs) => [...logs.slice(-9), message])
   }
 
-  function handlePageUpdate(index, doc, text) {
+  function handlePageUpdate(index, doc) {
     const current = pages[index] || {}
     const extracted = extractTitle(doc)
     const pageId = current.id
@@ -138,9 +140,7 @@ export default function App({ onSignOut }) {
       next[index] = doc
       return next
     })
-    if (index === activePageRef.current) {
-      setWordCount(countWords(text))
-    }
+    // word count handled in handlePageInView with debouncing
 
     // Debounced save
     setIsSaving(true)
@@ -169,11 +169,24 @@ export default function App({ onSignOut }) {
     }
 
   function handlePageInView(index, editor) {
-    activePageRef.current = index
-    setActivePage(index)
-    setWordCount(countWords(editor.getText()))
-    if (isNavigatingRef.current) {
-      isNavigatingRef.current = false
+    const text = editor.getText()
+    const indexChanged = index !== activePageRef.current
+    const textChanged = text !== lastTextRef.current
+
+    if (!indexChanged && !textChanged) return
+
+    if (indexChanged) {
+      activePageRef.current = index
+      setActivePage(index)
+    }
+
+    // Debounce word count updates to reduce flicker
+    if (indexChanged || textChanged) {
+      lastTextRef.current = text
+      clearTimeout(wordCountTimeoutRef.current)
+      wordCountTimeoutRef.current = setTimeout(() => {
+        setWordCount(countWords(text))
+      }, 150)
     }
   }
 
