@@ -46,7 +46,7 @@ export default function App({ onSignOut }) {
   const [activePage, setActivePage] = useState(0)
   const activePageRef = useRef(0)
   const activePageRatioRef = useRef(0)
-  const isNavigatingRef = useRef(false)
+  const lastInteractionRef = useRef('editor')
   const [wordCount, setWordCount] = useState(0)
   const wordCountsRef = useRef([])
   const sidebarRef = useRef(null)
@@ -191,18 +191,6 @@ export default function App({ onSignOut }) {
     }, 500)
   }, [logDev])
 
-  const handlePageInView = useCallback((index, editor) => {
-    if (isNavigatingRef.current) return
-    if (activePageRef.current !== index) {
-      activePageRef.current = index
-      setActivePage(index)
-    }
-    const text = editor?.getText ? editor.getText() : ''
-    wordCountsRef.current[index] = countWords(text)
-    const total = wordCountsRef.current.reduce((sum, c) => sum + c, 0)
-    setWordCount(total)
-  }, [])
-
   const throttledHandlePageUpdate = useMemo(
     () => throttle(handlePageUpdate, 200),
     [handlePageUpdate],
@@ -212,18 +200,20 @@ export default function App({ onSignOut }) {
     if (!userInitiated) return
     const el = pageRefs.current[index]
     if (!el) return
-    isNavigatingRef.current = true
+    lastInteractionRef.current = 'sidebar'
     activePageRef.current = index
     activePageRatioRef.current = 1
     setActivePage(index)
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setTimeout(() => {
-      isNavigatingRef.current = false
-    }, 300)
   }
 
   function handlePageInView(index, editor, ratio) {
-    if (isNavigatingRef.current) return
+    if (lastInteractionRef.current === 'sidebar') {
+      if (index !== activePageRef.current || ratio < 1) return
+      lastInteractionRef.current = 'editor'
+    } else {
+      lastInteractionRef.current = 'editor'
+    }
     if (index === activePageRef.current) {
       activePageRatioRef.current = ratio
     } else if (ratio > 0.6 || ratio > activePageRatioRef.current) {
@@ -259,15 +249,13 @@ export default function App({ onSignOut }) {
     setTimeout(() => {
       const el = pageRefs.current[newIndex]
       if (el && activePageRef.current !== newIndex) {
-        isNavigatingRef.current = true
+        lastInteractionRef.current = 'sidebar'
         activePageRef.current = newIndex
+        activePageRatioRef.current = 1
         setActivePage(newIndex)
         const total = wordCountsRef.current.reduce((sum, c) => sum + c, 0)
         setWordCount(total)
         el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        setTimeout(() => {
-          isNavigatingRef.current = false
-        }, 300)
       }
     }, 0)
   }
