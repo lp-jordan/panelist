@@ -313,7 +313,7 @@ body {
 .editor-content {
   box-sizing: border-box;
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   background: var(--bg-panel);
   margin: 0;
   padding: 1in;
@@ -324,7 +324,6 @@ body {
 
 .editor-content .ProseMirror {
   min-height: 100%;
-  height: 100%;
 }
 
 .page-wrapper {
