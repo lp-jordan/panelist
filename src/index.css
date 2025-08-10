@@ -310,6 +310,11 @@ body {
   border-radius: var(--radius);
 }
 
+.editor-wrapper {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
 .editor-content {
   box-sizing: border-box;
   width: 100%;
@@ -318,6 +323,8 @@ body {
   margin: 0;
   padding: 1in;
   overflow: hidden;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   border-radius: 0;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
 }
