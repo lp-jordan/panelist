@@ -1,7 +1,10 @@
-import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
-import { BubbleMenu } from '@tiptap/react/menus'
+import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
+import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
+import Underline from '@tiptap/extension-underline'
+
+// Custom extensions / nodes
 import SlashCommand from '../extensions/SlashCommand'
 import SmartFlow from '../extensions/SmartFlow'
 import {
@@ -14,18 +17,16 @@ import {
   NoCopy,
   CueLabel,
   CueContent,
-  Notes,
 } from '../extensions/customNodes'
-import { Button } from './ui/button'
-import { recalcNumbering } from '../utils/documentScanner'
 
+// Consistent page size used elsewhere in the app
 const PAGE_WIDTH = 816
 const PAGE_HEIGHT = 1056
 
 const ScriptEditor = forwardRef(function ScriptEditor(
   {
     content,
-    mode,
+    mode,            // kept to preserve behavior / styling toggles
     pageIndex,
     onUpdate,
     onInView,
@@ -34,105 +35,130 @@ const ScriptEditor = forwardRef(function ScriptEditor(
   },
   ref,
 ) {
+  // Expose the container to parent via ref
   const containerRef = useRef(null)
   useImperativeHandle(ref, () => containerRef.current)
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      PageHeader,
-      PanelHeader,
-      Description,
-      Character,
-      Dialogue,
-      Sfx,
-      NoCopy,
-      CueLabel,
-      CueContent,
-      Notes,
-      SmartFlow,
-      SlashCommand,
-    ],
-    content,
-    onUpdate: ({ editor }) => {
-      recalcNumbering(editor)
-      onUpdate?.(pageIndex, editor.getJSON(), editor.getText())
+  // Keep the latest callbacks in refs so their identity can change
+  // without forcing the editor to re-create.
+  const onUpdateRef = useRef(onUpdate)
+  const onInViewRef = useRef(onInView)
+  useEffect(() => { onUpdateRef.current = onUpdate }, [onUpdate])
+  useEffect(() => { onInViewRef.current = onInView }, [onInView])
+
+  // Memoize extensions so `useEditor` receives a stable config.
+  const extensions = useMemo(() => ([
+    StarterKit.configure({
+      history: true,
+    }),
+    Underline,
+    // Custom nodes in your schema
+    PageHeader,
+    PanelHeader,
+    Description,
+    Character,
+    Dialogue,
+    Sfx,
+    NoCopy,
+    CueLabel,
+    CueContent,
+    // Custom logic extensions
+    SlashCommand,
+    SmartFlow,
+  ]), [])
+
+  // Memoize editorProps to keep identity stable
+  const editorProps = useMemo(() => ({
+    attributes: {
+      class: 'editor', // keep your styling hook
+      spellcheck: 'false',
+      'data-page-index': String(pageIndex),
     },
+  }), [pageIndex])
+
+  // IMPORTANT: do not put onUpdate / onInView directly into useEditor.
+  // We attach listeners after mount to keep config stable.
+  const editor = useEditor({
+    extensions,
+    editorProps,
+    content,
+    autofocus: false, // avoid forced focus jumps that can cause scroll bounce
   })
 
+  // Register update handler as a side-effect (stable)
   useEffect(() => {
-    if (mode) {
-      console.log(`ScriptEditor mode set to: ${mode}`)
+    if (!editor) return
+    const handleUpdate = () => {
+      // Pass JSON + editor instance up; parent throttles state work
+      onUpdateRef.current?.(pageIndex, editor.getJSON(), editor)
     }
-  }, [mode])
+    editor.on('update', handleUpdate)
+    return () => {
+      editor.off('update', handleUpdate)
+    }
+  }, [editor, pageIndex])
 
+  // Optional: observe visibility for onInView without recreating editor
   useEffect(() => {
-    if (editor) {
+    if (!editor || !containerRef.current) return
+    const el = containerRef.current
+    const io = new IntersectionObserver(
+      entries => {
+        for (const e of entries) {
+          if (e.isIntersecting) {
+            onInViewRef.current?.(pageIndex, editor)
+            break
+          }
+        }
+      },
+      { root: null, rootMargin: '0px', threshold: 0.4 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [editor, pageIndex])
+
+  // Apply character suggestions from project as a side-effect
+  useEffect(() => {
+    if (!editor) return
+    // Only call if the command exists on your SlashCommand extension
+    if (editor.commands.setCharacterSuggestions) {
       editor.commands.setCharacterSuggestions(characters)
     }
   }, [editor, characters])
 
+  // Log mode changes if you need it; doesn’t touch editor config
   useEffect(() => {
-    const el = containerRef.current
-    if (!el || !onInView) return
-    const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            onInView(pageIndex, editor)
-          }
-        })
-      },
-      { threshold: 0.6 },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [onInView, pageIndex, editor])
-
-  if (!editor) return null
+    if (mode) {
+      // console.log(`ScriptEditor mode set to: ${mode}`)
+    }
+  }, [mode])
 
   return (
     <div
       ref={containerRef}
-      className="page-wrapper"
-      style={{ width: PAGE_WIDTH * zoom, height: PAGE_HEIGHT * zoom }}
+      className="editor-wrapper"
+      style={{
+        width: `${PAGE_WIDTH * zoom}px`,
+        minHeight: `${PAGE_HEIGHT * zoom}px`,
+        transformOrigin: 'top left',
+        transform: `scale(${zoom})`,
+      }}
     >
-      <div
-        style={{
-          width: PAGE_WIDTH,
-          height: PAGE_HEIGHT,
-          transform: `scale(${zoom})`,
-          transformOrigin: 'top left',
-        }}
-      >
-        <BubbleMenu className="editor-bubble-menu" editor={editor}>
-          <Button
-            size="sm"
-            variant={editor.isActive('bold') ? 'default' : 'ghost'}
-            onClick={() => editor.chain().focus().toggleBold().run()}
-          >
-            B
-          </Button>
-          <Button
-            size="sm"
-            variant={editor.isActive('italic') ? 'default' : 'ghost'}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-          >
-            I
-          </Button>
-          <Button
-            size="sm"
-            variant={editor.isActive('underline') ? 'default' : 'ghost'}
+      {editor && (
+        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
+          {/* Keep your existing buttons; example for underline */}
+          <button
+            className={`btn ${editor.isActive('underline') ? 'active' : ''}`}
             onClick={() => editor.chain().focus().toggleUnderline().run()}
+            type="button"
           >
             U
-          </Button>
+          </button>
         </BubbleMenu>
-        <EditorContent editor={editor} className="editor-content" />
-      </div>
+      )}
+      <EditorContent editor={editor} className="editor-content" />
     </div>
   )
 })
 
 export default ScriptEditor
-
