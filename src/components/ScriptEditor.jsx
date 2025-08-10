@@ -139,7 +139,7 @@ const ScriptEditor = forwardRef(function ScriptEditor(
       className="editor-wrapper"
       style={{
         width: `${PAGE_WIDTH * zoom}px`,
-        minHeight: `${PAGE_HEIGHT * zoom}px`,
+        height: `${PAGE_HEIGHT * zoom}px`,
         transformOrigin: 'top left',
         transform: `scale(${zoom})`,
       }}
