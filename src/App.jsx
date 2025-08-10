@@ -21,6 +21,7 @@ export default function App({ onSignOut }) {
   const [pageDocs, setPageDocs] = useState([])   // ProseMirror JSON per page
   const [activePage, setActivePage] = useState(0)
   const activePageRef = useRef(0)
+  const isNavigatingRef = useRef(false)
   const [wordCount, setWordCount] = useState(0)
   const lastTextRef = useRef('')
   const wordCountTimeoutRef = useRef(null)
@@ -189,10 +190,17 @@ export default function App({ onSignOut }) {
     }
   }
 
-  function handleNavigatePage(index) {
+  function handleNavigatePage(index, userInitiated = false) {
+    if (!userInitiated) return
     const el = pageRefs.current[index]
-    if (el) {
+    if (el && activePageRef.current !== index) {
+      isNavigatingRef.current = true
+      activePageRef.current = index
+      setActivePage(index)
       el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setTimeout(() => {
+        isNavigatingRef.current = false
+      }, 300)
     }
   }
 
@@ -216,7 +224,16 @@ export default function App({ onSignOut }) {
     setPageDocs(prev => [...prev, newDoc])
     setTimeout(() => {
       const el = pageRefs.current[newIndex]
-      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      if (el && activePageRef.current !== newIndex) {
+        isNavigatingRef.current = true
+        activePageRef.current = newIndex
+        setActivePage(newIndex)
+        setWordCount(0)
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        setTimeout(() => {
+          isNavigatingRef.current = false
+        }, 300)
+      }
     }, 0)
   }
 
