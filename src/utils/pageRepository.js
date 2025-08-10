@@ -1,15 +1,14 @@
-// utils/pagesRepository.ts
+// utils/pageRepository.js
 import { getSupabase } from './supabaseClient'
 import { getCurrentUserId, clearCachedUserId } from './authCache'
 
 const TABLE = 'pages'
 
-// NOTE: These helpers exist to preserve legacy stored titles if you already saved them encoded.
-// They do NOT affect ID-based selectors.
-function encodeTitle(name: string) {
+// Keep these to remain compatible with any previously-encoded titles
+function encodeTitle(name) {
   return encodeURIComponent(name)
 }
-function decodeTitle(name: string) {
+function decodeTitle(name) {
   try {
     return decodeURIComponent(name)
   } catch {
@@ -17,7 +16,7 @@ function decodeTitle(name: string) {
   }
 }
 
-function handleUnauthorized(error: any) {
+function handleUnauthorized(error) {
   if (error?.status === 401 || error?.message?.includes('not logged in')) {
     clearCachedUserId()
     window.location.reload()
@@ -31,11 +30,8 @@ async function getClient() {
   return supabase
 }
 
-/**
- * List pages for a project (ID-based everywhere else).
- * Returns [{ id, title }]
- */
-export async function listPages(projectId: string) {
+// List pages for a project (returns [{ id, title }])
+export async function listPages(projectId) {
   try {
     const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
@@ -47,7 +43,7 @@ export async function listPages(projectId: string) {
       .order('created_at', { ascending: true })
 
     if (error) throw error
-    return (data ?? []).map((row: any) => ({
+    return (data ?? []).map((row) => ({
       id: row.id,
       title: decodeTitle(row.title),
     }))
@@ -57,14 +53,8 @@ export async function listPages(projectId: string) {
   }
 }
 
-/**
- * Create a page; returns new page id.
- */
-export async function createPage(
-  name: string,
-  data: { page_content?: any; metadata?: { version?: number } },
-  projectId: string,
-) {
+// Create a page; returns new page id.
+export async function createPage(name, data, projectId) {
   try {
     const supabase = await getClient()
     const now = new Date().toISOString()
@@ -73,8 +63,8 @@ export async function createPage(
       title: encodeTitle(name),
       created_at: now,
       updated_at: now,
-      page_content: data.page_content ?? null,
-      version: data.metadata?.version ?? 1,
+      page_content: data?.page_content ?? null,
+      version: data?.metadata?.version ?? 1,
       user_id: userId,
       project_id: projectId ?? null,
     }
@@ -92,10 +82,8 @@ export async function createPage(
   }
 }
 
-/**
- * Read a page by ID (scoped to project + user).
- */
-export async function readPage(id: string, projectId: string) {
+// Read a page by ID (scoped to project + user).
+export async function readPage(id, projectId) {
   if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
 
@@ -129,14 +117,8 @@ export async function readPage(id: string, projectId: string) {
   }
 }
 
-/**
- * Update a page by ID.
- */
-export async function updatePage(
-  id: string,
-  data: { page_content?: any; metadata?: { title?: string; version?: number } },
-  projectId: string,
-) {
+// Update a page by ID.
+export async function updatePage(id, data, projectId) {
   if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
 
@@ -148,11 +130,11 @@ export async function updatePage(
     const updated = {
       metadata: {
         ...existing.metadata,
-        ...data.metadata,
+        ...(data?.metadata || {}),
         projectId,
         updated_at: new Date().toISOString(),
       },
-      page_content: data.page_content ?? existing.page_content,
+      page_content: data?.page_content ?? existing.page_content,
     }
 
     const row = {
@@ -180,10 +162,8 @@ export async function updatePage(
   }
 }
 
-/**
- * Delete a page by ID.
- */
-export async function deletePage(id: string, projectId: string) {
+// Delete a page by ID.
+export async function deletePage(id, projectId) {
   if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
 
@@ -205,23 +185,14 @@ export async function deletePage(id: string, projectId: string) {
   }
 }
 
-/**
- * Convenience: load only content + version by ID.
- */
-export async function loadPageContent(id: string, projectId: string) {
+// Convenience: load only content + version by ID.
+export async function loadPageContent(id, projectId) {
   const page = await readPage(id, projectId)
   if (!page) return null
   return { page_content: page.page_content, version: page.metadata.version }
 }
 
-/**
- * Convenience: update only content + version by ID.
- */
-export async function savePageContent(
-  id: string,
-  pageContent: any,
-  version: number,
-  projectId: string,
-) {
+// Convenience: update only content + version by ID.
+export async function savePageContent(id, pageContent, version, projectId) {
   return updatePage(id, { page_content: pageContent, metadata: { version } }, projectId)
 }
