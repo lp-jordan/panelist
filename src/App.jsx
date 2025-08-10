@@ -1,5 +1,5 @@
 /* global __APP_VERSION__ */
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import DevInfo from './components/DevInfo'
@@ -7,10 +7,24 @@ import { listScripts, readScript, updateScript, createScript } from './utils/scr
 import { supabase } from './utils/supabaseClient'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
-import { cn } from './lib/utils'
+import { cn, throttle } from './lib/utils'
 
 const PAGE_WIDTH = 816
 const PAGE_HEIGHT = 1056
+
+function countWords(text) {
+  return text ? text.trim().split(/\s+/).filter(Boolean).length : 0
+}
+
+function extractTitle(pageDoc) {
+  const header = pageDoc.content?.[0]
+  if (!header) return null
+  const text = (header.content || [])
+    .map(c => c.text || '')
+    .join('')
+    .trim()
+  return text || null
+}
 
 export default function App({ onSignOut }) {
   const [activeProject, setActiveProject] = useState(null)
@@ -33,6 +47,9 @@ export default function App({ onSignOut }) {
   const pageRefs = useRef([])
   const saveTimeoutsRef = useRef({})
   const [zoom, setZoom] = useState(1)
+
+  const pagesRef = useRef(pages)
+  const activeProjectRef = useRef(activeProject)
 
   const pageTitle = pages[activePage]?.title ?? ''
   const totalPages = pages.length
@@ -78,10 +95,6 @@ export default function App({ onSignOut }) {
     }
   }
 
-  function countWords(text) {
-    return text ? text.trim().split(/\s+/).filter(Boolean).length : 0
-  }
-
   async function loadProjectPages(projectId) {
     try {
       const pageList = await listScripts(projectId)
@@ -107,22 +120,15 @@ export default function App({ onSignOut }) {
     }
   }
 
-  function extractTitle(pageDoc) {
-    const header = pageDoc.content?.[0]
-    if (!header) return null
-    const text = (header.content || [])
-      .map(c => c.text || '')
-      .join('')
-      .trim()
-    return text || null
-  }
+  useEffect(() => { pagesRef.current = pages }, [pages])
+  useEffect(() => { activeProjectRef.current = activeProject }, [activeProject])
 
-  function logDev(message) {
-    setDevLogs((logs) => [...logs.slice(-9), message])
-  }
+  const logDev = useCallback(message => {
+    setDevLogs(logs => [...logs.slice(-9), message])
+  }, [])
 
-  function handlePageUpdate(index, doc) {
-    const current = pages[index] || {}
+  const handlePageUpdate = useCallback((index, doc) => {
+    const current = pagesRef.current[index] || {}
     const extracted = extractTitle(doc)
     const pageId = current.id
     const finalTitle = extracted !== null ? extracted : current.title
@@ -140,12 +146,11 @@ export default function App({ onSignOut }) {
       next[index] = doc
       return next
     })
-    // word count handled in handlePageInView with debouncing
 
-    // Debounced save
     setIsSaving(true)
     clearTimeout(saveTimeoutsRef.current[index])
     saveTimeoutsRef.current[index] = setTimeout(async () => {
+      const activeProject = activeProjectRef.current
       if (activeProject && pageId) {
         try {
           await updateScript(
@@ -163,12 +168,16 @@ export default function App({ onSignOut }) {
       } else {
         logDev('No active project or page id; save skipped')
         setIsSaving(false)
-        return
       }
-      }, 500)
-    }
+    }, 500)
+  }, [logDev])
 
-  function handlePageInView(index, editor) {
+  const throttledHandlePageUpdate = useMemo(
+    () => throttle(handlePageUpdate, 200),
+    [handlePageUpdate],
+  )
+
+  const handlePageInView = useCallback((index, editor) => {
     const text = editor.getText()
     const indexChanged = index !== activePageRef.current
     const textChanged = text !== lastTextRef.current
@@ -180,7 +189,6 @@ export default function App({ onSignOut }) {
       setActivePage(index)
     }
 
-    // Debounce word count updates to reduce flicker
     if (indexChanged || textChanged) {
       lastTextRef.current = text
       clearTimeout(wordCountTimeoutRef.current)
@@ -188,7 +196,7 @@ export default function App({ onSignOut }) {
         setWordCount(countWords(text))
       }, 150)
     }
-  }
+  }, [])
 
   function handleNavigatePage(index, userInitiated = false) {
     if (!userInitiated) return
@@ -255,12 +263,12 @@ export default function App({ onSignOut }) {
       <div className={cn('main-content', settingsOpen && 'shifted')}>
         {pageDocs.map((doc, idx) => (
           <ScriptEditor
-            key={idx}
+            key={pages[idx]?.id ?? `page-${idx}`}
             ref={el => (pageRefs.current[idx] = el)}
             content={doc}
             mode={mode}
             pageIndex={idx}
-            onUpdate={handlePageUpdate}
+            onUpdate={throttledHandlePageUpdate}
             onInView={handlePageInView}
             characters={activeProject?.characters ?? []}
             zoom={zoom}
