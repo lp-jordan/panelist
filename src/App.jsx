@@ -12,10 +12,6 @@ import { cn, throttle } from './lib/utils'
 const PAGE_WIDTH = 816
 const PAGE_HEIGHT = 1056
 
-function countWords(text) {
-  return text ? text.trim().split(/\s+/).filter(Boolean).length : 0
-}
-
 function extractTitle(pageDoc) {
   const header = pageDoc.content?.[0]
   if (!header) return null
@@ -37,8 +33,6 @@ export default function App({ onSignOut }) {
   const activePageRef = useRef(0)
   const isNavigatingRef = useRef(false)
   const [wordCount, setWordCount] = useState(0)
-  const lastTextRef = useRef('')
-  const wordCountTimeoutRef = useRef(null)
   const sidebarRef = useRef(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [theme, setTheme] = useState('light')
@@ -177,41 +171,6 @@ export default function App({ onSignOut }) {
     [handlePageUpdate],
   )
 
-  const handlePageInView = useCallback((index, editor) => {
-    const text = editor.getText()
-    const indexChanged = index !== activePageRef.current
-    const textChanged = text !== lastTextRef.current
-
-    if (!indexChanged && !textChanged) return
-
-    if (indexChanged) {
-      activePageRef.current = index
-      setActivePage(index)
-    }
-
-    if (indexChanged || textChanged) {
-      lastTextRef.current = text
-      clearTimeout(wordCountTimeoutRef.current)
-      wordCountTimeoutRef.current = setTimeout(() => {
-        setWordCount(countWords(text))
-      }, 150)
-    }
-  }, [])
-
-  function handleNavigatePage(index, userInitiated = false) {
-    if (!userInitiated) return
-    const el = pageRefs.current[index]
-    if (el && activePageRef.current !== index) {
-      isNavigatingRef.current = true
-      activePageRef.current = index
-      setActivePage(index)
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      setTimeout(() => {
-        isNavigatingRef.current = false
-      }, 300)
-    }
-  }
-
   async function handleCreatePage() {
     const newDoc = { type: 'doc', content: [{ type: 'pageHeader' }] }
     const newIndex = pages.length
@@ -252,7 +211,6 @@ export default function App({ onSignOut }) {
         pages={pages}
         activePage={activePage}
         onSelectProject={handleSelectProject}
-        onSelectPage={handleNavigatePage}
         onCreatePage={handleCreatePage}
         onSignOut={onSignOut}
         currentMode={mode}
@@ -269,7 +227,6 @@ export default function App({ onSignOut }) {
             mode={mode}
             pageIndex={idx}
             onUpdate={throttledHandlePageUpdate}
-            onInView={handlePageInView}
             characters={activeProject?.characters ?? []}
             zoom={zoom}
           />
