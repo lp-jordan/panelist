@@ -1,6 +1,6 @@
 // utils/pageRepository.js
 import { supabase } from './supabaseClient'
-import { getCurrentUserId } from './authCache'
+import { getCurrentUserId, isUnauthenticated } from './authCache'
 import { handleUnauthorized } from './session'
 
 const TABLE = 'pages'
@@ -23,6 +23,7 @@ function getClient() {
 
 // List pages for a project (returns [{ id, title }])
 export async function listPages(projectId) {
+  if (isUnauthenticated()) return []
   try {
     const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
@@ -47,6 +48,7 @@ export async function listPages(projectId) {
 
 // Create a page; returns new page id.
 export async function createPage(name, data, projectId) {
+  if (isUnauthenticated()) return null
   try {
     const supabase = getClient()
     const now = new Date().toISOString()
@@ -80,6 +82,7 @@ export async function readPage(id, projectId) {
   if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
 
+  if (isUnauthenticated()) return null
   try {
     const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
@@ -116,9 +119,11 @@ export async function updatePage(id, data, projectId) {
   if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
 
-    try {
-      const supabase = await getClient()
-      const existing = await readPage(id, projectId)
+  if (isUnauthenticated()) return null
+
+  try {
+    const supabase = await getClient()
+    const existing = await readPage(id, projectId)
     if (!existing) return null
 
     const updated = {
@@ -162,6 +167,7 @@ export async function deletePage(id, projectId) {
   if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
 
+  if (isUnauthenticated()) return false
   try {
     const supabase = getClient()
     const userId = await getCurrentUserId(supabase)

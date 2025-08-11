@@ -1,6 +1,6 @@
 // utils/projectRepository.js
 import { supabase } from './supabaseClient'
-import { getCurrentUserId } from './authCache'
+import { getCurrentUserId, isUnauthenticated } from './authCache'
 import { handleUnauthorized } from './session'
 
 const TABLE = 'projects'
@@ -11,6 +11,7 @@ function getClient() {
 
 // List all projects for the current user.
 export async function listProjects() {
+  if (isUnauthenticated()) return []
   try {
     const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
@@ -31,8 +32,9 @@ export async function listProjects() {
 
 // Create a new project (enforces unique name per user).
 export async function createProject(name, data = {}) {
-    try {
-      const supabase = await getClient()
+  if (isUnauthenticated()) return null
+  try {
+    const supabase = await getClient()
     const now = new Date().toISOString()
     const userId = await getCurrentUserId(supabase)
     if (!userId) return null
@@ -73,8 +75,9 @@ export async function createProject(name, data = {}) {
 // Read a project by ID (scoped to current user).
 export async function readProject(id) {
   if (!id) throw new Error('id required')
-    try {
-      const supabase = await getClient()
+  if (isUnauthenticated()) return null
+  try {
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     if (!userId) return null
     const { data, error } = await supabase
@@ -95,8 +98,9 @@ export async function readProject(id) {
 // Update a project by ID (name, etc.). Returns updated row.
 export async function updateProject(id, data) {
   if (!id) throw new Error('id required')
-    try {
-      const supabase = await getClient()
+  if (isUnauthenticated()) return null
+  try {
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     if (!userId) return null
 
@@ -132,8 +136,9 @@ export async function updateProject(id, data) {
 // Delete a project by ID.
 export async function deleteProject(id) {
   if (!id) throw new Error('id required')
-    try {
-      const supabase = await getClient()
+  if (isUnauthenticated()) return false
+  try {
+    const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     if (!userId) return false
     const { error } = await supabase
