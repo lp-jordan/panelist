@@ -43,6 +43,7 @@ export default function App({ onSignOut }) {
   const [mode, setMode] = useState('Script')
   const [pages, setPages] = useState([])         // [{ id, title, ... }]
   const [pageDocs, setPageDocs] = useState([])   // ProseMirror JSON per page
+  const pageDocsRef = useRef([])
   const [activePage, setActivePage] = useState(0)
   const [wordCount, setWordCount] = useState(0)
   const wordCountsRef = useRef([])
@@ -57,6 +58,8 @@ export default function App({ onSignOut }) {
 
   const pagesRef = useRef(pages)
   const activeProjectRef = useRef(activeProject)
+
+  useEffect(() => { pageDocsRef.current = pageDocs }, [pageDocs])
 
   const pageTitle = pages[activePage]?.title ?? ''
   const totalPages = pages.length
@@ -115,6 +118,7 @@ export default function App({ onSignOut }) {
       }))
       setPages(pageInfo)
       setPageDocs(docs)
+      pageDocsRef.current = docs
       const counts = docs.map(d => countWords(getTextFromDoc(d)))
       wordCountsRef.current = counts
       const total = counts.reduce((sum, c) => sum + c, 0)
@@ -138,19 +142,15 @@ export default function App({ onSignOut }) {
     const pageId = current.id
     const finalTitle = extracted !== null ? extracted : current.title
 
-    setPages(prev => {
-      const next = [...prev]
-      const page = next[index] || {}
-      if (extracted !== null) {
-        next[index] = { ...page, title: extracted }
-      }
-      return next
-    })
-    setPageDocs(prev => {
-      const next = [...prev]
-      next[index] = doc
-      return next
-    })
+    if (extracted !== null && current.title !== extracted) {
+      setPages(prev => {
+        const next = [...prev]
+        next[index] = { ...next[index], title: extracted }
+        return next
+      })
+    }
+
+    pageDocsRef.current[index] = doc
 
     const text = editor?.getText ? editor.getText() : getTextFromDoc(doc)
     wordCountsRef.current[index] = countWords(text)
@@ -213,6 +213,7 @@ export default function App({ onSignOut }) {
     }
     setPages(prev => [...prev, { id: newId, title }])
     setPageDocs(prev => [...prev, newDoc])
+    pageDocsRef.current[newIndex] = newDoc
     wordCountsRef.current[newIndex] = 0
     setTimeout(() => {
       const el = pageRefs.current[newIndex]
