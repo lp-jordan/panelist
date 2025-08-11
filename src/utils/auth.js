@@ -5,6 +5,7 @@ import { supabase } from './supabaseClient.js'
 export async function signUp(email, password) {
   logger.log('Attempting signUp for', email)
   try {
+    const supabase = await getClient()
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) {
       logger.error('signUp error:', error)
@@ -21,6 +22,7 @@ export async function signUp(email, password) {
 export async function signIn(email, password) {
   logger.log('Attempting signIn for', email)
   try {
+    const supabase = await getClient()
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -40,6 +42,7 @@ export async function signIn(email, password) {
 export async function signOut() {
   logger.log('Signing out current user')
   try {
+    const supabase = await getClient()
     const { error } = await supabase.auth.signOut()
     if (error) {
       logger.error('signOut error:', error)

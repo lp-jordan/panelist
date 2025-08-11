@@ -1,6 +1,6 @@
 // utils/pageRepository.js
 import { supabase } from './supabaseClient'
-import { getCurrentUserId, isUnauthenticated } from './authCache'
+import { cachedUserId } from './authCache'
 import { handleUnauthorized } from './session'
 
 const TABLE = 'pages'
@@ -26,7 +26,7 @@ export async function listPages(projectId) {
   if (isUnauthenticated()) return []
   try {
     const supabase = getClient()
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return []
     const { data, error } = await supabase
       .from(TABLE)
@@ -52,7 +52,7 @@ export async function createPage(name, data, projectId) {
   try {
     const supabase = getClient()
     const now = new Date().toISOString()
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return null
     const payload = {
       title: encodeTitle(name),
@@ -85,7 +85,7 @@ export async function readPage(id, projectId) {
   if (isUnauthenticated()) return null
   try {
     const supabase = getClient()
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return null
     const { data, error } = await supabase
       .from(TABLE)
@@ -145,7 +145,7 @@ export async function updatePage(id, data, projectId) {
       version: updated.metadata.version,
     }
 
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return null
     const { error } = await supabase
       .from(TABLE)
@@ -170,7 +170,7 @@ export async function deletePage(id, projectId) {
   if (isUnauthenticated()) return false
   try {
     const supabase = getClient()
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return false
     const { error } = await supabase
       .from(TABLE)

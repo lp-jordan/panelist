@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react'
 import App from './App.jsx'
 import Login from './components/Login.jsx'
 import './index.css'
+import {
+  setCachedUserId,
+  clearCachedUserId,
+} from './utils/authCache.js'
 function Root() {
   const [session, setSession] = useState(null)
   const [supabase, setSupabase] = useState(null)
@@ -17,11 +21,19 @@ function Root() {
         supabase.auth.getSession().then(({ data }) => {
           console.log('Initial auth session:', data.session)
           setSession(data.session)
+          const id = data.session?.user?.id
+          if (id) setCachedUserId(id)
+          else clearCachedUserId()
         })
-        subscription = supabase.auth.onAuthStateChange((event, session) => {
-          console.log('Auth state changed:', event, session)
-          setSession(session)
-        }).data.subscription
+        subscription = supabase.auth
+          .onAuthStateChange((event, session) => {
+            console.log('Auth state changed:', event, session)
+            setSession(session)
+            const id = session?.user?.id
+            if (id) setCachedUserId(id)
+            else clearCachedUserId()
+          })
+          .data.subscription
       })
       .catch((error) => {
         console.error('Error initializing Supabase client:', error?.message || error)
@@ -39,16 +51,28 @@ function Root() {
     }
 
     if (!session) {
-      return <Login onLogin={(s) => {
-        console.log('Login successful, session set')
-        setSession(s)
-      }} />
+      return (
+        <Login
+          onLogin={(s) => {
+            console.log('Login successful, session set')
+            setSession(s)
+            const id = s?.user?.id
+            if (id) setCachedUserId(id)
+          }}
+        />
+      )
     }
 
-    return <App onSignOut={() => {
-      console.log('User signed out from App')
-      setSession(null)
-    }} supabase={supabase} />
+    return (
+      <App
+        onSignOut={() => {
+          console.log('User signed out from App')
+          setSession(null)
+          clearCachedUserId()
+        }}
+        supabase={supabase}
+      />
+    )
 }
 
 export default Root
