@@ -23,9 +23,10 @@ function getClient() {
 
 // List pages for a project (returns [{ id, title }])
 export async function listPages(projectId) {
-    try {
-      const supabase = await getClient()
-      const userId = await getCurrentUserId(supabase)
+  try {
+    const supabase = getClient()
+    const userId = await getCurrentUserId(supabase)
+    if (!userId) return []
     const { data, error } = await supabase
       .from(TABLE)
       .select('id, title')
@@ -46,10 +47,11 @@ export async function listPages(projectId) {
 
 // Create a page; returns new page id.
 export async function createPage(name, data, projectId) {
-    try {
-      const supabase = await getClient()
-      const now = new Date().toISOString()
-      const userId = await getCurrentUserId(supabase)
+  try {
+    const supabase = getClient()
+    const now = new Date().toISOString()
+    const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
     const payload = {
       title: encodeTitle(name),
       created_at: now,
@@ -78,9 +80,10 @@ export async function readPage(id, projectId) {
   if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
 
-    try {
-      const supabase = await getClient()
-      const userId = await getCurrentUserId(supabase)
+  try {
+    const supabase = getClient()
+    const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
     const { data, error } = await supabase
       .from(TABLE)
       .select('id, title, project_id, created_at, updated_at, page_content, version')
@@ -138,6 +141,7 @@ export async function updatePage(id, data, projectId) {
     }
 
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
     const { error } = await supabase
       .from(TABLE)
       .update(row)
@@ -158,9 +162,10 @@ export async function deletePage(id, projectId) {
   if (!id) throw new Error('id required')
   if (!projectId) throw new Error('projectId required')
 
-    try {
-      const supabase = await getClient()
-      const userId = await getCurrentUserId(supabase)
+  try {
+    const supabase = getClient()
+    const userId = await getCurrentUserId(supabase)
+    if (!userId) return false
     const { error } = await supabase
       .from(TABLE)
       .delete()

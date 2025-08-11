@@ -11,9 +11,10 @@ function getClient() {
 
 // List all projects for the current user.
 export async function listProjects() {
-    try {
-      const supabase = await getClient()
-      const userId = await getCurrentUserId(supabase)
+  try {
+    const supabase = getClient()
+    const userId = await getCurrentUserId(supabase)
+    if (!userId) return []
     const { data, error } = await supabase
       .from(TABLE)
       .select('id, name, created_at, updated_at')
@@ -34,6 +35,7 @@ export async function createProject(name, data = {}) {
       const supabase = await getClient()
     const now = new Date().toISOString()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
 
     // Enforce uniqueness per (user_id, name) before insert
     const { data: existing, error: existingError } = await supabase
@@ -74,6 +76,7 @@ export async function readProject(id) {
     try {
       const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
     const { data, error } = await supabase
       .from(TABLE)
       .select('*')
@@ -95,6 +98,7 @@ export async function updateProject(id, data) {
     try {
       const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
 
     // If name is changing, enforce per-user uniqueness
     if (typeof data.name === 'string' && data.name.trim()) {
@@ -131,6 +135,7 @@ export async function deleteProject(id) {
     try {
       const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return false
     const { error } = await supabase
       .from(TABLE)
       .delete()
