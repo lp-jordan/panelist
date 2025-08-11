@@ -1,39 +1,25 @@
-# React + Vite
+# Panelist
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Panelist is a web-based editor for writing comic or storyboard scripts one panel at a time.  It provides a page-sized canvas, keyboard-driven navigation, and persistence through Supabase so projects can be saved and retrieved anywhere.
 
-Currently, two official plugins are available:
+## Key features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Panel‑ and page‑oriented script editor built with React and TipTap
+- SmartFlow keyboard shortcuts for moving between nodes and panels quickly
+- Project and multi-page management with live word counts
+- Light/dark themes, zoom controls, and sidebar settings
+- Supabase-backed storage of scripts in a `pages` table
 
-## Expanding the ESLint configuration
+## Supabase requirements
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
-## Manual Testing
-
-The `SmartFlow` extension adds keyboard shortcuts for navigating script panels.
-
-1. Run `npm run dev` and open the ScriptEditor.
-2. Create a `PageHeader` node. Press **Enter** to insert the next node (`PanelHeader`), then **Enter** again to continue through the flow (`Description` → `Dialogue`).
-3. Use **Tab** to move the cursor forward through nodes in the current panel.
-4. Use **Shift+Tab** to move the cursor backward within the panel.
-
-Verify that the cursor stops when reaching the start or end of a panel.
-
-## Supabase connectivity
-
-Set the `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` environment variables and run:
+The application expects a Supabase project with a table named `pages`.  Configure the connection by setting the following environment variables before running or building the app:
 
 ```
-npm run test:supabase
+VITE_SUPABASE_URL=<your Supabase project URL>
+VITE_SUPABASE_ANON_KEY=<your Supabase anon key>
 ```
 
-The script will report whether the project can reach the configured Supabase instance.
-Scripts are persisted in a Supabase table called `pages`.
-
-To create the table, run the following SQL in the Supabase SQL editor:
+Create the table in the Supabase SQL editor:
 
 ```sql
 create table if not exists pages (
@@ -47,7 +33,7 @@ create table if not exists pages (
 );
 ```
 
-Seed it with a sample row if desired:
+Optional sample row:
 
 ```sql
 insert into pages (
@@ -57,6 +43,46 @@ insert into pages (
   project_id,
   created_at,
   updated_at
-)
-values ('Example', '{}'::jsonb, 1, null, now(), now());
+) values ('Example', '{}'::jsonb, 1, null, now(), now());
 ```
+
+Test connectivity with:
+
+```
+npm run test:supabase
+```
+
+## Development
+
+1. Install dependencies
+
+   ```
+   npm install
+   ```
+
+2. Start the dev server
+
+   ```
+   npm run dev
+   ```
+
+   The app will be available at http://localhost:5173.
+
+## Build
+
+Create an optimized production build:
+
+```
+npm run build
+```
+
+Preview the build locally:
+
+```
+npm run preview
+```
+
+## Deployment
+
+Deploy the contents of the `dist/` folder to any static hosting provider (Netlify, Vercel, Supabase Storage, etc.).  Ensure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set in the build environment so the generated files include the correct Supabase credentials.
+
