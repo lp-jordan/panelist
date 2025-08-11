@@ -1,25 +1,12 @@
 // utils/projectRepository.js
-import { getCurrentUserId, clearCachedUserId } from './authCache'
+import { supabase } from './supabaseClient'
+import { getCurrentUserId } from './authCache'
+import { handleUnauthorized } from './session'
 
 const TABLE = 'projects'
 
-function handleUnauthorized(error) {
-  if (error?.status === 401 || error?.message?.includes('not logged in')) {
-    clearCachedUserId()
-    window.location.reload()
-    return true
-  }
-  return false
-}
-
-async function getClient() {
-  try {
-    const { supabase } = await import('./supabaseClient.js')
-    return supabase
-  } catch (error) {
-    console.error('Failed to load Supabase client:', error?.message || error)
-    throw error
-  }
+function getClient() {
+  return supabase
 }
 
 // List all projects for the current user.
