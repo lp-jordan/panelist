@@ -1,52 +1,56 @@
 import { supabase } from './supabaseClient.js'
 import { clearCachedUserId } from './authCache.js'
+import { logger } from './logger.js'
 
 export async function signUp(email, password) {
+  logger.log('Attempting signUp for', email)
   try {
-    console.log('Attempting signUp for', email)
-    const result = await supabase.auth.signUp({ email, password })
-    if (result.error) {
-      console.error('signUp error:', result.error)
+    const { data, error } = await supabase.auth.signUp({ email, password })
+    if (error) {
+      logger.error('signUp error:', error)
     } else {
-      console.log('signUp success for user', result.data.user?.id)
+      logger.log('signUp success for user', data.user?.id)
     }
-    return result
+    return { data, error }
   } catch (error) {
-    console.error('unexpected signUp error:', error)
+    logger.error('unexpected signUp error:', error)
     return { data: null, error }
   }
 }
 
 export async function signIn(email, password) {
+  logger.log('Attempting signIn for', email)
   try {
-    console.log('Attempting signIn for', email)
-    const result = await supabase.auth.signInWithPassword({ email, password })
-    if (result.error) {
-      console.error('signIn error:', result.error)
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+    if (error) {
+      logger.error('signIn error:', error)
     } else {
-      console.log('signIn success for user', result.data.user?.id)
+      logger.log('signIn success for user', data.user?.id)
     }
-    return result
+    return { data, error }
   } catch (error) {
-    console.error('unexpected signIn error:', error)
+    logger.error('unexpected signIn error:', error)
     return { data: null, error }
   }
 }
 
 export async function signOut() {
+  logger.log('Signing out current user')
   try {
-    console.log('Signing out current user')
-    const result = await supabase.auth.signOut()
-    if (result.error) {
-      console.error('signOut error:', result.error)
+    const { error } = await supabase.auth.signOut()
+    if (error) {
+      logger.error('signOut error:', error)
     } else {
-      console.log('signOut success')
+      logger.log('signOut success')
     }
     clearCachedUserId()
-    return result
+    return { data: null, error }
   } catch (error) {
-    console.error('unexpected signOut error:', error)
+    logger.error('unexpected signOut error:', error)
     clearCachedUserId()
-    return { error }
+    return { data: null, error }
   }
 }

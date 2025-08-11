@@ -1,6 +1,7 @@
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
 import { signOut } from '../utils/auth.js'
+import { logger } from '../utils/logger.js'
 
 export default function SettingsSidebar({
   open,
@@ -13,11 +14,11 @@ export default function SettingsSidebar({
   setShowDevInfo,
 }) {
   async function handleSignOut() {
-    try {
-      await signOut()
+    const { error } = await signOut()
+    if (error) {
+      logger.error('signOut failed:', error)
+    } else {
       onSignOut?.()
-    } catch (err) {
-      console.error('signOut failed:', err.message)
     }
   }
 
