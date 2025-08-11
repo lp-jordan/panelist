@@ -4,7 +4,6 @@ import Sidebar from './components/Sidebar'
 import ScriptEditor from './components/ScriptEditor'
 import DevInfo from './components/DevInfo'
 import { listScripts, readScript, updateScript, createScript } from './utils/scriptRepository'
-import { supabase } from './utils/supabaseClient'
 import SettingsSidebar from './components/SettingsSidebar'
 import { Button } from './components/ui/button'
 import { cn, throttle } from './lib/utils'
@@ -36,7 +35,7 @@ function getTextFromDoc(node) {
   return ''
 }
 
-export default function App({ onSignOut }) {
+export default function App({ onSignOut, supabase }) {
   const [activeProject, setActiveProject] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [devLogs, setDevLogs] = useState([])
@@ -228,7 +227,7 @@ export default function App({ onSignOut }) {
 
   return (
     <div className="app-layout">
-      <Sidebar
+        <Sidebar
         ref={sidebarRef}
         pages={pages}
         activePage={activePage}
@@ -238,7 +237,7 @@ export default function App({ onSignOut }) {
         onSignOut={onSignOut}
         currentMode={mode}
         onModeChange={setMode}
-        supabase={supabase}
+          supabase={supabase}
       />
 
       <div className={cn('main-content', settingsOpen && 'shifted')}>

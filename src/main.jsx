@@ -4,36 +4,51 @@ import { useEffect, useState } from 'react'
 import App from './App.jsx'
 import Login from './components/Login.jsx'
 import './index.css'
-import { supabase } from './utils/supabaseClient.js'
-
 function Root() {
   const [session, setSession] = useState(null)
+  const [supabase, setSupabase] = useState(null)
+  const [initError, setInitError] = useState(null)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      console.log('Initial auth session:', data.session)
-      setSession(data.session)
-    })
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session)
-      setSession(session)
-    })
-    return () => subscription.unsubscribe()
+    let subscription
+    import('./utils/supabaseClient.js')
+      .then(({ supabase }) => {
+        setSupabase(supabase)
+        supabase.auth.getSession().then(({ data }) => {
+          console.log('Initial auth session:', data.session)
+          setSession(data.session)
+        })
+        subscription = supabase.auth.onAuthStateChange((event, session) => {
+          console.log('Auth state changed:', event, session)
+          setSession(session)
+        }).data.subscription
+      })
+      .catch((error) => {
+        console.error('Error initializing Supabase client:', error?.message || error)
+        setInitError(error)
+      })
+    return () => subscription?.unsubscribe()
   }, [])
 
-  if (!session) {
-    return <Login onLogin={(s) => {
-      console.log('Login successful, session set')
-      setSession(s)
-    }} />
-  }
+    if (initError) {
+      return <div className="error">{initError.message || 'Supabase client failed to load'}</div>
+    }
 
-  return <App onSignOut={() => {
-    console.log('User signed out from App')
-    setSession(null)
-  }} />
+    if (!supabase) {
+      return <div>Loading...</div>
+    }
+
+    if (!session) {
+      return <Login onLogin={(s) => {
+        console.log('Login successful, session set')
+        setSession(s)
+      }} />
+    }
+
+    return <App onSignOut={() => {
+      console.log('User signed out from App')
+      setSession(null)
+    }} supabase={supabase} />
 }
 
 export default Root

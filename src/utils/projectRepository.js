@@ -11,9 +11,9 @@ function getClient() {
 
 // List all projects for the current user.
 export async function listProjects() {
-  try {
-    const supabase = getClient()
-    const userId = await getCurrentUserId(supabase)
+    try {
+      const supabase = await getClient()
+      const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
       .select('id, name, created_at, updated_at')
@@ -30,8 +30,8 @@ export async function listProjects() {
 
 // Create a new project (enforces unique name per user).
 export async function createProject(name, data = {}) {
-  try {
-    const supabase = getClient()
+    try {
+      const supabase = await getClient()
     const now = new Date().toISOString()
     const userId = await getCurrentUserId(supabase)
 
@@ -71,8 +71,8 @@ export async function createProject(name, data = {}) {
 // Read a project by ID (scoped to current user).
 export async function readProject(id) {
   if (!id) throw new Error('id required')
-  try {
-    const supabase = getClient()
+    try {
+      const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     const { data, error } = await supabase
       .from(TABLE)
@@ -92,8 +92,8 @@ export async function readProject(id) {
 // Update a project by ID (name, etc.). Returns updated row.
 export async function updateProject(id, data) {
   if (!id) throw new Error('id required')
-  try {
-    const supabase = getClient()
+    try {
+      const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
 
     // If name is changing, enforce per-user uniqueness
@@ -128,8 +128,8 @@ export async function updateProject(id, data) {
 // Delete a project by ID.
 export async function deleteProject(id) {
   if (!id) throw new Error('id required')
-  try {
-    const supabase = getClient()
+    try {
+      const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
     const { error } = await supabase
       .from(TABLE)

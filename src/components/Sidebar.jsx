@@ -12,6 +12,7 @@ import {
   deleteProject,
 } from '../utils/projectRepository'
 import { Button } from './ui/button'
+import Modal from './ui/modal'
 import { cn } from '../lib/utils'
 import ModeCarousel from './ModeCarousel'
 
@@ -58,6 +59,11 @@ const Sidebar = forwardRef(function Sidebar(
   const [selectedProjectName, setSelectedProjectName] = useState('')
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [newProjectName, setNewProjectName] = useState('')
+  const [createError, setCreateError] = useState('')
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [projectToDelete, setProjectToDelete] = useState(null)
 
   const dropdownRef = useRef(null)
 
@@ -120,11 +126,18 @@ const Sidebar = forwardRef(function Sidebar(
       })
   }, [supabase, refreshProjects, handleSelectProject])
 
-  async function handleCreateProject() {
-    const name = prompt('New project name')?.trim()
+  function openCreateProject() {
+    setNewProjectName('')
+    setCreateError('')
+    setCreateOpen(true)
+  }
+
+  async function submitCreateProject(e) {
+    e?.preventDefault()
+    const name = newProjectName.trim()
     if (!name) return
     if (projects.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
-      alert('Project already exists')
+      setCreateError('Project already exists')
       return
     }
     try {
@@ -134,19 +147,26 @@ const Sidebar = forwardRef(function Sidebar(
       setMenuOpen(false)
       const newProj = list.find((p) => p.name === name)
       if (newProj) await handleSelectProject(newProj)
+      setCreateOpen(false)
     } catch (error) {
       if (error?.message?.includes('unique')) {
-        alert('Project already exists')
+        setCreateError('Project already exists')
       }
       console.error('createProject failed:', error?.message || error)
       console.warn('Could not create project')
     }
   }
 
-  async function handleDeleteProject(e, project = selectedProject) {
+  function handleDeleteProject(e, project = selectedProject) {
     e?.stopPropagation()
     if (!project) return
-    if (!confirm(`Delete project "${project.name}"?`)) return
+    setProjectToDelete(project)
+    setDeleteOpen(true)
+  }
+
+  async function confirmDeleteProject() {
+    const project = projectToDelete
+    if (!project) return
     try {
       if (!supabase) return
       await deleteProject(project.id)
@@ -163,6 +183,9 @@ const Sidebar = forwardRef(function Sidebar(
       setMenuOpen(false)
     } catch (err) {
       console.error('Error deleting project:', err?.message || err)
+    } finally {
+      setDeleteOpen(false)
+      setProjectToDelete(null)
     }
   }
 
@@ -174,8 +197,9 @@ const Sidebar = forwardRef(function Sidebar(
   )
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
+    <>
+      <aside className="sidebar">
+        <div className="sidebar-header">
         <div
           style={{ position: 'relative' }}
           tabIndex={0}
@@ -214,7 +238,7 @@ const Sidebar = forwardRef(function Sidebar(
               <Button
                 variant="ghost"
                 className="project-menu-item"
-                onClick={handleCreateProject}
+                onClick={openCreateProject}
               >
                 Create project
               </Button>
@@ -239,8 +263,41 @@ const Sidebar = forwardRef(function Sidebar(
         onCreatePage={onCreatePage}
       />
 
-      <ModeCarousel currentMode={currentMode} onModeChange={onModeChange} />
-    </aside>
+        <ModeCarousel currentMode={currentMode} onModeChange={onModeChange} />
+      </aside>
+      <Modal open={createOpen} onClose={() => setCreateOpen(false)}>
+        <form onSubmit={submitCreateProject}>
+          <h2 className="section-heading">Create project</h2>
+          <input
+            type="text"
+            value={newProjectName}
+            onChange={(e) => setNewProjectName(e.target.value)}
+            placeholder="Project name"
+            autoFocus
+            style={{ width: '100%', marginTop: '0.5rem' }}
+          />
+          {createError && <div className="modal-error">{createError}</div>}
+          <div className="modal-actions">
+            <Button type="submit">Create</Button>
+            <Button type="button" variant="ghost" onClick={() => setCreateOpen(false)}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Modal>
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)}>
+        <h2 className="section-heading">Delete project</h2>
+        <p style={{ marginTop: '0.5rem' }}>
+          Are you sure you want to delete "{projectToDelete?.name}"?
+        </p>
+        <div className="modal-actions">
+          <Button onClick={confirmDeleteProject}>Delete</Button>
+          <Button variant="ghost" onClick={() => setDeleteOpen(false)}>
+            Cancel
+          </Button>
+        </div>
+      </Modal>
+    </>
   )
 })
 
