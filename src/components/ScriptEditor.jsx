@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { BubbleMenu } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 
 // Custom extensions / nodes
@@ -120,24 +119,6 @@ const ScriptEditor = forwardRef(function ScriptEditor(
         transform: `scale(${zoom})`,
       }}
     >
-      {editor && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
-          {/* Keep your existing buttons; example for underline */}
-          <button
-            className={`btn ${editor.isActive('underline') ? 'active' : ''}`}
-            onClick={() =>
-              editor
-                .chain()
-                .focus(undefined, { scrollIntoView: false })
-                .toggleUnderline()
-                .run()
-            }
-            type="button"
-          >
-            U
-          </button>
-        </BubbleMenu>
-      )}
       <EditorContent editor={editor} className="editor-content" />
     </div>
   )

@@ -301,15 +301,6 @@ body {
 }
 
 /* ScriptEditor */
-.editor-bubble-menu {
-  display: flex;
-  gap: 0.25rem;
-  border: 1px solid var(--border-color);
-  background: var(--bg-panel);
-  padding: 0.25rem;
-  border-radius: var(--radius);
-}
-
 .editor-wrapper {
   overscroll-behavior: contain;
   touch-action: pan-y;
