@@ -1,6 +1,7 @@
 // utils/pageRepository.js
 import { supabase } from './supabaseClient'
-import { getCurrentUserId, clearCachedUserId } from './authCache'
+import { getCurrentUserId } from './authCache'
+import { handleUnauthorized } from './session'
 
 const TABLE = 'pages'
 
@@ -14,15 +15,6 @@ function decodeTitle(name) {
   } catch {
     return name
   }
-}
-
-function handleUnauthorized(error) {
-  if (error?.status === 401 || error?.message?.includes('not logged in')) {
-    clearCachedUserId()
-    window.location.reload()
-    return true
-  }
-  return false
 }
 
 function getClient() {

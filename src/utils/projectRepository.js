@@ -1,17 +1,9 @@
 // utils/projectRepository.js
 import { supabase } from './supabaseClient'
-import { getCurrentUserId, clearCachedUserId } from './authCache'
+import { getCurrentUserId } from './authCache'
+import { handleUnauthorized } from './session'
 
 const TABLE = 'projects'
-
-function handleUnauthorized(error) {
-  if (error?.status === 401 || error?.message?.includes('not logged in')) {
-    clearCachedUserId()
-    window.location.reload()
-    return true
-  }
-  return false
-}
 
 function getClient() {
   return supabase
