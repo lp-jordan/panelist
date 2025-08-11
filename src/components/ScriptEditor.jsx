@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle } from 'rea
 import { EditorContent, useEditor } from '@tiptap/react'
 import { BubbleMenu } from '@tiptap/react/menus'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
 
 // Custom extensions / nodes
 import SlashCommand from '../extensions/SlashCommand'
@@ -48,7 +47,6 @@ const ScriptEditor = forwardRef(function ScriptEditor(
     StarterKit.configure({
       history: true,
     }),
-    Underline,
     // Custom nodes in your schema
     PageHeader,
     PanelHeader,
