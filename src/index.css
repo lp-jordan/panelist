@@ -544,3 +544,36 @@ body {
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius);
 }
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--bg-panel);
+  color: var(--text-primary);
+  padding: var(--spacing-container);
+  border-radius: var(--radius);
+  min-width: 18rem;
+  max-width: 90%;
+}
+
+.modal-actions {
+  margin-top: var(--spacing-inner);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-inner);
+}
+
+.modal-error {
+  margin-top: var(--spacing-inner);
+  color: #dc2626;
+  font-size: 0.875rem;
+}

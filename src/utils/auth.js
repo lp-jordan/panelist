@@ -1,6 +1,15 @@
-import { supabase } from './supabaseClient.js'
 import { clearCachedUserId } from './authCache.js'
 import { logger } from './logger.js'
+
+async function getClient() {
+  try {
+    const { supabase } = await import('./supabaseClient.js')
+    return supabase
+  } catch (error) {
+    console.error('Failed to load Supabase client:', error?.message || error)
+    throw error
+  }
+}
 
 export async function signUp(email, password) {
   logger.log('Attempting signUp for', email)

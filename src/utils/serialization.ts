@@ -1,9 +1,16 @@
 import type { JSONContent } from '@tiptap/core'
 import type { ScriptPage, Panel, Cue } from '../types/samplePage'
 
-function getText(node?: JSONContent): string {
-  if (!node?.content) return ''
-  return node.content.map((child: any) => child.text ?? '').join('')
+type JSONContentChild = {
+  text?: string
+  content?: JSONContentChild[]
+}
+
+export function getText(node?: JSONContentChild): string {
+  if (!node) return ''
+  if (typeof node.text === 'string') return node.text
+  if (!node.content) return ''
+  return node.content.map(getText).join('')
 }
 
 /**

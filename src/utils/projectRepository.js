@@ -1,17 +1,9 @@
 // utils/projectRepository.js
 import { supabase } from './supabaseClient'
-import { getCurrentUserId, clearCachedUserId } from './authCache'
+import { getCurrentUserId } from './authCache'
+import { handleUnauthorized } from './session'
 
 const TABLE = 'projects'
-
-function handleUnauthorized(error) {
-  if (error?.status === 401 || error?.message?.includes('not logged in')) {
-    clearCachedUserId()
-    window.location.reload()
-    return true
-  }
-  return false
-}
 
 function getClient() {
   return supabase
@@ -22,6 +14,7 @@ export async function listProjects() {
   try {
     const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return []
     const { data, error } = await supabase
       .from(TABLE)
       .select('id, name, created_at, updated_at')
@@ -38,10 +31,11 @@ export async function listProjects() {
 
 // Create a new project (enforces unique name per user).
 export async function createProject(name, data = {}) {
-  try {
-    const supabase = getClient()
+    try {
+      const supabase = await getClient()
     const now = new Date().toISOString()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
 
     // Enforce uniqueness per (user_id, name) before insert
     const { data: existing, error: existingError } = await supabase
@@ -79,9 +73,10 @@ export async function createProject(name, data = {}) {
 // Read a project by ID (scoped to current user).
 export async function readProject(id) {
   if (!id) throw new Error('id required')
-  try {
-    const supabase = getClient()
+    try {
+      const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
     const { data, error } = await supabase
       .from(TABLE)
       .select('*')
@@ -100,9 +95,10 @@ export async function readProject(id) {
 // Update a project by ID (name, etc.). Returns updated row.
 export async function updateProject(id, data) {
   if (!id) throw new Error('id required')
-  try {
-    const supabase = getClient()
+    try {
+      const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
 
     // If name is changing, enforce per-user uniqueness
     if (typeof data.name === 'string' && data.name.trim()) {
@@ -136,9 +132,10 @@ export async function updateProject(id, data) {
 // Delete a project by ID.
 export async function deleteProject(id) {
   if (!id) throw new Error('id required')
-  try {
-    const supabase = getClient()
+    try {
+      const supabase = await getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return false
     const { error } = await supabase
       .from(TABLE)
       .delete()
