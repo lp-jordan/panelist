@@ -11,6 +11,7 @@ function getClient() {
 
 // List all projects for the current user.
 export async function listProjects() {
+  if (isUnauthenticated()) return []
   try {
     const supabase = getClient()
     const userId = cachedUserId
@@ -31,8 +32,9 @@ export async function listProjects() {
 
 // Create a new project (enforces unique name per user).
 export async function createProject(name, data = {}) {
-    try {
-      const supabase = await getClient()
+  if (isUnauthenticated()) return null
+  try {
+    const supabase = await getClient()
     const now = new Date().toISOString()
     const userId = cachedUserId
     if (!userId) return null

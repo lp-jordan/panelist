@@ -10,4 +10,9 @@ export async function getCurrentUserId() {
 
 export function clearCachedUserId() {
   cachedUserId = null
+  checkedUnauthenticated = false
+}
+
+export function isUnauthenticated() {
+  return checkedUnauthenticated
 }
