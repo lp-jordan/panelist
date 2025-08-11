@@ -34,6 +34,7 @@ export async function listPages(projectId) {
   try {
     const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return []
     const { data, error } = await supabase
       .from(TABLE)
       .select('id, title')
@@ -58,6 +59,7 @@ export async function createPage(name, data, projectId) {
     const supabase = getClient()
     const now = new Date().toISOString()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
     const payload = {
       title: encodeTitle(name),
       created_at: now,
@@ -89,6 +91,7 @@ export async function readPage(id, projectId) {
   try {
     const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
     const { data, error } = await supabase
       .from(TABLE)
       .select('id, title, project_id, created_at, updated_at, page_content, version')
@@ -146,6 +149,7 @@ export async function updatePage(id, data, projectId) {
     }
 
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return null
     const { error } = await supabase
       .from(TABLE)
       .update(row)
@@ -169,6 +173,7 @@ export async function deletePage(id, projectId) {
   try {
     const supabase = getClient()
     const userId = await getCurrentUserId(supabase)
+    if (!userId) return false
     const { error } = await supabase
       .from(TABLE)
       .delete()

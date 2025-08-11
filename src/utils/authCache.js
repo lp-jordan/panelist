@@ -10,6 +10,10 @@ export async function getCurrentUserId(supabase) {
     cachedUserId = null
     throw error
   }
+  if (!user) {
+    cachedUserId = null
+    return null
+  }
   cachedUserId = user.id
   return cachedUserId
 }
