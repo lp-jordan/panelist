@@ -1,6 +1,6 @@
 // utils/projectRepository.js
 import { supabase } from './supabaseClient'
-import { getCurrentUserId } from './authCache'
+import { cachedUserId } from './authCache'
 import { handleUnauthorized } from './session'
 
 const TABLE = 'projects'
@@ -13,7 +13,7 @@ function getClient() {
 export async function listProjects() {
   try {
     const supabase = getClient()
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return []
     const { data, error } = await supabase
       .from(TABLE)
@@ -34,7 +34,7 @@ export async function createProject(name, data = {}) {
     try {
       const supabase = await getClient()
     const now = new Date().toISOString()
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return null
 
     // Enforce uniqueness per (user_id, name) before insert
@@ -75,7 +75,7 @@ export async function readProject(id) {
   if (!id) throw new Error('id required')
     try {
       const supabase = await getClient()
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return null
     const { data, error } = await supabase
       .from(TABLE)
@@ -97,7 +97,7 @@ export async function updateProject(id, data) {
   if (!id) throw new Error('id required')
     try {
       const supabase = await getClient()
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return null
 
     // If name is changing, enforce per-user uniqueness
@@ -134,7 +134,7 @@ export async function deleteProject(id) {
   if (!id) throw new Error('id required')
     try {
       const supabase = await getClient()
-    const userId = await getCurrentUserId(supabase)
+    const userId = cachedUserId
     if (!userId) return false
     const { error } = await supabase
       .from(TABLE)
