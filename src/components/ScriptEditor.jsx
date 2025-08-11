@@ -29,7 +29,6 @@ const ScriptEditor = forwardRef(function ScriptEditor(
     mode,            // kept to preserve behavior / styling toggles
     pageIndex,
     onUpdate,
-    onInView,
     characters = [],
     zoom = 1,
   },
@@ -42,9 +41,7 @@ const ScriptEditor = forwardRef(function ScriptEditor(
   // Keep the latest callbacks in refs so their identity can change
   // without forcing the editor to re-create.
   const onUpdateRef = useRef(onUpdate)
-  const onInViewRef = useRef(onInView)
   useEffect(() => { onUpdateRef.current = onUpdate }, [onUpdate])
-  useEffect(() => { onInViewRef.current = onInView }, [onInView])
 
   // Memoize extensions so `useEditor` receives a stable config.
   const extensions = useMemo(() => ([
@@ -76,7 +73,7 @@ const ScriptEditor = forwardRef(function ScriptEditor(
     },
   }), [pageIndex])
 
-  // IMPORTANT: do not put onUpdate / onInView directly into useEditor.
+  // IMPORTANT: do not put onUpdate directly into useEditor.
   // We attach listeners after mount to keep config stable.
   const editor = useEditor({
     extensions,
@@ -96,25 +93,6 @@ const ScriptEditor = forwardRef(function ScriptEditor(
     return () => {
       editor.off('update', handleUpdate)
     }
-  }, [editor, pageIndex])
-
-  // Optional: observe visibility for onInView without recreating editor
-  useEffect(() => {
-    if (!editor || !containerRef.current) return
-    const el = containerRef.current
-    const io = new IntersectionObserver(
-      entries => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            onInViewRef.current?.(pageIndex, editor, e.intersectionRatio)
-            break
-          }
-        }
-      },
-      { root: null, rootMargin: '0px', threshold: 0.4 },
-    )
-    io.observe(el)
-    return () => io.disconnect()
   }, [editor, pageIndex])
 
   // Apply character suggestions from project as a side-effect

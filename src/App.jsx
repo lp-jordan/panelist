@@ -43,10 +43,8 @@ export default function App({ onSignOut }) {
   const [mode, setMode] = useState('Script')
   const [pages, setPages] = useState([])         // [{ id, title, ... }]
   const [pageDocs, setPageDocs] = useState([])   // ProseMirror JSON per page
+  const pageDocsRef = useRef([])
   const [activePage, setActivePage] = useState(0)
-  const activePageRef = useRef(0)
-  const activePageRatioRef = useRef(0)
-  const lastInteractionRef = useRef('editor')
   const [wordCount, setWordCount] = useState(0)
   const wordCountsRef = useRef([])
   const sidebarRef = useRef(null)
@@ -61,6 +59,8 @@ export default function App({ onSignOut }) {
   const pagesRef = useRef(pages)
   const activeProjectRef = useRef(activeProject)
 
+  useEffect(() => { pageDocsRef.current = pageDocs }, [pageDocs])
+
   const pageTitle = pages[activePage]?.title ?? ''
   const totalPages = pages.length
 
@@ -68,10 +68,6 @@ export default function App({ onSignOut }) {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
-
-  useEffect(() => {
-    activePageRef.current = activePage
-  }, [activePage])
 
   useEffect(() => {
     document.documentElement.style.setProperty('--accent', accentColor)
@@ -122,10 +118,10 @@ export default function App({ onSignOut }) {
       }))
       setPages(pageInfo)
       setPageDocs(docs)
+      pageDocsRef.current = docs
       const counts = docs.map(d => countWords(getTextFromDoc(d)))
       wordCountsRef.current = counts
       const total = counts.reduce((sum, c) => sum + c, 0)
-      activePageRef.current = 0
       setActivePage(0)
       setWordCount(total)
     } catch (err) {
@@ -146,19 +142,15 @@ export default function App({ onSignOut }) {
     const pageId = current.id
     const finalTitle = extracted !== null ? extracted : current.title
 
-    setPages(prev => {
-      const next = [...prev]
-      const page = next[index] || {}
-      if (extracted !== null) {
-        next[index] = { ...page, title: extracted }
-      }
-      return next
-    })
-    setPageDocs(prev => {
-      const next = [...prev]
-      next[index] = doc
-      return next
-    })
+    if (extracted !== null && current.title !== extracted) {
+      setPages(prev => {
+        const next = [...prev]
+        next[index] = { ...next[index], title: extracted }
+        return next
+      })
+    }
+
+    pageDocsRef.current[index] = doc
 
     const text = editor?.getText ? editor.getText() : getTextFromDoc(doc)
     wordCountsRef.current[index] = countWords(text)
@@ -199,31 +191,8 @@ export default function App({ onSignOut }) {
     if (!userInitiated) return
     const el = pageRefs.current[index]
     if (!el) return
-    lastInteractionRef.current = 'sidebar'
-    activePageRef.current = index
-    activePageRatioRef.current = 1
     setActivePage(index)
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  }
-
-  function handlePageInView(index, editor, ratio) {
-    if (lastInteractionRef.current === 'sidebar') {
-      if (index !== activePageRef.current || ratio < 1) return
-      lastInteractionRef.current = 'editor'
-    } else {
-      lastInteractionRef.current = 'editor'
-    }
-    if (index === activePageRef.current) {
-      activePageRatioRef.current = ratio
-    } else if (ratio > 0.6 || ratio > activePageRatioRef.current) {
-      activePageRef.current = index
-      activePageRatioRef.current = ratio
-      setActivePage(index)
-    }
-    const text = editor?.getText ? editor.getText() : ''
-    wordCountsRef.current[index] = countWords(text)
-    const total = wordCountsRef.current.reduce((sum, c) => sum + c, 0)
-    setWordCount(total)
   }
 
   async function handleCreatePage() {
@@ -244,13 +213,11 @@ export default function App({ onSignOut }) {
     }
     setPages(prev => [...prev, { id: newId, title }])
     setPageDocs(prev => [...prev, newDoc])
+    pageDocsRef.current[newIndex] = newDoc
     wordCountsRef.current[newIndex] = 0
     setTimeout(() => {
       const el = pageRefs.current[newIndex]
-      if (el && activePageRef.current !== newIndex) {
-        lastInteractionRef.current = 'sidebar'
-        activePageRef.current = newIndex
-        activePageRatioRef.current = 1
+      if (el) {
         setActivePage(newIndex)
         const total = wordCountsRef.current.reduce((sum, c) => sum + c, 0)
         setWordCount(total)
@@ -283,7 +250,6 @@ export default function App({ onSignOut }) {
             mode={mode}
             pageIndex={idx}
             onUpdate={throttledHandlePageUpdate}
-            onInView={handlePageInView}
             characters={activeProject?.characters ?? []}
             zoom={zoom}
           />
