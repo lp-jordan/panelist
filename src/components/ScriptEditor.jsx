@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, forwardRef, useImperativeHandle } from 'react'
 import { EditorContent, useEditor } from '@tiptap/react'
-import { BubbleMenu } from '@tiptap/react/menus'
+import { BubbleMenu } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Underline from '@tiptap/extension-underline'
 
