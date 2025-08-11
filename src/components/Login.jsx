@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { signIn, signUp } from '../utils/auth.js'
+import { logger } from '../utils/logger.js'
 import { Button } from './ui/button'
 
 export default function Login({ onLogin }) {
@@ -30,22 +31,13 @@ export default function Login({ onLogin }) {
       return
     }
 
-    let result
-    try {
-      if (isSignUp) {
-        result = await signUp(trimmedEmail, trimmedPassword)
-      } else {
-        result = await signIn(trimmedEmail, trimmedPassword)
-      }
-    } catch (err) {
-      console.error('Unexpected auth error:', err)
-      setError(err.message)
-      return
-    }
+    const result = isSignUp
+      ? await signUp(trimmedEmail, trimmedPassword)
+      : await signIn(trimmedEmail, trimmedPassword)
 
     const { data, error: err } = result
     if (err) {
-      console.error('Auth error:', err)
+      logger.error('Auth error:', err)
       setError(err.message)
     } else {
       onLogin?.(data.session)
