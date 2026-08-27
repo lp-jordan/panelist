@@ -192,14 +192,18 @@ Tracking scaffolding and build progress against this spec. Check items off as th
 - [x] Search by title / sort by last edited
 
 ### Editor core (§3.2, §4, §5)
-- [ ] Tiptap schema: page, note, panel, dialogue, caption, sfx node types
-- [ ] Live panel numbering + page word-numbers
-- [ ] Live panel count in page heading
-- [ ] Auto "NO COPY" insertion/removal
-- [ ] Inline bold/italic/bold-italic
-- [ ] Enter-key contextual element flow
-- [ ] Explicit insert menu/hotkeys (page, panel, note, SFX, caption)
-- [ ] Drag/keyboard reordering of panels and pages
+- [x] Tiptap schema: page, note, panel, panelDescription, textElement (dialogue/caption/sfx) node types
+- [x] Live panel numbering + page word-numbers (computed at render time from document position, never stored as text)
+- [x] Live panel count in page heading
+- [x] Auto "NO COPY" insertion/removal
+- [x] Inline bold/italic/bold-italic
+- [x] Enter-key contextual element flow (panel description → dialogue; dialogue/caption/sfx → same kind+character; note → new panel). Also `Mod-Enter` to jump straight to a new dialogue line in the current panel from anywhere in it.
+- [x] Explicit inserts — implemented as toolbar buttons (+Page/+Panel/+Note/+Dialogue/+Caption/+SFX) rather than a slash-command menu; same functionality, simpler MVP scope.
+- [x] Reordering — implemented as ↑/↓ buttons on pages/panels/textElements rather than drag-and-drop (the doc allows either); numbering recalculates immediately since it's computed, not stored.
+- [x] Character autocomplete (HTML `<datalist>` sourced from the project's cast) + auto-add new names to the project's `CastMember` table on blur.
+- [x] Manual Save button + Ctrl/Cmd+S (full round-trip verified: editor → relational tables → reload reconstructs identically, including bold/italic runs). This is the "forced save" half of §3.4 — debounced autosave and version snapshots are still their own separate checklist section below, not built yet.
+
+Known gaps from this pass, not blocking: (1) `CastMember` requires a `projectId`, so unassigned scripts don't yet get the "script-only memory" fallback described in §3.3 — would need a schema change to support. (2) The last-page delete-guard button initially went stale when a *different* page was deleted (fixed with `useEditorState` so it re-renders on any document change, not just position shifts of that specific node) — mentioning since it's the kind of bug worth knowing about if similar computed-UI-state bugs show up elsewhere in the editor.
 
 ### Character memory (§3.3)
 - [ ] Per-project cast list

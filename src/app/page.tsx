@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/format";
@@ -126,7 +127,9 @@ function ScriptList({ scripts }: { scripts: ScriptCard[] }) {
           }}
         >
           <div style={{ flex: 1 }}>
-            <strong>{script.title}</strong>{" "}
+            <Link href={`/scripts/${script.id}`}>
+              <strong>{script.title}</strong>
+            </Link>{" "}
             <span style={{ color: "#666" }}>
               — {script.draftLabel} · {script._count.pages} page{script._count.pages === 1 ? "" : "s"} · edited{" "}
               {formatRelativeTime(script.updatedAt)}

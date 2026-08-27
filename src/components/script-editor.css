@@ -1,0 +1,132 @@
+.sx-editor {
+  font-family: "Courier New", Courier, monospace;
+  max-width: 700px;
+  line-height: 1.5;
+}
+
+.sx-page {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background: white;
+}
+
+.sx-page-toolbar,
+.sx-panel-toolbar,
+.sx-note-controls,
+.sx-text-element-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+  font-family: sans-serif;
+  font-size: 0.75rem;
+}
+
+.sx-page-toolbar button,
+.sx-panel-toolbar button,
+.sx-note-controls button,
+.sx-text-element-controls button,
+.sx-text-element-controls select {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+}
+
+.sx-page-heading {
+  text-decoration: underline;
+  font-size: 1.1rem;
+}
+
+.sx-controls {
+  margin-left: auto;
+  display: flex;
+  gap: 0.3rem;
+}
+
+.sx-page-body {
+  display: block;
+}
+
+.sx-panel {
+  margin: 0.75rem 0;
+  padding-left: 0.5rem;
+  border-left: 3px solid transparent;
+}
+
+.sx-panel:hover {
+  border-left-color: #ddd;
+}
+
+.sx-panel-flow {
+  display: block;
+}
+
+.sx-panel-label {
+  display: inline;
+}
+
+.sx-panel-description {
+  display: inline;
+}
+
+.sx-no-copy {
+  font-style: italic;
+  font-weight: bold;
+  margin-top: 0.25rem;
+  margin-left: 1.5rem;
+  color: #555;
+}
+
+.sx-note {
+  margin: 0.5rem 0;
+  padding: 0.4rem 0.6rem;
+  background: #fffbe6;
+  border: 1px dashed #e0c85e;
+}
+
+.sx-note-content {
+  font-style: italic;
+  font-weight: bold;
+  display: inline;
+}
+
+.sx-text-element {
+  margin: 0.35rem 0 0.35rem 1.5rem;
+}
+
+.sx-character-input {
+  width: 8rem;
+}
+
+.sx-modifier-input {
+  width: 8rem;
+}
+
+.sx-text-element-line {
+  display: block;
+}
+
+.sx-text-element-label {
+  display: inline;
+}
+
+.sx-text-element-content {
+  display: inline;
+}
+
+.sx-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-family: sans-serif;
+}
+
+.sx-save-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  font-family: sans-serif;
+}
