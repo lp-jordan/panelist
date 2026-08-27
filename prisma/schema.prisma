@@ -1,0 +1,182 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+//
+// Data model mirrors "Comic Script Writer - MVP Plan.md" §4.
+// User / ProjectMember / Asset / Event exist now as schema seams for the
+// future team/production feature (§7) but are unused by MVP logic.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(OWNER)
+  createdAt    DateTime @default(now())
+
+  projectMemberships ProjectMember[]
+  uploadedAssets     Asset[]
+  events             Event[]
+}
+
+enum Role {
+  OWNER
+  COLLABORATOR
+}
+
+model Project {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  scripts      Script[]
+  castMembers  CastMember[]
+  members      ProjectMember[]
+}
+
+model ProjectMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      Role     @default(COLLABORATOR)
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model CastMember {
+  id        String  @id @default(cuid())
+  projectId String
+  name      String
+  notes     String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, name])
+}
+
+model Script {
+  id         String    @id @default(cuid())
+  projectId  String?
+  title      String
+  author     String
+  draftLabel String
+  draftDate  DateTime
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  deletedAt  DateTime?
+
+  project   Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  pages     Page[]
+  snapshots Snapshot[]
+}
+
+model Page {
+  id       String @id @default(cuid())
+  scriptId String
+  order    Int
+
+  script Script     @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  items  PageItem[]
+  assets Asset[]
+
+  @@unique([scriptId, order])
+}
+
+enum PageItemType {
+  NOTE
+  PANEL
+}
+
+model PageItem {
+  id       String       @id @default(cuid())
+  pageId   String
+  order    Int
+  type     PageItemType
+  noteText String?
+
+  page  Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  panel Panel?
+
+  @@unique([pageId, order])
+}
+
+model Panel {
+  id          String @id @default(cuid())
+  pageItemId  String @unique
+  description String
+
+  pageItem     PageItem          @relation(fields: [pageItemId], references: [id], onDelete: Cascade)
+  textElements PanelTextElement[]
+}
+
+enum PanelTextElementType {
+  DIALOGUE
+  CAPTION
+  SFX
+}
+
+model PanelTextElement {
+  id        String                @id @default(cuid())
+  panelId   String
+  order     Int
+  type      PanelTextElementType
+  character String?
+  modifier  String?
+  text      String
+
+  panel Panel @relation(fields: [panelId], references: [id], onDelete: Cascade)
+
+  @@unique([panelId, order])
+}
+
+model Snapshot {
+  id        String   @id @default(cuid())
+  scriptId  String
+  label     String?
+  isManual  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  content   String
+
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+}
+
+/// Future: uploaded art pages, out of scope for MVP UI/logic.
+/// No stage/pipeline enum — an asset stack for a page is just all its
+/// Asset rows ordered by createdAt (newest first).
+model Asset {
+  id         String   @id @default(cuid())
+  pageId     String
+  uploadedBy String
+  storageKey String
+  note       String?
+  createdAt  DateTime @default(now())
+
+  page     Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploadedBy], references: [id])
+}
+
+/// Future: append-only activity log. Not read anywhere in the MVP, but
+/// written to from day one where cheap, since unlogged history can never
+/// be reconstructed later.
+model Event {
+  id        String   @id @default(cuid())
+  type      String
+  subjectId String
+  actorId   String
+  meta      String?
+  createdAt DateTime @default(now())
+
+  actor User @relation(fields: [actorId], references: [id])
+}
