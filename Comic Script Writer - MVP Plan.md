@@ -181,15 +181,15 @@ Tracking scaffolding and build progress against this spec. Check items off as th
 - [x] Prisma + SQLite configured, schema from §4 applied (including the unused `ProjectMember`/`Asset`/`Event` seams; `User` is used now, by the password gate)
 - [x] Tiptap dependencies installed
 - [x] Password-gate middleware stubbed (§6) — implemented as a real single-owner login: seeded `User` row, bcrypt password check, signed session cookie (`jose`), `src/proxy.ts` doing the optimistic redirect. Run `npx prisma db seed` (reads `OWNER_NAME`/`OWNER_EMAIL`/`OWNER_PASSWORD` from `.env`) once before first login.
-- [ ] Initial commit
+- [x] Initial commit
 
 ### Dashboard (§3.1)
-- [ ] List scripts grouped by project + "Unassigned" group
-- [ ] Create / rename / archive / delete projects
-- [ ] Create / rename / duplicate / archive / delete scripts
-- [ ] Trash view with restore
-- [ ] Script card metadata (title, project, page count, last-edited, draft label)
-- [ ] Search by title / sort by last edited
+- [x] List scripts grouped by project + "Unassigned" group
+- [x] Create / rename / archive projects (archiving a project cascades to archive its own scripts too, so nothing goes missing from both dashboard and trash at once); permanent delete lives in Trash only
+- [x] Create / rename / duplicate / archive scripts; permanent delete lives in Trash only
+- [x] Trash view with restore (restoring a project does not auto-restore its scripts — restore those individually)
+- [x] Script card metadata (title, project, page count, last-edited, draft label)
+- [x] Search by title / sort by last edited
 
 ### Editor core (§3.2, §4, §5)
 - [ ] Tiptap schema: page, note, panel, dialogue, caption, sfx node types

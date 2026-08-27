@@ -18,11 +18,19 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const owner = await prisma.user.upsert({
-    where: { email },
-    update: { name, passwordHash, role: "OWNER" },
-    create: { name, email, passwordHash, role: "OWNER" },
-  });
+  // Keyed on role, not email: MVP has exactly one OWNER, and OWNER_EMAIL may
+  // change between seed runs. Matching on email would create a second owner
+  // instead of updating the existing one.
+  const existing = await prisma.user.findFirst({ where: { role: "OWNER" } });
+
+  const owner = existing
+    ? await prisma.user.update({
+        where: { id: existing.id },
+        data: { name, email, passwordHash },
+      })
+    : await prisma.user.create({
+        data: { name, email, passwordHash, role: "OWNER" },
+      });
 
   console.log(`Owner user ready: ${owner.email}`);
 }

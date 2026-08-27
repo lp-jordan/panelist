@@ -23,6 +23,9 @@ export const getCurrentUser = cache(async () => {
   });
 
   if (!user) {
+    // Shouldn't normally happen — proxy.ts already verifies the user
+    // exists and clears the cookie otherwise. Cookies can't be mutated
+    // from a Server Component render, so this is a plain fallback.
     redirect("/login");
   }
 
