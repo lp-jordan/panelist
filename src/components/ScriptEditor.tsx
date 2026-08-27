@@ -5,7 +5,7 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { scriptNodes } from "@/lib/editor/nodes";
 import { ScriptKeymap } from "@/lib/editor/keymap";
-import { CastContext, CAST_DATALIST_ID } from "@/lib/editor/CastContext";
+import { CastContext } from "@/lib/editor/CastContext";
 import type { JSONNode } from "@/lib/editor/serialize";
 import { saveScriptContent, addCastMemberFromEditor } from "@/app/actions/editor";
 import "./script-editor.css";
@@ -101,15 +101,10 @@ export function ScriptEditor({
 
   return (
     <CastContext.Provider value={{ castNames, ensureCastName }}>
-      <datalist id={CAST_DATALIST_ID}>
-        {castNames.map((name) => (
-          <option key={name} value={name} />
-        ))}
-      </datalist>
-
       <div className="sx-status-bar">
         <span className="sx-hint">
-          Enter for next line · Enter again to start the next panel · Tab to change type · Ctrl/Cmd+Enter for new page
+          Enter for next line · Enter again to start the next panel · Tab to change type · Ctrl/Cmd+Backspace to
+          delete a panel
         </span>
         <span className="sx-save-status">
           {status === "saving" && "Saving…"}

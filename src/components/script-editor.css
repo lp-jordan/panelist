@@ -9,8 +9,6 @@
 
 .sx-editor {
   --sx-tab: 2in;
-  max-width: 6.5in;
-  margin: 0 auto;
   line-height: 1.6;
   font-size: 0.9rem;
 }
@@ -20,8 +18,9 @@
   justify-content: space-between;
   align-items: baseline;
   gap: 1rem;
-  max-width: 6.5in;
-  margin: 0 auto 1.5rem;
+  width: 8.5in;
+  max-width: 100%;
+  margin: 0 auto 1rem;
   font-size: 0.75rem;
   color: #777;
 }
@@ -39,14 +38,20 @@
   display: inline;
 }
 
+/* A page is always a physical 8.5x11 sheet with 1in margins, so the writing
+   area never changes size as content is added. Short pages still render as a
+   full sheet; a comic page whose content genuinely exceeds one sheet grows
+   past 11in rather than being clipped (true mid-node pagination is a much
+   larger feature and isn't part of the MVP). */
 .sx-page {
-  padding: 1.5rem 0;
-  border-top: 1px solid #eee;
-}
-
-.sx-page:first-child {
-  border-top: none;
-  padding-top: 0;
+  box-sizing: border-box;
+  width: 8.5in;
+  min-height: 11in;
+  max-width: 100%;
+  padding: 1in;
+  margin: 0 auto 1.5rem;
+  background: #fff;
+  border: 1px solid #ddd;
 }
 
 .sx-page-heading {
@@ -107,6 +112,24 @@
   text-indent: 0;
 }
 
+/* The name field is sized to its own text so the colon sits right after the
+   name instead of at a fixed offset. `.sx-name-sizer` is an invisible copy of
+   that text, measured to get an exact width in a proportional font. */
+.sx-name-field {
+  position: relative;
+  display: inline-block;
+}
+
+.sx-name-sizer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: pre;
+  text-transform: uppercase;
+}
+
 .sx-inline-field {
   font-family: inherit;
   font-size: inherit;
@@ -119,6 +142,7 @@
   padding: 0;
   outline: none;
   vertical-align: baseline;
+  min-width: 1ch;
 }
 
 .sx-inline-field:focus {

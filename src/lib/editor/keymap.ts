@@ -48,10 +48,13 @@ export const ScriptKeymap = Extension.create({
             }
           }
 
+          // Carry the previous speaker over but land in the name field with it
+          // selected, so the next line can be a different character without
+          // reaching for the mouse — and stays the same one if you just Tab on.
           const { kind, character } = $from.parent.attrs as { kind: string; character: string };
           insertNodeAndFocus(editor, insertPos, {
             type: "textElement",
-            attrs: { kind, character, modifier: "", autoFocusCharacter: false },
+            attrs: { kind, character, modifier: "", autoFocusCharacter: true },
             content: [],
           });
           return true;
@@ -110,24 +113,27 @@ export const ScriptKeymap = Extension.create({
         return false;
       },
 
+      // Deletes the panel (or note) the cursor is in, dialogue and all —
+      // plain Backspace only clears lines that are already empty, which left
+      // no way to remove a panel that still had text in it.
       "Mod-Backspace": () => {
         const { editor } = this;
         const { state } = editor;
-        const { $from, empty } = state.selection;
-        if (!empty || $from.parentOffset !== 0 || $from.parent.type.name !== "panelDescription" || $from.parent.content.size > 0) {
-          return false;
+        const blockPos = currentBlockPos(state);
+        const pagePos = findAncestorPos(state, state.selection.$from.pos, "page");
+        if (blockPos == null || pagePos == null) return false;
+
+        const blockNode = state.doc.resolve(blockPos).nodeAfter;
+        const pageNode = state.doc.resolve(pagePos).nodeAfter;
+        if (!blockNode || !pageNode) return false;
+
+        if (pageNode.childCount > 1) {
+          return deleteRangeAndFocusNear(editor, blockPos, blockPos + blockNode.nodeSize, -1);
         }
 
-        const panelPos = findAncestorPos(state, $from.pos, "panel");
-        const pagePos = findAncestorPos(state, $from.pos, "page");
-        if (panelPos == null || pagePos == null) return false;
-
-        const panelNode = state.doc.resolve(panelPos).nodeAfter;
-        const pageNode = state.doc.resolve(pagePos).nodeAfter;
-        if (!panelNode || panelNode.childCount > 1) return false; // panel has content
-        if (!pageNode || pageNode.childCount > 1) return false; // page has more than this one empty panel
-        if (state.doc.childCount <= 1) return false; // never delete the only page
-
+        // It's the page's only content, so the page goes with it — unless
+        // it's the last page, which would leave nowhere to type.
+        if (state.doc.childCount <= 1) return false;
         return deleteRangeAndFocusNear(editor, pagePos, pagePos + pageNode.nodeSize, -1);
       },
 

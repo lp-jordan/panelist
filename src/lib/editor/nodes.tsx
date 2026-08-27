@@ -1,9 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Node, mergeAttributes } from "@tiptap/core";
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent, type NodeViewProps } from "@tiptap/react";
 import { toPageWordNumber } from "./numberToWords";
 import { pageIndexAt, panelCountInPage, panelNumberAt } from "./positions";
-import { CAST_DATALIST_ID, useCastContext } from "./CastContext";
+import { useCastContext } from "./CastContext";
 
 // --- doc ---------------------------------------------------------------
 
@@ -126,28 +126,86 @@ function TextElementView({ node, updateAttributes, getPos, editor }: NodeViewPro
     character: string;
     autoFocusCharacter?: boolean;
   };
-  const { ensureCastName } = useCastContext();
+  const { castNames, ensureCastName } = useCastContext();
   const characterRef = useRef<HTMLInputElement>(null);
+  const sizerRef = useRef<HTMLSpanElement>(null);
+  const [value, setValue] = useState(character);
+  const [fieldWidth, setFieldWidth] = useState<number>();
+  // Set when an autocomplete suggestion is applied, so the suggested tail can
+  // be selected after the value renders (typing then replaces it, as with any
+  // type-ahead field).
+  const pendingSelection = useRef<[number, number] | null>(null);
+
+  const placeholder = kind === "caption" ? "CAPTION" : "CHARACTER";
+
+  // Verdana is proportional, so the field can't be sized in `ch` units without
+  // the colon drifting away from short names. Measuring a hidden copy of the
+  // text gives an exact fit.
+  useLayoutEffect(() => {
+    if (sizerRef.current) setFieldWidth(sizerRef.current.offsetWidth + 1);
+  }, [value, placeholder]);
+
+  useLayoutEffect(() => {
+    const input = characterRef.current;
+    if (input && pendingSelection.current) {
+      const [start, end] = pendingSelection.current;
+      pendingSelection.current = null;
+      input.setSelectionRange(start, end);
+    }
+  });
 
   useEffect(() => {
     if (autoFocusCharacter) {
-      characterRef.current?.focus();
+      const input = characterRef.current;
+      // select() so a name carried over from the previous line is replaced by
+      // typing, but kept if the same character simply keeps talking.
+      input?.focus();
+      input?.select();
       updateAttributes({ autoFocusCharacter: false });
     }
     // Only run once, right after this node is created with the flag set.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const jumpToBody = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Tab" || event.shiftKey) return;
+  const commit = (raw: string) => {
+    const trimmed = raw.trim();
+    updateAttributes({ character: trimmed });
+    if (trimmed) ensureCastName(trimmed);
+    return trimmed;
+  };
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const typed = event.target.value;
+    // Comparing lengths would misread "type over the selected prefilled name"
+    // as a deletion — the value gets shorter — and suppress the suggestion on
+    // the very first keystroke, which is exactly when it's most useful.
+    const inputType = (event.nativeEvent as InputEvent).inputType;
+    const isInserting =
+      typeof inputType === "string" ? inputType.startsWith("insert") : typed.length > value.length;
+
+    if (isInserting && typed.length > 0) {
+      const match = castNames.find(
+        (name) => name.toLowerCase().startsWith(typed.toLowerCase()) && name.length > typed.length,
+      );
+      if (match) {
+        pendingSelection.current = [typed.length, match.length];
+        setValue(match);
+        return;
+      }
+    }
+    setValue(typed);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((event.key !== "Tab" || event.shiftKey) && event.key !== "Enter") return;
     event.preventDefault();
-    // Blurring this input (about to happen as focus moves to the ProseMirror
-    // body) fires onBlur -> updateAttributes -> a transaction that can race
-    // with the selection change below. Committing the value here first and
-    // deferring the focus move past that transaction avoids the race.
-    const value = event.currentTarget.value.trim();
-    updateAttributes({ character: value });
-    if (value) ensureCastName(value);
+    // Keep Tab/Enter from reaching the editor's own keymap, which would cycle
+    // the line type or start a new line instead of moving into this one.
+    event.stopPropagation();
+
+    // Committing here rather than relying on the blur that's about to happen
+    // avoids racing the attribute transaction against the selection change.
+    commit(value);
     const pos = getPos();
     if (typeof pos === "number") {
       setTimeout(() => focusEditorBodyAt(editor, pos), 0);
@@ -160,22 +218,23 @@ function TextElementView({ node, updateAttributes, getPos, editor }: NodeViewPro
         {kind === "sfx" ? (
           "SFX"
         ) : (
-          <input
-            ref={characterRef}
-            className="sx-inline-field"
-            list={CAST_DATALIST_ID}
-            placeholder={kind === "caption" ? "CAPTION" : "CHARACTER"}
-            defaultValue={character}
-            size={Math.max(character.length, kind === "caption" ? 7 : 9)}
-            onBlur={(event) => {
-              const value = event.target.value.trim();
-              updateAttributes({ character: value });
-              if (value) ensureCastName(value);
-            }}
-            onKeyDown={jumpToBody}
-          />
+          <span className="sx-name-field">
+            <span className="sx-name-sizer" ref={sizerRef} aria-hidden="true">
+              {value || placeholder}
+            </span>
+            <input
+              ref={characterRef}
+              className="sx-inline-field"
+              placeholder={placeholder}
+              value={value}
+              style={fieldWidth ? { width: fieldWidth } : undefined}
+              onChange={handleChange}
+              onBlur={() => commit(value)}
+              onKeyDown={handleKeyDown}
+            />
+          </span>
         )}
-        {kind === "caption" && character ? " (CAPTION)" : ""}
+        {kind === "caption" && value ? " (CAPTION)" : ""}
         {":"}
       </span>
       <NodeViewContent<"span"> className="sx-text-element-content" as="span" />
