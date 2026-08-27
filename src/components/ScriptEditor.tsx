@@ -6,7 +6,6 @@ import StarterKit from "@tiptap/starter-kit";
 import { scriptNodes } from "@/lib/editor/nodes";
 import { ScriptKeymap } from "@/lib/editor/keymap";
 import { CastContext, CAST_DATALIST_ID } from "@/lib/editor/CastContext";
-import { insertPage, insertPanelAfterCurrent, insertNoteAfterCurrent, insertTextElementInCurrentPanel } from "@/lib/editor/commands";
 import type { JSONNode } from "@/lib/editor/serialize";
 import { saveScriptContent, addCastMemberFromEditor } from "@/app/actions/editor";
 import "./script-editor.css";
@@ -108,28 +107,16 @@ export function ScriptEditor({
         ))}
       </datalist>
 
-      <div className="sx-save-bar">
-        <button type="button" onClick={save} disabled={status === "saving"}>
-          {status === "saving" ? "Saving..." : "Save (Ctrl/Cmd+S)"}
-        </button>
-        {status === "saved" && <span style={{ color: "green" }}>Saved</span>}
-        {status === "error" && <span style={{ color: "crimson" }}>Save failed — try again</span>}
-      </div>
-
-      <div className="sx-toolbar">
-        <button type="button" onClick={() => editor.chain().focus().toggleBold().run()}>
-          <strong>B</strong>
-        </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()}>
-          <em>I</em>
-        </button>
-        <span style={{ width: "1px", background: "#ccc" }} />
-        <button type="button" onClick={() => insertPage(editor)}>+ Page</button>
-        <button type="button" onClick={() => insertPanelAfterCurrent(editor)}>+ Panel</button>
-        <button type="button" onClick={() => insertNoteAfterCurrent(editor)}>+ Note</button>
-        <button type="button" onClick={() => insertTextElementInCurrentPanel(editor, "dialogue")}>+ Dialogue</button>
-        <button type="button" onClick={() => insertTextElementInCurrentPanel(editor, "caption")}>+ Caption</button>
-        <button type="button" onClick={() => insertTextElementInCurrentPanel(editor, "sfx")}>+ SFX</button>
+      <div className="sx-status-bar">
+        <span className="sx-hint">
+          Enter for next line · Enter again to start the next panel · Tab to change type · Ctrl/Cmd+Enter for new page
+        </span>
+        <span className="sx-save-status">
+          {status === "saving" && "Saving…"}
+          {status === "saved" && "Saved"}
+          {status === "error" && "Save failed — Ctrl/Cmd+S to retry"}
+          {status === "idle" && " "}
+        </span>
       </div>
 
       <EditorContent editor={editor} className="sx-editor" />

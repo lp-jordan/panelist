@@ -24,6 +24,19 @@ The sample script gives us a concrete, consistent structure to build the data mo
 
 This element set (title page, page heading, notes, panels, dialogue, captions, SFX, NO COPY) is confirmed as the full set needed for MVP — no additional first-class element types required.
 
+### 2a. Measured layout (from the RENOWNED #2 PDF, 2026-08-27)
+
+Jordan supplied the actual PDF, so these are measured values rather than inferences from prose. This is the authoritative reference for both the editor and the PDF export (§3.5):
+
+* **Page:** US Letter (612×792pt) with 1in margins — 6.5in content width. Every element's left edge sits on the left margin.
+* **Page heading** (`ONE (6 Panels)`): bold, at the margin.
+* **Panel:** `Panel N:` in **bold** at the margin, with the description running on **inline immediately after it**. Description wrap-lines return to the **left margin** (no hanging indent).
+* **Dialogue / caption / SFX:** the label (`DENNY:`, `DENNY (OFF):`, `BONE (CAPTION):`, `SFX:`) sits at the margin in **regular weight — not bold** — and the spoken text begins at a fixed **2in tab stop**. Wrapped lines align to that same 2in tab stop (a hanging indent). The tab stop is fixed, so it does not shift with the length of the character name.
+* **NO COPY:** regular weight, at the left margin — not indented and not bold-italic.
+* **Emphasis:** italic is the workhorse for in-line emphasis (individual words inside description and dialogue).
+
+Two inconsistencies exist in the source document, where the app deliberately picks one behavior rather than reproducing the variance: (1) one anonymous `CAPTION:` places its text right after the label instead of at the 2in tab stop — the app always uses the tab stop; (2) `NOTE:` appears italic on the title page but regular on p.12 — the app renders notes bold-italic per the written spec above.
+
 ## 3. Core feature list (MVP)
 
 ### 3.1 Dashboard
@@ -197,13 +210,23 @@ Tracking scaffolding and build progress against this spec. Check items off as th
 - [x] Live panel count in page heading
 - [x] Auto "NO COPY" insertion/removal
 - [x] Inline bold/italic/bold-italic
-- [x] Enter-key contextual element flow (panel description → dialogue; dialogue/caption/sfx → same kind+character; note → new panel). Also `Mod-Enter` to jump straight to a new dialogue line in the current panel from anywhere in it.
-- [x] Explicit inserts — implemented as toolbar buttons (+Page/+Panel/+Note/+Dialogue/+Caption/+SFX) rather than a slash-command menu; same functionality, simpler MVP scope.
-- [x] Reordering — implemented as ↑/↓ buttons on pages/panels/textElements rather than drag-and-drop (the doc allows either); numbering recalculates immediately since it's computed, not stored.
+- [x] Enter-key contextual element flow (panel description → dialogue; dialogue/caption/sfx → same kind+character; note → new panel).
 - [x] Character autocomplete (HTML `<datalist>` sourced from the project's cast) + auto-add new names to the project's `CastMember` table on blur.
-- [x] Manual Save button + Ctrl/Cmd+S (full round-trip verified: editor → relational tables → reload reconstructs identically, including bold/italic runs). This is the "forced save" half of §3.4 — debounced autosave and version snapshots are still their own separate checklist section below, not built yet.
+- [x] Manual Save (Ctrl/Cmd+S; full round-trip verified: editor → relational tables → reload reconstructs identically, including bold/italic runs). This is the "forced save" half of §3.4 — debounced autosave and version snapshots are still their own separate checklist section below, not built yet.
 
-Known gaps from this pass, not blocking: (1) `CastMember` requires a `projectId`, so unassigned scripts don't yet get the "script-only memory" fallback described in §3.3 — would need a schema change to support. (2) The last-page delete-guard button initially went stale when a *different* page was deleted (fixed with `useEditorState` so it re-renders on any document change, not just position shifts of that specific node) — mentioning since it's the kind of bug worth knowing about if similar computed-UI-state bugs show up elsewhere in the editor.
+**Redesigned to be fully keyboard-driven, no buttons** (per Jordan's feedback that the first pass was too button-heavy and didn't feel like a plain document): white background, black text, Verdana, and every action that used to be a click is now a shortcut —
+- `Tab` / `Shift-Tab` in a dialogue/caption/SFX line cycles its type (replaces the old dropdown); clears character when cycling into SFX.
+- `Ctrl/Cmd+Enter` inserts a new page (mirrors Google Docs' page-break shortcut); replaces the old +Page/+Panel/+Note/+Dialogue/+Caption/+SFX toolbar entirely — Enter's contextual flow now covers those insertions.
+- `Backspace` at the start of an empty line removes it and lands the cursor at the end of whatever came before — replaces the old per-node delete buttons. Guarded so it can never leave a page with zero content (that's `Ctrl/Cmd+Backspace` on a wholly-empty page instead, and never on the last remaining page).
+- `Alt+↑/↓` reorders the current panel/note within its page; `Alt+Shift+↑/↓` reorders the current page — replaces the old move-up/down buttons.
+- Character name is one free-text field (e.g. "BONE" or "BONE (OFF)") instead of separate character/modifier inputs — reads more like typing a document, less like filling out a form. The `modifier` column still exists and old data round-trips through it untouched; there's just no dedicated control for it in this pass.
+- Bold/Italic dropped from a visible toolbar — still Ctrl/Cmd+B and Ctrl/Cmd+I, just not buttons.
+- A single small gray hint line replaces all the removed chrome, since the interaction model isn't self-explanatory on first use.
+- **Double-Enter ends the panel:** pressing Enter on a dialogue/caption/SFX line that was left empty removes that empty line and starts the next panel, cursor landing in its action line. Both edits are one transaction, so a single undo reverses the whole thing.
+
+**Layout corrected against the real PDF** (§2a) once Jordan supplied it — the first pass had been built from the written description alone and got three things wrong: the editor was left-aligned rather than centered; the panel description sat on its own line below `Panel N:` instead of running on inline; and dialogue text sat below its character label instead of at the 2in tab stop. Root cause of the two inline bugs was that Tiptap wraps every React node view's content in a block-level `div`, which forces a line break inside what should be one continuous line — fixed by explicitly making that wrapper `display: inline` in those two contexts. Also corrected to match the PDF: character labels are regular weight (they had been bold), and NO COPY is flush-left regular (it had been indented bold-italic).
+
+Known gaps from this pass, not blocking: (1) `CastMember` requires a `projectId`, so unassigned scripts don't yet get the "script-only memory" fallback described in §3.3 — would need a schema change to support. (2) The last-page delete-guard initially went stale when a *different* page was deleted client-side (fixed with `useEditorState` so it re-renders on any document change, not just position shifts of that specific node) — mentioning since it's the kind of bug worth knowing about if similar computed-UI-state bugs show up elsewhere in the editor. This particular guard button no longer exists after the keyboard-only redesign, but the underlying lesson (position-shift tracking isn't enough for whole-document-derived values) still applies to `Mod-Backspace`'s own guard, which re-checks the live document on every keypress rather than caching anything.
 
 ### Character memory (§3.3)
 - [ ] Per-project cast list

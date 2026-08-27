@@ -1,7 +1,6 @@
 import type { Editor } from "@tiptap/core";
 import { Fragment, type Node as PMNode } from "@tiptap/pm/model";
 import { TextSelection } from "@tiptap/pm/state";
-import { findAncestorPos, afterNodeAt, contentEndOfNodeAt } from "./positions";
 
 // Swaps the node starting at `childPos` with its previous (-1) or next (+1)
 // sibling by rebuilding the parent's content in one step — simpler and less
@@ -23,16 +22,9 @@ export function moveSibling(editor: Editor, childPos: number, direction: -1 | 1)
     const contentStart = $pos.start($pos.depth);
     const contentEnd = $pos.end($pos.depth);
     editor.view.dispatch(state.tr.replaceWith(contentStart, contentEnd, Fragment.fromArray(children)));
+    editor.view.focus();
   } catch {
     // Rejected by the schema (e.g. would move a textElement before panelDescription).
-  }
-}
-
-export function deleteNodeAt(editor: Editor, pos: number, nodeSize: number) {
-  try {
-    editor.view.dispatch(editor.state.tr.delete(pos, pos + nodeSize));
-  } catch {
-    // Rejected by the schema (e.g. would leave the doc with zero pages).
   }
 }
 
@@ -49,54 +41,57 @@ export function insertNodeAndFocus(editor: Editor, pos: number, nodeJSON: Record
   editor.view.focus();
 }
 
-const emptyTextElement = (kind: "dialogue" | "caption" | "sfx", character = "", modifier = "") => ({
-  type: "textElement",
-  attrs: { kind, character, modifier },
-  content: [],
-});
-
-const emptyPanel = () => ({
-  type: "panel",
-  content: [{ type: "panelDescription", content: [] }],
-});
+// Deletes [from, to) and places the cursor at the nearest valid text position
+// searching in `direction` from the deletion point — used for Backspace on an
+// empty element, where "nearest valid position searching backward" is
+// exactly "end of whatever came before it".
+export function deleteRangeAndFocusNear(editor: Editor, from: number, to: number, direction: -1 | 1) {
+  try {
+    const tr = editor.state.tr.delete(from, to);
+    const resolved = tr.doc.resolve(Math.max(0, Math.min(from, tr.doc.content.size)));
+    tr.setSelection(TextSelection.near(resolved, direction));
+    editor.view.dispatch(tr);
+    editor.view.focus();
+    return true;
+  } catch {
+    // Rejected by the schema (e.g. would leave the doc with zero pages).
+    return false;
+  }
+}
 
 export function insertPage(editor: Editor) {
   const endPos = editor.state.doc.content.size;
-  insertNodeAndFocus(editor, endPos, { type: "page", content: [emptyPanel()] });
+  insertNodeAndFocus(editor, endPos, {
+    type: "page",
+    content: [{ type: "panel", content: [{ type: "panelDescription" }] }],
+  });
 }
 
-// Where to insert a new panel/note "after the current one": if the cursor is
-// inside a panel or note, that block's own end; otherwise the end of the
-// enclosing page (appended as its last child).
-function currentPageBlockInsertPos(editor: Editor): number | null {
+// "Double Enter" — pressing Enter on a dialogue/caption/SFX line that was left
+// empty means "I'm done with this panel", so the empty line is removed and the
+// next panel begins. Both edits go in one transaction so undo treats it as a
+// single step and the insert position stays valid after the delete.
+export function endPanelFromEmptyLine(editor: Editor, textElementPos: number, panelPos: number) {
   const { state } = editor;
-  const { $from } = state.selection;
-  const pagePos = findAncestorPos(state, $from.pos, "page");
-  if (pagePos == null) return null;
+  const textElementNode = state.doc.resolve(textElementPos).nodeAfter;
+  const panelNode = state.doc.resolve(panelPos).nodeAfter;
+  if (!textElementNode || !panelNode) return false;
 
-  const panelPos = findAncestorPos(state, $from.pos, "panel");
-  const notePos = findAncestorPos(state, $from.pos, "note");
-  const blockPos = panelPos ?? notePos;
+  const removedSize = textElementNode.nodeSize;
+  const insertAt = panelPos + panelNode.nodeSize - removedSize;
 
-  return blockPos != null ? afterNodeAt(state, blockPos) : contentEndOfNodeAt(state, pagePos);
-}
-
-export function insertPanelAfterCurrent(editor: Editor) {
-  const insertAt = currentPageBlockInsertPos(editor);
-  if (insertAt == null) return;
-  insertNodeAndFocus(editor, insertAt, emptyPanel());
-}
-
-export function insertNoteAfterCurrent(editor: Editor) {
-  const insertAt = currentPageBlockInsertPos(editor);
-  if (insertAt == null) return;
-  insertNodeAndFocus(editor, insertAt, { type: "note", content: [] });
-}
-
-export function insertTextElementInCurrentPanel(editor: Editor, kind: "dialogue" | "caption" | "sfx") {
-  const { state } = editor;
-  const panelPos = findAncestorPos(state, state.selection.$from.pos, "panel");
-  if (panelPos == null) return;
-
-  insertNodeAndFocus(editor, contentEndOfNodeAt(state, panelPos), emptyTextElement(kind));
+  try {
+    const tr = state.tr.delete(textElementPos, textElementPos + removedSize);
+    const newPanel = editor.schema.nodeFromJSON({
+      type: "panel",
+      content: [{ type: "panelDescription", content: [] }],
+    });
+    tr.insert(insertAt, newPanel);
+    tr.setSelection(TextSelection.near(tr.doc.resolve(Math.min(insertAt + 1, tr.doc.content.size)), 1));
+    editor.view.dispatch(tr);
+    editor.view.focus();
+    return true;
+  } catch {
+    return false;
+  }
 }

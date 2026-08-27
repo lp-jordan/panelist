@@ -1,47 +1,58 @@
+/* Layout mirrors the RENOWNED #2 reference PDF: US Letter with 1in margins
+   (6.5in content width) and a 2in tab stop for dialogue/caption/SFX text. */
+.sx-editor,
+.sx-status-bar {
+  font-family: Verdana, Geneva, sans-serif;
+  color: #000;
+  background: #fff;
+}
+
 .sx-editor {
-  font-family: "Courier New", Courier, monospace;
-  max-width: 700px;
-  line-height: 1.5;
+  --sx-tab: 2in;
+  max-width: 6.5in;
+  margin: 0 auto;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.sx-status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  max-width: 6.5in;
+  margin: 0 auto 1.5rem;
+  font-size: 0.75rem;
+  color: #777;
+}
+
+.sx-save-status {
+  white-space: nowrap;
+}
+
+/* Tiptap wraps each React node view's content in its own block-level div.
+   Inside a line that is supposed to read as one continuous sentence (the
+   panel label + its description, a character label + their line) that div
+   forces a break, so it has to be made inline explicitly. */
+.sx-panel-body > [data-node-view-content-react],
+.sx-text-element-content > [data-node-view-content-react] {
+  display: inline;
 }
 
 .sx-page {
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-  background: white;
+  padding: 1.5rem 0;
+  border-top: 1px solid #eee;
 }
 
-.sx-page-toolbar,
-.sx-panel-toolbar,
-.sx-note-controls,
-.sx-text-element-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.4rem;
-  font-family: sans-serif;
-  font-size: 0.75rem;
-}
-
-.sx-page-toolbar button,
-.sx-panel-toolbar button,
-.sx-note-controls button,
-.sx-text-element-controls button,
-.sx-text-element-controls select {
-  font-size: 0.75rem;
-  padding: 0.1rem 0.4rem;
+.sx-page:first-child {
+  border-top: none;
+  padding-top: 0;
 }
 
 .sx-page-heading {
   text-decoration: underline;
-  font-size: 1.1rem;
-}
-
-.sx-controls {
-  margin-left: auto;
-  display: flex;
-  gap: 0.3rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
 }
 
 .sx-page-body {
@@ -49,21 +60,13 @@
 }
 
 .sx-panel {
-  margin: 0.75rem 0;
-  padding-left: 0.5rem;
-  border-left: 3px solid transparent;
+  margin: 0.9rem 0;
 }
 
-.sx-panel:hover {
-  border-left-color: #ddd;
-}
-
-.sx-panel-flow {
-  display: block;
-}
-
+/* Panel description flows straight on from "Panel N:" and wraps back to the
+   left margin — no hanging indent, matching the reference. */
 .sx-panel-label {
-  display: inline;
+  font-weight: bold;
 }
 
 .sx-panel-description {
@@ -71,62 +74,57 @@
 }
 
 .sx-no-copy {
-  font-style: italic;
-  font-weight: bold;
-  margin-top: 0.25rem;
-  margin-left: 1.5rem;
-  color: #555;
+  margin-top: 0.2rem;
 }
 
 .sx-note {
-  margin: 0.5rem 0;
-  padding: 0.4rem 0.6rem;
-  background: #fffbe6;
-  border: 1px dashed #e0c85e;
+  margin: 0.9rem 0;
+  font-style: italic;
+  font-weight: bold;
 }
 
 .sx-note-content {
-  font-style: italic;
-  font-weight: bold;
   display: inline;
 }
 
+/* Dialogue / caption / SFX: label sits at the left margin, the line itself
+   starts at the tab stop, and wrapped lines align to that same tab stop. */
 .sx-text-element {
-  margin: 0.35rem 0 0.35rem 1.5rem;
-}
-
-.sx-character-input {
-  width: 8rem;
-}
-
-.sx-modifier-input {
-  width: 8rem;
-}
-
-.sx-text-element-line {
-  display: block;
+  margin: 0.35rem 0;
+  padding-left: var(--sx-tab);
+  text-indent: calc(-1 * var(--sx-tab));
 }
 
 .sx-text-element-label {
-  display: inline;
+  display: inline-block;
+  width: var(--sx-tab);
+  vertical-align: baseline;
+  text-indent: 0;
+  font-weight: normal;
 }
 
 .sx-text-element-content {
-  display: inline;
+  text-indent: 0;
 }
 
-.sx-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  font-family: sans-serif;
+.sx-inline-field {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+  text-transform: uppercase;
+  border: none;
+  background: transparent;
+  padding: 0;
+  outline: none;
+  vertical-align: baseline;
 }
 
-.sx-save-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  font-family: sans-serif;
+.sx-inline-field:focus {
+  background: #f2f2f2;
+}
+
+.sx-inline-field::placeholder {
+  color: #bbb;
 }
