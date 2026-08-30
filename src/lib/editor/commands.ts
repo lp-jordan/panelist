@@ -341,6 +341,69 @@ export function insertBlankPage(editor: Editor) {
   });
 }
 
+// --- context-menu actions -------------------------------------------------
+// These take explicit node positions (from a right-click hit test) rather than
+// reading the selection, so they act on exactly what was clicked.
+
+// Sets the kind (dialogue/caption/sfx/narration) of the textElement starting at
+// `pos`, preserving its other attrs — so a name typed under "dialogue" survives
+// a trip through a fixed-label kind and back. Mirrors keymap's cycleKind but for
+// a directly chosen kind.
+export function setTextElementKind(editor: Editor, pos: number, kind: string): boolean {
+  const { state } = editor;
+  const node = state.doc.resolve(pos).nodeAfter;
+  if (!node || node.type.name !== "textElement") return false;
+  try {
+    editor.view.dispatch(state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, kind }));
+    editor.view.focus();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Inserts an empty panel immediately above or below the panel starting at
+// `panelPos`, landing the caret in its description.
+export function insertPanelRelativeTo(editor: Editor, panelPos: number, where: "above" | "below"): boolean {
+  const { state } = editor;
+  const node = state.doc.resolve(panelPos).nodeAfter;
+  if (!node || node.type.name !== "panel") return false;
+  const insertAt = where === "above" ? panelPos : panelPos + node.nodeSize;
+  insertNodeAndFocus(editor, insertAt, {
+    type: "panel",
+    content: [{ type: "panelDescription", content: [] }],
+  });
+  return true;
+}
+
+// Removes the single dialogue/caption/SFX/narration line starting at `pos`. The
+// panel keeps its (required) description, so this is always schema-safe.
+export function deleteTextElementAt(editor: Editor, pos: number): boolean {
+  const { state } = editor;
+  const node = state.doc.resolve(pos).nodeAfter;
+  if (!node || node.type.name !== "textElement") return false;
+  return deleteRangeAndFocusNear(editor, pos, pos + node.nodeSize, -1);
+}
+
+// Removes the whole panel or note starting at `blockPos`. If it's the page's
+// only content the page goes with it — unless that's the last page, which would
+// leave nowhere to type (mirrors the Mod-Backspace guard).
+export function deleteBlockAt(editor: Editor, blockPos: number): boolean {
+  const { state } = editor;
+  const node = state.doc.resolve(blockPos).nodeAfter;
+  if (!node || (node.type.name !== "panel" && node.type.name !== "note")) return false;
+  const pagePos = findAncestorPos(state, blockPos + 1, "page");
+  const pageNode = pagePos != null ? state.doc.resolve(pagePos).nodeAfter : null;
+
+  if (pageNode && pageNode.childCount > 1) {
+    return deleteRangeAndFocusNear(editor, blockPos, blockPos + node.nodeSize, -1);
+  }
+  // The block is the page's only content, so remove the page too — unless it's
+  // the last remaining page.
+  if (pagePos == null || !pageNode || state.doc.childCount <= 1) return false;
+  return deleteRangeAndFocusNear(editor, pagePos, pagePos + pageNode.nodeSize, -1);
+}
+
 // "Double Enter" — pressing Enter on a dialogue/caption/SFX line that was left
 // empty means "I'm done with this panel", so the empty line is removed and the
 // next panel begins. Both edits go in one transaction so undo treats it as a

@@ -226,6 +226,40 @@
   background: var(--separator);
 }
 
+/* The editor's right-click menu reuses .sx-outline-menu, with a couple of
+   additions: a small section heading over the line-type choices, and a check
+   column so the current type reads as selected. */
+.sx-context-menu {
+  max-width: 240px;
+}
+
+.sx-context-heading {
+  padding: 6px 10px 3px;
+  font-size: var(--text-fine);
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--label-3);
+}
+
+.sx-context-check {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--blue);
+}
+
+.sx-context-check svg {
+  width: 15px;
+  height: 15px;
+}
+
+.sx-context-radio[aria-checked="true"] {
+  font-weight: 600;
+}
+
 /* Per-row ··· trigger for the page menu — the touch path to delete/reorder,
    since right-click and drag are pointer-only. Quiet until hover/focus on a
    fine pointer; always shown on touch (see the coarse block below). */

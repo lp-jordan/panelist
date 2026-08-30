@@ -19,6 +19,7 @@ import { ShortcutsSheet } from "./ShortcutsSheet";
 import { TitlePageSheet, type TitlePageValues } from "./TitlePageSheet";
 import { TitlePagePrint } from "./TitlePagePrint";
 import { PageOutline } from "./PageOutline";
+import { EditorContextMenu } from "./EditorContextMenu";
 import { KeyboardToolbar } from "./KeyboardToolbar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Menu } from "@/components/ui/Menu";
@@ -654,6 +655,7 @@ export function ScriptEditor({
                 on screen (edited via the title-page dialog instead). */}
             <TitlePagePrint {...meta} />
             <EditorContent editor={editor} className="sx-editor" />
+            <EditorContextMenu editor={editor} />
 
             <div className="sx-hints">
               <span>
