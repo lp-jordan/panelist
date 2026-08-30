@@ -1,0 +1,78 @@
+.login {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  background: var(--bg-grouped);
+}
+
+.login-mark {
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+  margin-bottom: 12px;
+  border-radius: 15px;
+  background: var(--blue);
+  color: #fff;
+  box-shadow: 0 10px 26px -10px var(--blue);
+}
+
+.login-mark svg {
+  width: 31px;
+  height: 31px;
+}
+
+.login h1 {
+  font-size: var(--text-head);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.login-tagline {
+  font-size: 0.875rem;
+  color: var(--label-2);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  width: min(290px, 100%);
+  margin-top: 12px;
+}
+
+/* Reserved whether or not there is an error, so nothing jumps on a failure. */
+.login-error {
+  min-height: 18px;
+  font-size: var(--text-sub);
+  color: var(--red);
+  text-align: center;
+}
+
+.shake {
+  animation: login-shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes login-shake {
+  10%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  80% {
+    transform: translateX(4px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-7px);
+  }
+  40%,
+  60% {
+    transform: translateX(7px);
+  }
+}

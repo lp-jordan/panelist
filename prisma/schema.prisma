@@ -82,10 +82,20 @@ model Script {
   snapshots Snapshot[]
 }
 
+enum PageKind {
+  SCRIPT
+  BLANK
+}
+
 model Page {
-  id       String @id @default(cuid())
+  id       String   @id @default(cuid())
   scriptId String
   order    Int
+  // SCRIPT: the numbered comic page (panels/notes). BLANK: a freeform document
+  // page (plain paragraphs) that's skipped by page numbering. A blank page
+  // stores its paragraphs as ordered NOTE items — same run-serialized text
+  // columns, no extra table.
+  kind     PageKind @default(SCRIPT)
 
   script Script     @relation(fields: [scriptId], references: [id], onDelete: Cascade)
   items  PageItem[]
@@ -125,6 +135,7 @@ enum PanelTextElementType {
   DIALOGUE
   CAPTION
   SFX
+  NARRATION
 }
 
 model PanelTextElement {

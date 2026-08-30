@@ -1,17 +1,158 @@
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Named after what they mean, not what they look like, so a colour is only
+   ever chosen once. Every surface in the app pulls from this file — no page
+   should hard-code a grey again.
+
+   Three theme states are wired deliberately:
+     :root                                     complete light palette
+     @media (prefers-color-scheme: dark)       follows the OS, unless the user
+                                               has explicitly stamped light
+     :root[data-theme="dark"]                  an explicit choice wins either way
+   Nothing but tokens is redefined inside those blocks, so a component styled
+   through the tokens is correct in all three states without knowing about them.
+--------------------------------------------------------------------------- */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces */
+  --bg-grouped: #f2f2f7;   /* the ground a list sits on */
+  --bg-elevated: #ffffff;  /* cards, rows, menus, the nav bar's solid state */
+  --bg-canvas: #e7e7ec;    /* the desk the script page lies on */
+  --paper: #ffffff;        /* the script page itself */
+  --paper-ink: #000000;
+
+  /* Text */
+  --label: #000000;
+  --label-2: rgba(60, 60, 67, 0.62);
+  --label-3: rgba(60, 60, 67, 0.34);
+
+  /* Hairlines and tap fills */
+  --separator: rgba(60, 60, 67, 0.2);
+  --separator-strong: rgba(60, 60, 67, 0.3);
+  --fill: rgba(120, 120, 128, 0.12);
+  --fill-press: rgba(120, 120, 128, 0.22);
+
+  /* Intent — blue means actionable, red means irreversible, and nothing else
+     in the app is allowed to be either colour. */
+  --blue: #007aff;
+  --red: #ff3b30;
+  --green: #34c759;
+
+  /* Translucent chrome. Backed by a solid fallback for browsers without
+     backdrop-filter, which would otherwise render these as near-transparent. */
+  --chrome: rgba(249, 249, 251, 0.78);
+  --chrome-solid: #f9f9fb;
+  --menu: rgba(250, 250, 252, 0.86);
+  --menu-solid: #fafafc;
+
+  --shadow-paper: 0 1px 2px rgba(0, 0, 0, 0.1), 0 14px 34px -14px rgba(0, 0, 0, 0.3),
+    0 0 0 0.5px rgba(0, 0, 0, 0.07);
+  --shadow-menu: 0 12px 34px rgba(0, 0, 0, 0.26), 0 0 0 0.5px rgba(0, 0, 0, 0.14);
+  --shadow-sheet: 0 -4px 40px rgba(0, 0, 0, 0.24);
+
+  /* Type. The system face, so the app looks native on the machine running it. */
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI",
+    system-ui, "Helvetica Neue", sans-serif;
+  --font-script: Verdana, Geneva, sans-serif; /* what the reference PDF sets */
+
+  --text-title: 2.0625rem;  /* 33px — large title */
+  --text-head: 1.4375rem;   /* 23px */
+  --text-body: 1.0625rem;   /* 17px */
+  --text-row: 0.9375rem;    /* 15px */
+  --text-sub: 0.8125rem;    /* 13px */
+  --text-fine: 0.75rem;     /* 12px */
+
+  /* Geometry */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --nav-height: 52px;
+  --gutter: 24px;
+
+  /* Motion. Two curves for the whole app: `spring` for anything that travels,
+     `ease` for anything that only tints. Consistency is what reads as
+     considered — see the design direction for the full inventory. */
+  --spring: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --bg-grouped: #000000;
+    --bg-elevated: #1c1c1e;
+    --bg-canvas: #0a0a0b;
+    --paper: #161617;
+    --paper-ink: #e8e8ea;
+
+    --label: #ffffff;
+    --label-2: rgba(235, 235, 245, 0.6);
+    --label-3: rgba(235, 235, 245, 0.32);
+
+    --separator: rgba(84, 84, 88, 0.55);
+    --separator-strong: rgba(84, 84, 88, 0.72);
+    --fill: rgba(120, 120, 128, 0.26);
+    --fill-press: rgba(120, 120, 128, 0.42);
+
+    --blue: #0a84ff;
+    --red: #ff453a;
+    --green: #30d158;
+
+    --chrome: rgba(28, 28, 30, 0.74);
+    --chrome-solid: #1c1c1e;
+    --menu: rgba(44, 44, 46, 0.84);
+    --menu-solid: #2c2c2e;
+
+    --shadow-paper: 0 14px 40px -12px rgba(0, 0, 0, 0.9), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+    --shadow-menu: 0 12px 34px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+    --shadow-sheet: 0 -4px 40px rgba(0, 0, 0, 0.6);
   }
+}
+
+:root[data-theme="dark"] {
+  --bg-grouped: #000000;
+  --bg-elevated: #1c1c1e;
+  --bg-canvas: #0a0a0b;
+  --paper: #161617;
+  --paper-ink: #e8e8ea;
+
+  --label: #ffffff;
+  --label-2: rgba(235, 235, 245, 0.6);
+  --label-3: rgba(235, 235, 245, 0.32);
+
+  --separator: rgba(84, 84, 88, 0.55);
+  --separator-strong: rgba(84, 84, 88, 0.72);
+  --fill: rgba(120, 120, 128, 0.26);
+  --fill-press: rgba(120, 120, 128, 0.42);
+
+  --blue: #0a84ff;
+  --red: #ff453a;
+  --green: #30d158;
+
+  --chrome: rgba(28, 28, 30, 0.74);
+  --chrome-solid: #1c1c1e;
+  --menu: rgba(44, 44, 46, 0.84);
+  --menu-solid: #2c2c2e;
+
+  --shadow-paper: 0 14px 40px -12px rgba(0, 0, 0, 0.9), 0 0 0 0.5px rgba(255, 255, 255, 0.08);
+  --shadow-menu: 0 12px 34px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.1);
+  --shadow-sheet: 0 -4px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* --------------------------------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 html {
   height: 100%;
+  color-scheme: light dark;
 }
 
 html,
@@ -24,17 +165,14 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-grouped);
+  color: var(--label);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: 1.5;
+  letter-spacing: -0.011em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
 }
 
 a {
@@ -42,8 +180,40 @@ a {
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+}
+
+button {
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* One visible focus treatment everywhere, so keyboard users are never lost. */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--blue) 26%, transparent);
+}
+
+/* Honour the system preference for everything the app animates. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

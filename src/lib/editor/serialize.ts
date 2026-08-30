@@ -64,7 +64,25 @@ export function scriptToDocJSON(script: ScriptWithContent) {
 
   return {
     type: "doc",
-    content: pages.length > 0 ? pages.map(pageToJSON) : [emptyPageJSON()],
+    content:
+      pages.length > 0
+        ? pages.map((page) => (page.kind === "BLANK" ? freeformPageToJSON(page) : pageToJSON(page)))
+        : [emptyPageJSON()],
+  };
+}
+
+// A blank page's paragraphs are stored as its ordered NOTE items (same run
+// serialization as a page note). Always yields at least one paragraph so the
+// freeformPage schema (`paragraph+`) is satisfied.
+function freeformPageToJSON(page: ScriptWithContent["pages"][number]) {
+  const items = [...page.items].sort((a, b) => a.order - b.order);
+  const paragraphs = items.map((item) => ({
+    type: "paragraph",
+    content: runsToInlineContent(parseRuns(item.noteText ?? "")),
+  }));
+  return {
+    type: "freeformPage",
+    content: paragraphs.length > 0 ? paragraphs : [{ type: "paragraph" }],
   };
 }
 
@@ -117,12 +135,34 @@ export type JSONNode = { type: string; attrs?: Record<string, unknown>; content?
 
 export function docJSONToScriptPagesInput(doc: JSONNode): Prisma.PageCreateWithoutScriptInput[] {
   const pages = doc.content ?? [];
-  return pages.map((page, pageIndex) => ({
-    order: pageIndex,
+  return pages.map((page, pageIndex) =>
+    page.type === "freeformPage"
+      ? freeformPageToInput(page, pageIndex)
+      : {
+          order: pageIndex,
+          kind: "SCRIPT",
+          items: {
+            create: (page.content ?? []).map((item, itemIndex) => itemToInput(item, itemIndex)),
+          },
+        },
+  );
+}
+
+// A blank page: each paragraph becomes a NOTE item carrying its run-serialized
+// text, in order. Kind BLANK is what tells the loader to rebuild a freeformPage.
+function freeformPageToInput(page: JSONNode, order: number): Prisma.PageCreateWithoutScriptInput {
+  const paragraphs = page.content ?? [];
+  return {
+    order,
+    kind: "BLANK",
     items: {
-      create: (page.content ?? []).map((item, itemIndex) => itemToInput(item, itemIndex)),
+      create: paragraphs.map((paragraph, paragraphIndex) => ({
+        order: paragraphIndex,
+        type: "NOTE" as const,
+        noteText: serializeRuns(inlineContentToRuns(paragraph.content as PMTextNode[] | undefined)),
+      })),
     },
-  }));
+  };
 }
 
 function itemToInput(item: JSONNode, order: number): Prisma.PageItemCreateWithoutPageInput {
@@ -146,7 +186,7 @@ function itemToInput(item: JSONNode, order: number): Prisma.PageItemCreateWithou
         textElements: {
           create: textElements.map((textElement, textElementIndex) => ({
             order: textElementIndex,
-            type: String(textElement.attrs?.kind ?? "dialogue").toUpperCase() as "DIALOGUE" | "CAPTION" | "SFX",
+            type: String(textElement.attrs?.kind ?? "dialogue").toUpperCase() as "DIALOGUE" | "CAPTION" | "SFX" | "NARRATION",
             character: (textElement.attrs?.character as string) || null,
             modifier: (textElement.attrs?.modifier as string) || null,
             text: serializeRuns(inlineContentToRuns(textElement.content as PMTextNode[] | undefined)),

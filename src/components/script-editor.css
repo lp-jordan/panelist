@@ -1,41 +1,418 @@
 /* Layout mirrors the RENOWNED #2 reference PDF: US Letter with 1in margins
-   (6.5in content width) and a 2in tab stop for dialogue/caption/SFX text. */
-.sx-editor,
-.sx-status-bar {
-  font-family: Verdana, Geneva, sans-serif;
-  color: #000;
-  background: #fff;
+   (6.5in content width) and a 2in tab stop for dialogue/caption/SFX text.
+   The geometry below is load-bearing — it is what the exported script has to
+   match — so the visual pass changes the surroundings and never the measures. */
+
+.sx-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The nav sits on top; below it the page outline and the desk sit side by side. */
+.sx-body {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The desk the page lies on. Without a contrasting ground behind it a white
+   sheet on a white body is just a rectangle; this is what makes it read as
+   paper. */
+.sx-canvas {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding: 26px 24px 48px;
+  background: var(--bg-canvas);
+}
+
+/* --- page outline --------------------------------------------------------- */
+
+/* A floating panel that sits just left of the centered page and scrolls with
+   the document (absolute inside the relatively-positioned body), rather than a
+   rail bolted to the window edge. Its right edge lands a gap to the left of the
+   page; on windows too narrow for that it clamps to a small left margin (and
+   below 1100px it becomes the drawer, further down). It reads as an elevated
+   card — rounded, shadowed — so it floats above the desk instead of dividing it. */
+.sx-outline {
+  position: fixed;
+  top: calc(var(--nav-height) + 20px);
+  left: max(20px, calc(50vw - 408px - 20px - 224px));
+  width: 224px;
+  max-height: calc(100vh - var(--nav-height) - 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 10px;
+  overflow-y: auto;
+  /* Clip horizontally so the fixed-width list is revealed by the widening
+     card rather than spilling out and reflowing mid-animation. */
+  overflow-x: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-menu);
+  font-family: var(--font-ui);
+  /* A smooth ease-out, not a spring — the spring overshot the target width
+     and snapped back, which read as the "jumpy" collapse/expand. */
+  transition: width 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    padding 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Collapsed: the list folds away and the card shrinks to just the hamburger,
+   anchored at the same corner — `left` above doesn't depend on width, so it
+   folds up in place rather than sliding off. */
+.sx-outline[data-collapsed="true"] {
+  width: 48px;
+  padding: 4px;
+  overflow: hidden;
+}
+
+.sx-outline[data-collapsed="true"] .sx-outline-list,
+.sx-outline[data-collapsed="true"] .sx-outline-add,
+.sx-outline[data-collapsed="true"] .sx-outline-title,
+.sx-outline[data-collapsed="true"] .sx-outline-count {
+  display: none;
+}
+
+.sx-outline[data-collapsed="true"] .sx-outline-head {
+  padding: 0;
+}
+
+.sx-outline-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px 8px;
+  font-size: var(--text-fine);
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--label-2);
+}
+
+/* The hamburger is the collapse/expand toggle and, when collapsed, is the whole
+   panel. */
+.sx-outline-collapse {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  color: var(--label-2);
+  transition: background 0.15s var(--ease);
+}
+
+.sx-outline-collapse:hover {
+  background: var(--fill);
+}
+
+.sx-outline-collapse svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sx-outline-title {
+  flex: 1;
+}
+
+.sx-outline[data-collapsed="true"] .sx-outline-title {
+  display: none;
+}
+
+.sx-outline-count {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.sx-outline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sx-outline-list li {
+  position: relative;
+  cursor: grab;
+}
+
+.sx-outline-list li[data-dragging="true"] {
+  opacity: 0.4;
+}
+
+/* A 2px insertion caret shown between rows as you drag over a drop target. */
+.sx-outline-list li[data-drop-before="true"]::before,
+.sx-outline-list li[data-drop-after="true"]::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--blue);
+}
+
+.sx-outline-list li[data-drop-before="true"]::before {
+  top: -2px;
+}
+
+.sx-outline-list li[data-drop-after="true"]::after {
+  bottom: -2px;
+}
+
+.sx-outline-menu {
+  position: fixed;
+  z-index: 200;
+  min-width: 180px;
+  padding: 5px;
+  border-radius: 13px;
+  background: var(--menu);
+  -webkit-backdrop-filter: saturate(180%) blur(26px);
+  backdrop-filter: saturate(180%) blur(26px);
+  box-shadow: var(--shadow-menu);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sx-outline-menu {
+    background: var(--menu-solid);
+  }
+}
+
+.sx-outline-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--label);
+  transition: background 0.12s var(--ease);
+}
+
+.sx-outline-menu-item svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sx-outline-menu-item:hover {
+  background: var(--fill);
+}
+
+.sx-outline-menu-item.is-danger {
+  color: var(--red);
+}
+
+.sx-outline-menu-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sx-outline-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  text-align: left;
+  color: var(--label);
+  transition: background 0.18s var(--ease);
+}
+
+.sx-outline-item:hover {
+  background: var(--fill);
+}
+
+.sx-outline-item[aria-current="true"] {
+  background: color-mix(in srgb, var(--blue) 14%, transparent);
+}
+
+.sx-outline-item[aria-current="true"] .sx-outline-num {
+  background: var(--blue);
+  color: #fff;
+}
+
+.sx-outline-num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--fill);
+  color: var(--label-2);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sx-outline-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: var(--text-sub);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.sx-outline-sub {
+  font-size: var(--text-fine);
+  font-weight: 400;
+  color: var(--label-2);
+}
+
+.sx-outline-add {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--blue);
+  font-size: var(--text-sub);
+  font-weight: 500;
+  transition: background 0.18s var(--ease);
+}
+
+.sx-outline-add:hover {
+  background: var(--fill);
+}
+
+.sx-outline-add:active {
+  background: var(--fill-press);
+}
+
+.sx-outline-add svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* The blank-page entry marks itself with a document glyph instead of a number,
+   and its footer button reads as the quieter, secondary of the two adds. */
+.sx-outline-num-blank {
+  background: transparent;
+  color: var(--label-3);
+}
+
+.sx-outline-num-blank svg {
+  width: 15px;
+  height: 15px;
+}
+
+.sx-outline-add-blank {
+  margin-top: 0;
+  color: var(--label-2);
+  font-weight: 400;
+}
+
+/* The trigger and scrim only exist for the drawer; hidden while the sidebar
+   is persistent. */
+.nav-pages-btn {
+  display: none;
+}
+
+.sx-outline-scrim {
+  display: none;
+}
+
+/* Below the width where a sidebar fits beside the sheet, the outline becomes a
+   drawer that slides in from the left. */
+@media (max-width: 1100px) {
+  .nav-pages-btn {
+    display: grid;
+  }
+
+  .sx-outline-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: rgba(0, 0, 0, 0.36);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s var(--ease);
+  }
+
+  .sx-outline-scrim[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* A full-height drawer, overriding the desktop floating card. The collapse
+     chevron is meaningless here (the drawer opens/closes from the nav button),
+     so it's hidden. */
+  .sx-outline {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 100;
+    width: 264px;
+    --sx-outline-w: 264px;
+    max-width: 82vw;
+    height: 100dvh;
+    max-height: none;
+    padding: 16px 12px 12px;
+    border-radius: 0;
+    border-right: 1px solid var(--separator);
+    box-shadow: 2px 0 24px rgba(0, 0, 0, 0.18);
+    transform: translateX(-100%);
+    transition: transform 0.34s var(--spring);
+  }
+
+  .sx-outline[data-open="true"] {
+    transform: translateX(0);
+  }
+
+  .sx-outline-collapse {
+    display: none;
+  }
+}
+
+.sx-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 60px 20px;
+  color: var(--label-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-sub);
+  background: var(--bg-canvas);
 }
 
 .sx-editor {
   --sx-tab: 2in;
-  line-height: 1.6;
-  font-size: 0.9rem;
-}
-
-.sx-status-bar {
+  width: 100%;
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
-  width: 8.5in;
-  max-width: 100%;
-  margin: 0 auto 1rem;
-  font-size: 0.75rem;
-  color: #777;
+  flex-direction: column;
+  align-items: center;
+  font-family: var(--font-script);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  letter-spacing: normal;
+  color: var(--paper-ink);
 }
 
-.sx-save-status {
-  white-space: nowrap;
-}
-
-/* Tiptap wraps each React node view's content in its own block-level div.
-   Inside a line that is supposed to read as one continuous sentence (the
-   panel label + its description, a character label + their line) that div
-   forces a break, so it has to be made inline explicitly. */
-.sx-panel-body > [data-node-view-content-react],
-.sx-text-element-content > [data-node-view-content-react] {
-  display: inline;
+.sx-editor .ProseMirror {
+  outline: none;
 }
 
 /* A page is always a physical 8.5x11 sheet with 1in margins, so the writing
@@ -43,20 +420,54 @@
    full sheet; a comic page whose content genuinely exceeds one sheet grows
    past 11in rather than being clipped (true mid-node pagination is a much
    larger feature and isn't part of the MVP). */
-.sx-page {
+.sx-page,
+.sx-freeform-page {
+  position: relative;
   box-sizing: border-box;
   width: 8.5in;
   min-height: 11in;
   max-width: 100%;
   padding: 1in;
   margin: 0 auto 1.5rem;
-  background: #fff;
-  border: 1px solid #ddd;
+  /* Clears the sticky nav when the outline scrolls a page to the top. */
+  scroll-margin-top: calc(var(--nav-height) + 12px);
+  background: var(--paper);
+  border-radius: 3px;
+  box-shadow: var(--shadow-paper);
 }
 
+/* A freeform (blank) page is a plain document sheet: paragraphs of body text,
+   no panel labels, no computed heading. */
+.sx-para {
+  margin: 0 0 0.7em;
+  /* An empty paragraph keeps a clickable line rather than collapsing to a
+     zero-height sliver. */
+  min-height: 1.6em;
+}
+
+.sx-freeform-page .sx-para:last-child {
+  margin-bottom: 0;
+}
+
+/* The computed labels aren't editable, but they should still read as part of
+   the script — selectable and copyable like everything else, so nothing feels
+   walled off. (Typing over a selection that includes them is caught in
+   ScriptEditor with a hint rather than silently dropped.) */
+.sx-page-heading,
+.sx-panel-label,
+.sx-text-element-label,
+.sx-no-copy {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* The page header is set 1.6x the body, matching the reference doc's 16pt
+   heading over 10pt body. */
 .sx-page-heading {
   text-decoration: underline;
   font-weight: bold;
+  font-size: 1.6em;
+  line-height: 1.2;
   margin-bottom: 1rem;
 }
 
@@ -66,6 +477,9 @@
 
 .sx-panel {
   margin: 0.9rem 0;
+  /* The action line (Panel N: + description) reads as prose and is set
+     single-spaced. Dialogue lines below restore the looser body spacing. */
+  line-height: 1.2;
 }
 
 /* Panel description flows straight on from "Panel N:" and wraps back to the
@@ -88,16 +502,13 @@
   font-weight: bold;
 }
 
-.sx-note-content {
-  display: inline;
-}
-
 /* Dialogue / caption / SFX: label sits at the left margin, the line itself
    starts at the tab stop, and wrapped lines align to that same tab stop. */
 .sx-text-element {
   margin: 0.35rem 0;
   padding-left: var(--sx-tab);
   text-indent: calc(-1 * var(--sx-tab));
+  line-height: 1.6;
 }
 
 .sx-text-element-label {
@@ -142,13 +553,744 @@
   padding: 0;
   outline: none;
   vertical-align: baseline;
-  min-width: 1ch;
+  min-width: 0;
+  border-radius: 3px;
+  transition: background 0.18s var(--ease);
 }
 
 .sx-inline-field:focus {
-  background: #f2f2f2;
+  background: color-mix(in srgb, var(--blue) 16%, transparent);
 }
 
 .sx-inline-field::placeholder {
+  color: var(--label-3);
+}
+
+/* --- save status ---------------------------------------------------------- */
+
+/* Replaces the word "Saving…". A pill that spins, ticks, and leaves says the
+   same thing without asking to be read. */
+.sx-save-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 84px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  font-size: var(--text-fine);
+  color: var(--label-2);
+  white-space: nowrap;
+  transition: opacity 0.3s var(--ease);
+}
+
+.sx-save-pill[data-state="idle"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sx-save-pill[data-state="error"] {
+  background: color-mix(in srgb, var(--red) 14%, transparent);
+  color: var(--red);
+}
+
+.sx-spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.6px solid var(--label-3);
+  border-top-color: var(--label-2);
+  border-radius: 50%;
+  animation: sx-spin 0.7s linear infinite;
+}
+
+@keyframes sx-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sx-tick {
+  width: 13px;
+  height: 13px;
+  color: var(--green);
+  animation: sx-pop 0.4s var(--spring);
+}
+
+@keyframes sx-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.14);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- shortcut strip ------------------------------------------------------- */
+
+/* The old run-on sentence, broken into chips that can be ignored. */
+.sx-hints {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  max-width: 100%;
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 0.5px var(--separator);
+  font-family: var(--font-ui);
+  font-size: var(--text-fine);
+  color: var(--label-2);
+}
+
+.sx-hints kbd {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--fill);
+  color: var(--label);
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  font-size: 0.6875rem;
+}
+
+/* --- shortcuts sheet ------------------------------------------------------ */
+
+.sx-shortcuts {
+  width: min(460px, 92vw);
+}
+
+.sx-shortcuts-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  padding: 16px;
+  font-family: var(--font-ui);
+}
+
+.sx-shortcuts-body h3 {
+  margin-bottom: 6px;
+  font-size: var(--text-fine);
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--label-2);
+}
+
+.sx-shortcuts-body dl {
+  display: flex;
+  flex-direction: column;
+}
+
+.sx-shortcuts-body dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+}
+
+.sx-shortcuts-body dl > div + div {
+  border-top: 0.5px solid var(--separator);
+}
+
+.sx-shortcuts-body dt {
+  flex: none;
+  order: 2;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: var(--fill);
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  font-size: 0.6875rem;
+  color: var(--label);
+  white-space: nowrap;
+}
+
+.sx-shortcuts-body dd {
+  order: 1;
+  font-size: var(--text-sub);
+  color: var(--label);
+}
+
+/* --- mobile keyboard toolbar ---------------------------------------------- */
+
+/* Only exists on touch, where Tab (change type) and Mod+Enter (new page) have
+   no keys. Hidden entirely on pointer devices, which have the shortcuts. */
+.sx-kbtoolbar-holder {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .sx-kbtoolbar-holder {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    transform: translateY(110%);
+    transition: transform 0.28s var(--spring);
+    /* Sits just above the soft keyboard; the browser keeps fixed elements above
+       it, and the safe-area padding clears the home indicator when it doesn't. */
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--chrome);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-top: 1px solid var(--separator);
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .sx-kbtoolbar-holder {
+      background: var(--chrome-solid);
+    }
+  }
+
+  .sx-kbtoolbar-holder[data-visible="true"] {
+    transform: translateY(0);
+  }
+}
+
+.sx-kbtoolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.sx-kb-spacer {
+  flex: 1;
+}
+
+.sx-kb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--label);
+  font-family: var(--font-ui);
+  font-size: var(--text-sub);
+  font-weight: 500;
+  transition: background 0.15s var(--ease), transform 0.12s var(--ease);
+}
+
+.sx-kb-btn:active {
+  background: var(--fill-press);
+  transform: scale(0.96);
+}
+
+.sx-kb-btn:disabled {
+  opacity: 0.45;
+}
+
+.sx-kb-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* The type button leads, tinted so it reads as the primary action. */
+.sx-kb-type {
+  background: var(--accent-soft, color-mix(in srgb, var(--blue) 13%, transparent));
+  color: var(--blue);
+  font-weight: 600;
+}
+
+.sx-kb-type-label {
+  min-width: 4.5em;
+  text-align: left;
+}
+
+/* --- formatting hint toast ------------------------------------------------ */
+
+/* A quiet, self-dismissing note when a keystroke would hit auto-formatting.
+   Non-blocking: it never takes focus or stops the writer. */
+.sx-hint-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 11px 15px;
+  border-radius: var(--radius);
+  background: var(--menu);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: var(--shadow-menu);
+  color: var(--label);
+  font-family: var(--font-ui);
+  font-size: var(--text-sub);
+  line-height: 1.35;
+  transform: translate(-50%, 12px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s var(--ease), transform 0.32s var(--spring);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sx-hint-toast {
+    background: var(--menu-solid);
+  }
+}
+
+.sx-hint-toast[data-show="true"] {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  /* Re-enable input so the tap-through "Clear it" button is reachable. */
+  pointer-events: auto;
+}
+
+.sx-hint-toast > svg:not(.sx-hold-ring) {
+  flex: none;
+  width: 17px;
+  height: 17px;
+  color: var(--blue);
+}
+
+.sx-hint-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The tap-through escape hatch from the guard — the reliable path on touch,
+   and a mouse-friendly one on desktop. */
+.sx-hint-action {
+  flex: none;
+  margin-left: 3px;
+  padding: 5px 12px;
+  border: none;
+  border-radius: 999px;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--font-ui);
+  font-size: var(--text-sub);
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.16s var(--ease), transform 0.16s var(--ease);
+}
+
+.sx-hint-action:hover {
+  filter: brightness(1.06);
+}
+
+.sx-hint-action:active {
+  transform: scale(0.96);
+}
+
+/* The hold-to-delete progress ring (desktop). Mounted fresh when the hold
+   starts, so its fill animation runs once over the hold duration. */
+.sx-hold-ring {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  transform: rotate(-90deg); /* start the fill from 12 o'clock */
+}
+
+.sx-hold-ring-track {
+  stroke: color-mix(in srgb, var(--blue) 24%, transparent);
+}
+
+.sx-hold-ring-fill {
+  stroke: var(--blue);
+  stroke-linecap: round;
+  /* 2 * pi * r, r = 8 */
+  stroke-dasharray: 50.27;
+  stroke-dashoffset: 50.27;
+  animation: sx-hold-fill var(--sx-hold-ms, 650ms) linear forwards;
+}
+
+@keyframes sx-hold-fill {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* No animated sweep — show it half-filled so the ring still reads as an
+     in-progress indicator while the hold timer runs. */
+  .sx-hold-ring-fill {
+    animation: none;
+    stroke-dashoffset: 25.13;
+  }
+}
+
+/* --- narrower screens ----------------------------------------------------- */
+
+/* Below the width where a full 8.5in sheet fits, the inch margins are what
+   break first — they leave almost no column. Shrink the padding rather than
+   the measure, so line breaks stay close to what the export will do. */
+@media (max-width: 900px) {
+  .sx-canvas {
+    padding: 16px 12px 36px;
+  }
+
+  .sx-page,
+  .sx-freeform-page {
+    padding: 0.55in 0.5in;
+    min-height: 0;
+  }
+
+  .sx-editor {
+    --sx-tab: 1.35in;
+  }
+}
+
+/* --- phones: fluid full-width page --------------------------------------- */
+
+/* Below this width an 8.5in sheet can't fit, so the paper metaphor is dropped
+   for a seamless full-bleed writing column. Page boundaries are carried by the
+   heading and the printed-page-end marker (.sx-page-end) instead of the sheet
+   edges. The physical measures (--sx-tab, the 8.5in width) only mattered for
+   matching print; on a phone, readability wins. */
+@media (max-width: 700px) {
+  .sx-canvas {
+    padding: 0;
+    gap: 0;
+    background: var(--paper);
+  }
+
+  .sx-editor {
+    /* A shorter tab keeps the dialogue label + line readable in a narrow
+       column without the text starting halfway across the screen. */
+    --sx-tab: 92px;
+    font-size: 1rem; /* a touch larger for reading on a phone */
+  }
+
+  .sx-page,
+  .sx-freeform-page {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 0;
+    margin: 0;
+    padding: 18px 18px 8px;
+    border-radius: 0;
+    box-shadow: none;
+    scroll-margin-top: calc(var(--nav-height) + 6px);
+  }
+
+  /* Separate pages with a hairline instead of a floating sheet edge. */
+  .sx-page + .sx-page {
+    border-top: 1px solid var(--separator);
+  }
+
+  .sx-hints {
+    margin: 8px 12px 20px;
+  }
+}
+
+/* --- print / export to PDF ----------------------------------------------- */
+
+/* "Export PDF" is the browser's own print-to-PDF: the pages you see are the
+   pages that print, so the export is exactly WYSIWYG. Everything that isn't a
+   sheet — nav, outline, hints, toolbar, toasts — is hidden, and each .sx-page
+   maps to one physical Letter sheet. The page's existing 1in padding provides
+   the margins, so @page itself has none. */
+@media print {
+  @page {
+    size: letter;
+    margin: 0;
+  }
+
+  /* Hide all app chrome. */
+  .nav,
+  .sx-outline,
+  .sx-outline-scrim,
+  .sx-hints,
+  .sx-kbtoolbar-holder,
+  .sx-hint-toast,
+  .sx-shortcuts,
+  .scrim {
+    display: none !important;
+  }
+
+  /* Collapse the app's flex/centered layout to a plain block flow so sheets
+     stack top to bottom with nothing around them. */
+  .sx-shell,
+  .sx-body,
+  .sx-canvas {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .sx-editor {
+    display: block !important;
+    /* Keep the on-screen measures (2in tab, 8.5in width) so print matches. */
+    --sx-tab: 2in;
+    color: #000;
+  }
+
+  /* One sheet per page, no floating-sheet affordances, hard break between. */
+  .sx-page,
+  .sx-freeform-page {
+    width: 8.5in !important;
+    max-width: none !important;
+    /* Just under a full 11in physical sheet. A box exactly one page tall
+       followed by `page-break-after: always` makes some print engines emit a
+       trailing blank page; the ~0.1in slack (paired with pagination's
+       BOTTOM_SAFETY reserve so content still fits) lets each sheet break to the
+       next cleanly. */
+    min-height: 10.9in;
+    margin: 0 !important;
+    padding: 1in !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .sx-page:last-child,
+  .sx-freeform-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* Don't split a panel or a dialogue block across two sheets. */
+  .sx-panel,
+  .sx-text-element,
+  .sx-note {
+    break-inside: avoid;
+  }
+
+  /* The title-page editor is on-screen chrome, never part of the print. */
+  .tp-dialog {
+    display: none !important;
+  }
+
+  /* The cover sheet leads the export: a full Letter sheet, title centered
+     vertically, "written by" beneath it, draft label/date bottom-left — then a
+     hard break onto the first script page. Mirrors the on-screen tp-sheet but
+     sized to the physical sheet like every other printed page. */
+  .sx-cover {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    box-sizing: border-box;
+    width: 8.5in;
+    min-height: 10.9in;
+    margin: 0 !important;
+    padding: 1in;
+    background: #fff;
+    color: #000;
+    font-family: var(--font-script);
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .sx-cover-titleblock {
+    margin: auto 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .sx-cover-title {
+    font-weight: bold;
+    text-decoration: underline;
+    text-transform: uppercase;
+    font-size: 1.6rem;
+  }
+
+  .sx-cover-writtenby {
+    margin-top: 10px;
+    font-size: 0.9rem;
+  }
+
+  .sx-cover-draft {
+    position: absolute;
+    left: 1in;
+    bottom: 1in;
+    display: flex;
+    align-items: baseline;
+    font-weight: bold;
+    font-size: 0.9rem;
+  }
+
+  .sx-cover-draft-date {
+    font-weight: normal;
+  }
+}
+
+/* Hidden on screen — the cover only exists for print/PDF export. */
+.sx-cover {
+  display: none;
+}
+
+/* --- title page editor --------------------------------------------------- */
+
+/* Opened over the editor: the cover as it reads on paper, with the title,
+   the "written by" credit, and the draft label/date each editable in place. */
+.tp-dialog {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translate(-50%, -50%) scale(0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s var(--ease), transform 0.28s var(--spring);
+}
+
+.tp-dialog[data-open="true"] {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tp-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* A real toolbar surface so the header + Cancel/Done read as a contained bar
+     attached above the sheet, rather than loose controls floating on the scrim. */
+  padding: 7px 10px 7px 14px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-menu);
+  color: var(--label);
+}
+
+.tp-bar strong {
+  font-size: var(--text-row);
+  font-weight: 600;
+}
+
+.tp-bar button {
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--blue);
+  font-size: var(--text-row);
+  font-weight: 500;
+  transition: background 0.15s var(--ease);
+}
+
+.tp-bar button:hover {
+  background: var(--fill);
+}
+
+.tp-bar .tp-done {
+  font-weight: 600;
+}
+
+/* The paper — kept a true 8.5:11 and sized to fit the viewport height. Always
+   white with dark ink regardless of theme, because it's a sheet of paper. */
+.tp-sheet {
+  position: relative;
+  box-sizing: border-box;
+  height: min(72vh, 11in);
+  width: calc(min(72vh, 11in) * 8.5 / 11);
+  max-width: 92vw;
+  padding: 9% 12%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #fff;
+  color: #111;
+  border-radius: 4px;
+  box-shadow: var(--shadow-paper);
+  font-family: var(--font-script);
+}
+
+.tp-titleblock {
+  /* The draft block is absolutely positioned (bottom-left), so this is the
+     sheet's only in-flow child — auto top/bottom margins center it vertically
+     on the page rather than pinning it a fixed distance down from the top. */
+  margin: auto 0;
+  width: 100%;
+  text-align: center;
+}
+
+/* Shared bare-input look for every editable field on the sheet. */
+.tp-title,
+.tp-author,
+.tp-draft-label,
+.tp-draft-date {
+  border: none;
+  background: transparent;
+  outline: none;
+  color: inherit;
+  font: inherit;
+  border-radius: 3px;
+  transition: background 0.15s var(--ease);
+}
+
+.tp-title:focus,
+.tp-author:focus,
+.tp-draft-label:focus,
+.tp-draft-date:focus {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.tp-title {
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  text-decoration: underline;
+  text-transform: uppercase;
+  font-size: clamp(1rem, 2.7vh, 1.6rem);
+}
+
+.tp-title::placeholder {
   color: #bbb;
+}
+
+.tp-writtenby {
+  margin-top: 8px;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  font-size: clamp(0.7rem, 1.5vh, 0.85rem);
+  color: #333;
+}
+
+.tp-author {
+  min-width: 5ch;
+  text-align: left;
+}
+
+.tp-author::placeholder {
+  color: #bbb;
+}
+
+/* Bottom-left corner, bold, matching the reference cover. */
+.tp-draft {
+  position: absolute;
+  left: 12%;
+  bottom: 9%;
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  font-weight: bold;
+  font-size: clamp(0.7rem, 1.6vh, 0.9rem);
+}
+
+.tp-draft-label {
+  width: 6ch;
+  font-weight: bold;
+}
+
+.tp-draft-date {
+  font-weight: normal;
 }

@@ -1,6 +1,6 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 
 const secretKey = process.env.SESSION_SECRET;
 if (!secretKey) {
@@ -39,9 +39,19 @@ export async function createSession(userId: string) {
   const session = await encrypt({ userId });
   const cookieStore = await cookies();
 
+  // Mark the cookie `secure` only when the request actually arrived over HTTPS,
+  // not merely because NODE_ENV is production. A `secure` cookie is dropped by
+  // the browser over plain HTTP on any non-localhost host, which bounced the
+  // phone (reaching a `next start` build over http://<tailscale-ip>:3000)
+  // between /login and / forever. A production build served behind an HTTPS
+  // proxy still gets `secure` via x-forwarded-proto.
+  const requestHeaders = await headers();
+  const proto = requestHeaders.get("x-forwarded-proto")?.split(",")[0].trim();
+  const isHttps = proto === "https";
+
   cookieStore.set(SESSION_COOKIE, session, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isHttps,
     expires: expiresAt,
     sameSite: "lax",
     path: "/",

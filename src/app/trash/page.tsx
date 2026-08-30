@@ -1,8 +1,11 @@
+import Link from "next/link";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
+import { formatRelativeTime } from "@/lib/format";
 import { restoreProject, deleteProjectForever } from "@/app/actions/projects";
 import { restoreScript, deleteScriptForever } from "@/app/actions/scripts";
-import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
+import { TrashRow } from "@/components/library/TrashRow";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default async function TrashPage() {
   await verifySession();
@@ -16,55 +19,84 @@ export default async function TrashPage() {
     }),
   ]);
 
+  const isEmpty = projects.length === 0 && scripts.length === 0;
+
   return (
-    <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: 900 }}>
-      <h1>Trash</h1>
+    <div className="shell">
+      <nav className="nav">
+        <Link href="/" className="nav-back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+          Library
+        </Link>
+        <span className="nav-spacer" />
+        <ThemeToggle />
+      </nav>
 
-      <section style={{ marginBottom: "2rem" }}>
-        <h2>Projects</h2>
-        {projects.length === 0 && <p style={{ color: "#666" }}>Nothing here.</p>}
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {projects.map((project) => (
-            <li key={project.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.5rem 0" }}>
-              <span style={{ flex: 1 }}>{project.name}</span>
-              <form action={restoreProject}>
-                <input type="hidden" name="id" value={project.id} />
-                <button type="submit">Restore</button>
-              </form>
-              <form action={deleteProjectForever}>
-                <input type="hidden" name="id" value={project.id} />
-                <ConfirmSubmitButton confirmMessage={`Permanently delete "${project.name}"? Its scripts move to Unassigned. This cannot be undone.`}>
-                  Delete forever
-                </ConfirmSubmitButton>
-              </form>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <main className="shell-inner pullback">
+        <h1 className="large-title">Trash</h1>
 
-      <section>
-        <h2>Scripts</h2>
-        {scripts.length === 0 && <p style={{ color: "#666" }}>Nothing here.</p>}
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {scripts.map((script) => (
-            <li key={script.id} style={{ display: "flex", alignItems: "center", gap: "0.75rem", padding: "0.5rem 0" }}>
-              <span style={{ flex: 1 }}>
-                {script.title} <span style={{ color: "#666" }}>— {script.project?.name ?? "Unassigned"}</span>
-              </span>
-              <form action={restoreScript}>
-                <input type="hidden" name="id" value={script.id} />
-                <button type="submit">Restore</button>
-              </form>
-              <form action={deleteScriptForever}>
-                <input type="hidden" name="id" value={script.id} />
-                <ConfirmSubmitButton confirmMessage={`Permanently delete "${script.title}"? This cannot be undone.`}>
-                  Delete forever
-                </ConfirmSubmitButton>
-              </form>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </main>
+        {isEmpty && (
+          <section className="group">
+            <div className="list">
+              <div className="empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                </svg>
+                <h4>Trash is empty</h4>
+                <p>Anything you move here can be restored until you delete it for good.</p>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {projects.length > 0 && (
+          <section className="group">
+            <div className="group-head">
+              Projects <span className="count">{projects.length}</span>
+            </div>
+            <div className="list">
+              {projects.map((project) => (
+                <TrashRow
+                  key={project.id}
+                  id={project.id}
+                  kind="project"
+                  title={project.name}
+                  sublabel={project.deletedAt ? `Moved to Trash ${formatRelativeTime(project.deletedAt)}` : ""}
+                  restoreAction={restoreProject}
+                  deleteAction={deleteProjectForever}
+                  deleteDescription="Its scripts move to Unassigned. This cannot be undone."
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {scripts.length > 0 && (
+          <section className="group">
+            <div className="group-head">
+              Scripts <span className="count">{scripts.length}</span>
+            </div>
+            <div className="list">
+              {scripts.map((script) => (
+                <TrashRow
+                  key={script.id}
+                  id={script.id}
+                  kind="script"
+                  title={script.title}
+                  sublabel={`${script.project?.name ?? "Unassigned"}${
+                    script.deletedAt ? ` · moved to Trash ${formatRelativeTime(script.deletedAt)}` : ""
+                  }`}
+                  restoreAction={restoreScript}
+                  deleteAction={deleteScriptForever}
+                  deleteDescription="The script and all its pages go with it. This cannot be undone."
+                />
+              ))}
+            </div>
+          </section>
+        )}
+      </main>
+    </div>
   );
 }

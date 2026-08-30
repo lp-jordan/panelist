@@ -1,30 +1,38 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { NavBar } from "@/components/NavBar";
+import { cookies } from "next/headers";
+import { THEME_COOKIE, type Theme } from "@/lib/theme";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import "./ui.css";
 
 export const metadata: Metadata = {
   title: "Panelist",
   description: "Comic script writer",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export const viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+};
+
+// Each page renders its own nav bar: the library and trash share one, the
+// editor has its own with the script's save state in it, and the login gate
+// has none. A single global bar would have had to be all three.
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Read the appearance server-side and stamp it on <html> in the first byte
+  // of HTML. A client script would have to run before paint to avoid a visible
+  // flip, and React 19 warns about <script> rendered inside a component.
+  const stored = (await cookies()).get(THEME_COOKIE)?.value;
+  const theme: Theme = stored === "light" || stored === "dark" ? stored : "system";
+
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>
-        <NavBar />
-        {children}
-      </body>
+    <html
+      lang="en"
+      data-theme={theme === "system" ? undefined : theme}
+      style={{ colorScheme: theme === "system" ? "light dark" : theme }}
+    >
+      <body>{children}</body>
     </html>
   );
 }

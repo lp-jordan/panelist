@@ -1,0 +1,194 @@
+/* The print/export view. Unlike the editor's own @media print block (which
+   styles the live Tiptap DOM), this stylesheet is always on: the page you see
+   IS the page that prints, and it's exactly what Playwright loads to render the
+   PDF. Geometry is copied verbatim from the RENOWNED #2 reference (US Letter,
+   1in margins, 2in dialogue tab) so the export matches the editor sheet-for-
+   sheet. Colors are hardcoded black-on-white regardless of theme — it's paper. */
+
+.px-doc {
+  --px-tab: 2in;
+  background: #fff;
+  color: #000;
+  font-family: var(--font-script, Verdana, Geneva, sans-serif);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+@page {
+  size: letter;
+  /* The sheet's own 1in padding supplies the margins, so the page box has none. */
+  margin: 0;
+}
+
+/* Each sheet is a physical Letter page. min-height is just under a full 11in:
+   a box exactly one page tall followed by a forced break makes some print
+   engines emit a trailing blank page, so the ~0.1in slack lets each sheet
+   break cleanly to the next. */
+.px-page,
+.px-freeform-page,
+.px-cover {
+  box-sizing: border-box;
+  width: 8.5in;
+  min-height: 10.9in;
+  margin: 0 auto;
+  padding: 1in;
+  background: #fff;
+  color: #000;
+  position: relative;
+  break-after: page;
+  page-break-after: always;
+}
+
+.px-doc > :last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+
+/* --- page heading --------------------------------------------------------- */
+
+.px-page-heading {
+  font-weight: bold;
+  text-decoration: underline;
+  font-size: 1.6em;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.px-page-body {
+  display: block;
+}
+
+/* --- panel ---------------------------------------------------------------- */
+
+.px-panel {
+  margin: 0.9rem 0;
+  line-height: 1.2;
+  break-inside: avoid;
+}
+
+.px-panel-label {
+  font-weight: bold;
+}
+
+/* Description flows straight on from "Panel N:" and wraps back to the left
+   margin (no hanging indent), so the body is inline. */
+.px-panel-body {
+  display: inline;
+}
+
+.px-panel-description {
+  display: inline;
+}
+
+.px-no-copy {
+  margin-top: 0.2rem;
+}
+
+/* --- note ----------------------------------------------------------------- */
+
+.px-note {
+  margin: 0.9rem 0;
+  font-style: italic;
+  font-weight: bold;
+  break-inside: avoid;
+}
+
+/* --- dialogue / caption / sfx / narration --------------------------------- */
+
+/* Label at the left margin, text at a fixed 2in tab, wrapped lines aligned to
+   that same tab (a hanging indent). The tab does not shift with name length. */
+.px-text-element {
+  margin: 0.35rem 0;
+  padding-left: var(--px-tab);
+  text-indent: calc(-1 * var(--px-tab));
+  line-height: 1.6;
+  break-inside: avoid;
+}
+
+.px-text-element-label {
+  display: inline-block;
+  width: var(--px-tab);
+  vertical-align: baseline;
+  text-indent: 0;
+  font-weight: normal;
+  text-transform: uppercase;
+}
+
+.px-text-element-content {
+  text-indent: 0;
+}
+
+/* --- freeform (blank) page ------------------------------------------------ */
+
+.px-para {
+  margin: 0 0 0.7em;
+  min-height: 1.6em;
+}
+
+.px-freeform-page .px-para:last-child {
+  margin-bottom: 0;
+}
+
+/* --- cover ---------------------------------------------------------------- */
+
+.px-cover {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.px-cover-titleblock {
+  /* The draft block is absolutely positioned, so this is the only in-flow
+     child; auto top/bottom margins center it vertically on the sheet. */
+  margin: auto 0;
+  width: 100%;
+  text-align: center;
+}
+
+.px-cover-title {
+  font-weight: bold;
+  text-decoration: underline;
+  text-transform: uppercase;
+  font-size: 1.6rem;
+}
+
+.px-cover-writtenby {
+  margin-top: 10px;
+  font-size: 0.9rem;
+}
+
+.px-cover-draft {
+  position: absolute;
+  left: 1in;
+  bottom: 1in;
+  display: flex;
+  align-items: baseline;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.px-cover-draft-date {
+  font-weight: normal;
+}
+
+/* On screen the sheets sit on a gray desk so they read as paper; in print the
+   desk isn't painted. */
+@media screen {
+  body:has(.px-doc) {
+    background: #5b5b60;
+  }
+
+  .px-doc {
+    padding: 24px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .px-page,
+  .px-freeform-page,
+  .px-cover {
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.4);
+  }
+}

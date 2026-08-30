@@ -1,0 +1,900 @@
+/* ---------------------------------------------------------------------------
+   UI primitives.
+
+   The repeated pieces, defined once: nav bar, grouped list, row, button,
+   field, segmented control, menu, sheet. Pages compose these and add layout
+   only — the moment a page starts declaring its own colours or paddings,
+   the thing to do is add a primitive here instead.
+
+   Every colour comes from a token in globals.css, so all of this is correct
+   in light and dark without a single theme-specific rule below.
+--------------------------------------------------------------------------- */
+
+/* --- page shell ---------------------------------------------------------- */
+
+.shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-grouped);
+}
+
+.shell-inner {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 var(--gutter) 56px;
+}
+
+/* --- nav bar ------------------------------------------------------------- */
+
+/* Translucent so content stays visible sliding under it — the chrome defers
+   to the work. Falls back to a solid fill where backdrop-filter is missing,
+   which would otherwise leave the bar almost see-through. */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--nav-height);
+  padding: 0 18px;
+  background: var(--chrome);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.25s var(--ease);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nav {
+    background: var(--chrome-solid);
+  }
+}
+
+/* Set once the content behind has scrolled, so the bar only earns an edge
+   when there is something to divide it from. */
+.nav[data-scrolled="true"] {
+  border-bottom-color: var(--separator);
+}
+
+.nav-spacer {
+  flex: 1;
+}
+
+.nav-title {
+  font-size: var(--text-row);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The compact title rises into the bar as the large one scrolls away. */
+.nav-title--collapsing {
+  opacity: 0;
+  transform: translateY(7px);
+  transition: opacity 0.24s var(--ease), transform 0.24s var(--ease);
+}
+
+.nav[data-scrolled="true"] .nav-title--collapsing {
+  opacity: 1;
+  transform: none;
+}
+
+.nav-back {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 5px 9px 5px 3px;
+  border-radius: var(--radius-sm);
+  color: var(--blue);
+  font-size: var(--text-row);
+  transition: background 0.18s var(--ease), transform 0.12s var(--ease);
+}
+
+.nav-back:hover {
+  background: var(--fill);
+}
+
+.nav-back:active {
+  background: var(--fill-press);
+  transform: scale(0.97);
+}
+
+.nav-back svg {
+  width: 16px;
+  height: 16px;
+}
+
+.large-title {
+  padding: 12px 0 2px;
+  font-size: var(--text-title);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* --- buttons ------------------------------------------------------------- */
+
+/* Press feedback is the asymmetry: the fill lands at once and releases
+   slowly, which is what makes a flat surface feel physical. */
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  color: var(--blue);
+  transition: background 0.18s var(--ease), transform 0.12s var(--ease);
+}
+
+.icon-btn:hover {
+  background: var(--fill);
+}
+
+.icon-btn:active {
+  background: var(--fill-press);
+  transform: scale(0.9);
+}
+
+.icon-btn svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+}
+
+.icon-btn--quiet {
+  color: var(--label-2);
+}
+
+/* The account avatar. A filled circle so it reads as a person chip, not just
+   another nav glyph. */
+.avatar-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--label-2);
+  transition: background 0.18s var(--ease), transform 0.12s var(--ease);
+}
+
+.avatar-btn:hover {
+  background: var(--fill-press);
+}
+
+.avatar-btn:active {
+  transform: scale(0.9);
+}
+
+.avatar-btn svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+}
+
+@media (pointer: coarse) {
+  .avatar-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.btn-primary {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 11px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: transform 0.13s var(--ease), filter 0.18s var(--ease);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.06);
+}
+
+.btn-primary:active {
+  transform: scale(0.965);
+  filter: brightness(0.94);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+  filter: none;
+}
+
+.btn-plain {
+  padding: 7px 14px;
+  border-radius: 9px;
+  color: var(--blue);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: background 0.18s var(--ease), transform 0.12s var(--ease);
+}
+
+.btn-plain:hover {
+  background: var(--fill);
+}
+
+.btn-plain:active {
+  background: var(--fill-press);
+  transform: scale(0.95);
+}
+
+.btn-plain--danger {
+  color: var(--red);
+}
+
+/* --- fields -------------------------------------------------------------- */
+
+.field {
+  width: 100%;
+  height: 40px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--label);
+  font-size: 0.96875rem;
+  outline: 0;
+  transition: background 0.22s var(--ease), box-shadow 0.22s var(--ease);
+}
+
+.field::placeholder {
+  color: var(--label-2);
+}
+
+.field:focus {
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--blue) 26%, transparent),
+    0 0 0 1px var(--blue);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 6px;
+}
+
+select.field {
+  height: 40px;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 17px) 18px, calc(100% - 12px) 18px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 34px;
+  cursor: pointer;
+}
+
+.search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 11px;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--label-2);
+  transition: background 0.22s var(--ease), box-shadow 0.22s var(--ease);
+}
+
+.search:focus-within {
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--blue) 26%, transparent),
+    0 0 0 1px var(--blue);
+}
+
+.search svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: 0;
+  font-size: 0.90625rem;
+  color: var(--label);
+}
+
+.search input::placeholder {
+  color: var(--label-2);
+}
+
+/* --- segmented control --------------------------------------------------- */
+
+.seg {
+  position: relative;
+  display: flex;
+  flex: none;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--fill);
+}
+
+/* The moving pill is a sibling positioned by script, so the segments
+   themselves stay plain buttons that work with JS disabled. */
+.seg-pill {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  height: calc(100% - 4px);
+  border-radius: 7px;
+  background: var(--bg-elevated);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.34s var(--spring), width 0.34s var(--spring);
+}
+
+.seg button {
+  position: relative;
+  z-index: 1;
+  padding: 6px 15px;
+  border-radius: 7px;
+  font-size: var(--text-sub);
+  font-weight: 500;
+  color: var(--label-2);
+  transition: color 0.2s var(--ease), transform 0.12s var(--ease);
+}
+
+.seg button[aria-pressed="true"] {
+  color: var(--label);
+}
+
+.seg button:active {
+  transform: scale(0.94);
+}
+
+/* --- grouped inset list -------------------------------------------------- */
+
+.group {
+  padding-top: 22px;
+}
+
+.group-head {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 0 4px 7px;
+  font-size: var(--text-fine);
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--label-2);
+}
+
+.group-head .count {
+  font-size: var(--text-fine);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--label-3);
+}
+
+.group-head-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* A group header has no row to hover, so its menu button stays visible. */
+.group-head .more-btn {
+  opacity: 1;
+}
+
+.list {
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 0.5px var(--separator);
+  overflow: hidden;
+}
+
+.row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 12px 11px 16px;
+  text-align: left;
+  background: transparent;
+  transition: background 0.22s var(--ease);
+}
+
+/* Separators are inset to the text, the way a grouped list does it, so the
+   eye reads one block rather than a stack of bordered boxes. */
+.row + .row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 0;
+  height: 0.5px;
+  background: var(--separator);
+}
+
+.row:hover {
+  background: var(--fill);
+}
+
+.row:active {
+  background: var(--fill-press);
+  transition-duration: 0.03s;
+}
+
+.row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row-title {
+  font-size: var(--text-row);
+  font-weight: 500;
+  letter-spacing: -0.017em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The title's hit area is stretched over the whole row, which keeps the row
+   clickable without wrapping the menu button and its form inside an anchor. */
+.row-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+/* …and the controls that sit on top of it stay clickable. */
+.row .menu-anchor {
+  z-index: 1;
+}
+
+.row-sub {
+  font-size: var(--text-fine);
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.row-sub .dot {
+  padding: 0 5px;
+  opacity: 0.45;
+}
+
+.chev {
+  flex: none;
+  width: 13px;
+  height: 13px;
+  color: var(--label-3);
+}
+
+.badge {
+  flex: none;
+  padding: 2.5px 7px;
+  border-radius: 6px;
+  background: var(--fill);
+  color: var(--label-2);
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+/* Hidden until the row is approached, so four controls per row become none. */
+.more-btn {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--label-2);
+  opacity: 0;
+  transition: opacity 0.18s var(--ease), background 0.18s var(--ease),
+    transform 0.12s var(--ease);
+}
+
+.row:hover .more-btn,
+.row:focus-within .more-btn,
+.more-btn[aria-expanded="true"] {
+  opacity: 1;
+}
+
+.more-btn:hover {
+  background: var(--fill);
+}
+
+.more-btn:active {
+  background: var(--fill-press);
+  transform: scale(0.88);
+}
+
+.more-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Keyboard users never get a hover, so the menu button has to stay reachable. */
+.more-btn:focus-visible {
+  opacity: 1;
+}
+
+/* On touch there is no hover to reveal the menu, and 28–32px controls are below
+   the ~44px a fingertip needs — so on a coarse pointer the row menu is always
+   visible and the tap targets grow. */
+@media (pointer: coarse) {
+  .more-btn {
+    opacity: 1;
+    width: 40px;
+    height: 40px;
+  }
+
+  .more-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .row {
+    padding: 14px 8px 14px 16px;
+  }
+
+  .btn-plain {
+    padding: 10px 14px;
+  }
+
+  .nav-back {
+    padding: 9px 12px 9px 6px;
+  }
+}
+
+/* --- empty state --------------------------------------------------------- */
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 20px 36px;
+  text-align: center;
+}
+
+.empty svg {
+  width: 32px;
+  height: 32px;
+  color: var(--label-3);
+}
+
+.empty h4 {
+  font-size: var(--text-row);
+  font-weight: 600;
+}
+
+.empty p {
+  max-width: 34ch;
+  font-size: 0.84375rem;
+  color: var(--label-2);
+}
+
+/* --- context menu -------------------------------------------------------- */
+
+.menu-anchor {
+  position: relative;
+  display: inline-flex;
+}
+
+/* Fixed, and portalled to <body> — a menu positioned inside `.list` was clipped
+   by the `overflow: hidden` that rounds the list's corners. Placement is set
+   by script, which also flips it upward near the bottom of the window. */
+.menu {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 200;
+  width: 224px;
+  padding: 5px;
+  border-radius: 13px;
+  background: var(--menu);
+  -webkit-backdrop-filter: saturate(180%) blur(26px);
+  backdrop-filter: saturate(180%) blur(26px);
+  box-shadow: var(--shadow-menu);
+  transform-origin: top right;
+  opacity: 0;
+  transform: scale(0.86) translateY(-5px);
+  pointer-events: none;
+  transition: opacity 0.16s var(--ease), transform 0.3s var(--spring);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .menu {
+    background: var(--menu-solid);
+  }
+}
+
+.menu[data-open="true"] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 0.875rem;
+  transition: background 0.12s var(--ease);
+}
+
+.menu button:hover {
+  background: var(--fill);
+}
+
+.menu button:active {
+  background: var(--fill-press);
+}
+
+.menu button.danger {
+  color: var(--red);
+}
+
+.menu svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+}
+
+.menu hr {
+  height: 0.5px;
+  margin: 4px 8px;
+  border: 0;
+  background: var(--separator-strong);
+}
+
+/* --- scrim + sheets ------------------------------------------------------ */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(0, 0, 0, 0.36);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease);
+}
+
+.scrim[data-open="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Action sheet — for anything irreversible. It names the object and states
+   the consequence, which window.confirm never could. */
+.sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(420px, 92vw);
+  padding-bottom: 12px;
+  transform: translate(-50%, 112%);
+  /* Hidden outright when closed, not just slid down: a short sheet's %-based
+     slide didn't always clear the viewport, so a closed sheet could peek up
+     from the bottom and read as a phantom second modal. */
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.44s var(--spring), opacity 0.3s var(--ease);
+}
+
+.sheet[data-open="true"] {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sheet-card {
+  border-radius: 14px;
+  background: var(--menu);
+  -webkit-backdrop-filter: saturate(180%) blur(26px);
+  backdrop-filter: saturate(180%) blur(26px);
+  box-shadow: var(--shadow-sheet);
+  overflow: hidden;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sheet-card {
+    background: var(--menu-solid);
+  }
+}
+
+.sheet-head {
+  padding: 15px 20px 13px;
+  text-align: center;
+  border-bottom: 0.5px solid var(--separator-strong);
+}
+
+.sheet-head strong {
+  display: block;
+  font-size: 0.84375rem;
+  font-weight: 600;
+}
+
+.sheet-head span {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--text-fine);
+  line-height: 1.45;
+  color: var(--label-2);
+}
+
+.sheet-card button {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.03125rem;
+  transition: background 0.12s var(--ease);
+}
+
+.sheet-card button + button {
+  border-top: 0.5px solid var(--separator-strong);
+}
+
+.sheet-card button:hover {
+  background: var(--fill);
+}
+
+.sheet-card button:active {
+  background: var(--fill-press);
+}
+
+.sheet-card button.danger {
+  color: var(--red);
+  font-weight: 500;
+}
+
+.sheet-card--cancel button {
+  color: var(--blue);
+  font-weight: 600;
+}
+
+/* Form sheet — rename, create. Comes from the top so it reads as a different
+   kind of thing from the destructive sheet, and so it clears the keyboard. */
+.form-sheet {
+  position: fixed;
+  left: 50%;
+  top: 0;
+  z-index: 80;
+  width: min(430px, 92vw);
+  padding-top: 14px;
+  transform: translate(-50%, -112%);
+  /* Same as .sheet: fully hidden when closed so a short sheet can't peek in
+     from the top edge. */
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.44s var(--spring), opacity 0.3s var(--ease);
+}
+
+.form-sheet[data-open="true"] {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.form-sheet-card {
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), 0 0 0 0.5px var(--separator);
+  overflow: hidden;
+}
+
+.form-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 0.5px solid var(--separator);
+}
+
+.form-sheet-head strong {
+  font-size: var(--text-row);
+  font-weight: 600;
+}
+
+.form-sheet-head button {
+  padding: 5px 9px;
+  border-radius: var(--radius-sm);
+  color: var(--blue);
+  font-size: var(--text-row);
+  transition: background 0.15s var(--ease), transform 0.12s var(--ease);
+}
+
+.form-sheet-head button:active {
+  background: var(--fill);
+  transform: scale(0.95);
+}
+
+.form-sheet-head button[type="submit"] {
+  font-weight: 600;
+}
+
+.form-sheet-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* The page pulls back behind a sheet, so the sheet reads as sitting on top of
+   the app rather than pasted over it. Driven off whether any scrim is open
+   rather than threaded through state, so no component has to know that a
+   sibling elsewhere opened a sheet. */
+.pullback {
+  transition: transform 0.44s var(--spring), border-radius 0.44s var(--spring),
+    filter 0.44s var(--ease);
+  transform-origin: 50% 0;
+}
+
+body:has(.scrim[data-open="true"]) .pullback {
+  transform: scale(0.958) translateY(8px);
+  border-radius: var(--radius);
+  filter: brightness(0.94);
+}
+
+/* Trash/archive: a quiet control anchored bottom-left, away from the primary
+   top-right actions. */
+.archive-fab {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px 9px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-menu);
+  color: var(--label-2);
+  font-size: var(--text-sub);
+  font-weight: 500;
+  transition: color 0.15s var(--ease), transform 0.12s var(--ease);
+}
+
+.archive-fab svg {
+  width: 17px;
+  height: 17px;
+}
+
+.archive-fab:hover {
+  color: var(--label);
+}
+
+.archive-fab:active {
+  transform: scale(0.96);
+}

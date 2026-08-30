@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
@@ -30,18 +29,19 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
 
   const doc = scriptToDocJSON(script);
 
+  // The editor owns the whole screen, nav bar included, because the bar has to
+  // show the save state that lives inside it.
   return (
-    <main style={{ padding: "2rem" }}>
-      <p>
-        <Link href="/">&larr; Back to Scripts</Link>
-      </p>
-      <h1 style={{ fontFamily: "sans-serif" }}>{script.title}</h1>
-      <ScriptEditor
-        scriptId={script.id}
-        projectId={script.projectId}
-        initialDoc={doc}
-        initialCastNames={castMembers.map((c) => c.name)}
-      />
-    </main>
+    <ScriptEditor
+      scriptId={script.id}
+      projectId={script.projectId}
+      title={script.title}
+      author={script.author}
+      draftLabel={script.draftLabel}
+      // The date field wants a yyyy-mm-dd string; hand it the ISO day.
+      draftDate={script.draftDate.toISOString().slice(0, 10)}
+      initialDoc={doc}
+      initialCastNames={castMembers.map((c) => c.name)}
+    />
   );
 }

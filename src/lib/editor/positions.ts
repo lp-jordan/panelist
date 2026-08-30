@@ -35,9 +35,16 @@ export function panelNumberAt(state: EditorState, panelPos: number): number {
   return count;
 }
 
-// 0-based index of the page starting at `pagePos` among the document's pages.
+// 0-based index of the script page starting at `pagePos`, counting only
+// `page` nodes — freeform (blank) pages sit at the top level too but are
+// skipped by numbering, so they don't advance the page count.
 export function pageIndexAt(state: EditorState, pagePos: number): number {
-  return state.doc.resolve(pagePos).index();
+  const childIndex = state.doc.resolve(pagePos).index();
+  let count = 0;
+  for (let i = 0; i < childIndex; i++) {
+    if (state.doc.child(i).type.name === "page") count++;
+  }
+  return count;
 }
 
 export function panelCountInPage(pageNode: PMNode): number {

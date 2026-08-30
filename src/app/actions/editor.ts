@@ -21,6 +21,33 @@ export async function saveScriptContent(scriptId: string, doc: JSONNode) {
   revalidatePath("/");
 }
 
+// Saves the title-page fields — title, "written by" credit, draft label and
+// date. Separate from saveScriptContent so editing the cover never rewrites the
+// page content (and vice versa). `draftDate` is an ISO date string (yyyy-mm-dd)
+// from the date field; a blank or unparseable value leaves the date untouched.
+export async function updateScriptMeta(
+  scriptId: string,
+  meta: { title: string; author: string; draftLabel: string; draftDate: string },
+) {
+  await verifySession();
+
+  const parsedDate = meta.draftDate ? new Date(meta.draftDate) : null;
+  const draftDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : undefined;
+
+  await prisma.script.update({
+    where: { id: scriptId },
+    data: {
+      title: meta.title.trim() || "Untitled",
+      author: meta.author.trim(),
+      draftLabel: meta.draftLabel.trim() || "Draft #1",
+      ...(draftDate ? { draftDate } : {}),
+    },
+  });
+
+  revalidatePath(`/scripts/${scriptId}`);
+  revalidatePath("/");
+}
+
 export async function addCastMemberFromEditor(projectId: string, name: string) {
   await verifySession();
   const trimmed = name.trim();

@@ -2,16 +2,16 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/format";
-import { createProject, archiveProject, renameProject } from "@/app/actions/projects";
-import { createScript, archiveScript, duplicateScript, renameScript } from "@/app/actions/scripts";
+import { LibraryToolbar } from "@/components/library/LibraryToolbar";
+import { NewMenu } from "@/components/library/NewMenu";
+import { AccountMenu } from "@/components/library/AccountMenu";
+import { ProjectMenu } from "@/components/library/ProjectMenu";
+import { ScriptRow } from "@/components/library/ScriptRow";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 type SearchParams = { q?: string; sort?: string };
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
+export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await getCurrentUser();
   const { q = "", sort = "updated" } = await searchParams;
 
@@ -37,119 +37,118 @@ export default async function Home({
     }),
   ]);
 
+  const searching = q.trim().length > 0;
+  const matches = projects.reduce((n, p) => n + p.scripts.length, 0) + unassignedScripts.length;
+
   return (
-    <main style={{ padding: "2rem", fontFamily: "sans-serif", maxWidth: 900 }}>
-      <h1>Scripts</h1>
+    <div className="shell">
+      <nav className="nav">
+        <span className="nav-title">Panelist</span>
+        <span className="nav-spacer" />
+        <ThemeToggle />
+        <NewMenu projects={projects.map((p) => ({ id: p.id, name: p.name }))} />
+        <AccountMenu />
+      </nav>
 
-      <form style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem" }}>
-        <input type="text" name="q" placeholder="Search by title" defaultValue={q} />
-        <select name="sort" defaultValue={sort}>
-          <option value="updated">Last edited</option>
-          <option value="title">Title</option>
-        </select>
-        <button type="submit">Apply</button>
-      </form>
+      <main className="shell-inner pullback">
+        <h1 className="large-title">Library</h1>
 
-      <section style={{ marginBottom: "2rem" }}>
-        <h2>New project</h2>
-        <form action={createProject} style={{ display: "flex", gap: "0.5rem" }}>
-          <input type="text" name="name" placeholder="Project name" required />
-          <button type="submit">Create project</button>
-        </form>
-      </section>
+        <LibraryToolbar q={q} sort={sort} />
 
-      <section style={{ marginBottom: "2rem" }}>
-        <h2>New script</h2>
-        <form action={createScript} style={{ display: "flex", gap: "0.5rem" }}>
-          <input type="text" name="title" placeholder="Script title" required />
-          <select name="projectId" defaultValue="">
-            <option value="">Unassigned</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
+        {searching && matches === 0 && (
+          <div className="group">
+            <div className="list">
+              <div className="empty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="M20 20l-3.5-3.5" />
+                </svg>
+                <h4>No matches</h4>
+                <p>Nothing titled “{q.trim()}”. Try a shorter search.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {projects.map((project) => {
+          // While searching, a project with no matching scripts is noise.
+          if (searching && project.scripts.length === 0) return null;
+
+          return (
+            <section className="group" key={project.id}>
+              <div className="group-head">
                 {project.name}
-              </option>
-            ))}
-          </select>
-          <button type="submit">Create script</button>
-        </form>
-      </section>
+                <span className="count">
+                  {project.scripts.length} script{project.scripts.length === 1 ? "" : "s"}
+                </span>
+                <span className="group-head-actions">
+                  <ProjectMenu id={project.id} name={project.name} scriptCount={project.scripts.length} />
+                </span>
+              </div>
+              <div className="list">
+                {project.scripts.length === 0 ? (
+                  <div className="empty">
+                    <h4>No scripts yet</h4>
+                    <p>Add one from the + in the bar above.</p>
+                  </div>
+                ) : (
+                  project.scripts.map((script) => (
+                    <ScriptRow
+                      key={script.id}
+                      id={script.id}
+                      title={script.title}
+                      draftLabel={script.draftLabel}
+                      pageCount={script._count.pages}
+                      editedLabel={formatRelativeTime(script.updatedAt)}
+                    />
+                  ))
+                )}
+              </div>
+            </section>
+          );
+        })}
 
-      {projects.map((project) => (
-        <section key={project.id} style={{ marginBottom: "2rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <h2>{project.name}</h2>
-            <form action={renameProject} style={{ display: "flex", gap: "0.25rem" }}>
-              <input type="hidden" name="id" value={project.id} />
-              <input type="text" name="name" defaultValue={project.name} />
-              <button type="submit">Rename</button>
-            </form>
-            <form action={archiveProject}>
-              <input type="hidden" name="id" value={project.id} />
-              <button type="submit">Archive project</button>
-            </form>
-          </div>
-          <ScriptList scripts={project.scripts} />
-        </section>
-      ))}
+        {!(searching && unassignedScripts.length === 0) && (
+          <section className="group">
+            <div className="group-head">Unassigned</div>
+            <div className="list">
+              {unassignedScripts.length === 0 ? (
+                <div className="empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 4h11l5 5v11H4z" />
+                    <path d="M15 4v5h5" />
+                    <path d="M8 13h8M8 17h5" />
+                  </svg>
+                  <h4>Nothing loose</h4>
+                  <p>Scripts that don’t belong to a project land here.</p>
+                </div>
+              ) : (
+                unassignedScripts.map((script) => (
+                  <ScriptRow
+                    key={script.id}
+                    id={script.id}
+                    title={script.title}
+                    draftLabel={script.draftLabel}
+                    pageCount={script._count.pages}
+                    editedLabel={formatRelativeTime(script.updatedAt)}
+                  />
+                ))
+              )}
+            </div>
+          </section>
+        )}
+      </main>
 
-      <section style={{ marginBottom: "2rem" }}>
-        <h2>Unassigned</h2>
-        <ScriptList scripts={unassignedScripts} />
-      </section>
-    </main>
-  );
-}
-
-type ScriptCard = {
-  id: string;
-  title: string;
-  draftLabel: string;
-  updatedAt: Date;
-  _count: { pages: number };
-};
-
-function ScriptList({ scripts }: { scripts: ScriptCard[] }) {
-  if (scripts.length === 0) {
-    return <p style={{ color: "#666" }}>No scripts.</p>;
-  }
-
-  return (
-    <ul style={{ listStyle: "none", padding: 0 }}>
-      {scripts.map((script) => (
-        <li
-          key={script.id}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            padding: "0.5rem 0",
-            borderBottom: "1px solid #eee",
-          }}
-        >
-          <div style={{ flex: 1 }}>
-            <Link href={`/scripts/${script.id}`}>
-              <strong>{script.title}</strong>
-            </Link>{" "}
-            <span style={{ color: "#666" }}>
-              — {script.draftLabel} · {script._count.pages} page{script._count.pages === 1 ? "" : "s"} · edited{" "}
-              {formatRelativeTime(script.updatedAt)}
-            </span>
-          </div>
-          <form action={renameScript} style={{ display: "flex", gap: "0.25rem" }}>
-            <input type="hidden" name="id" value={script.id} />
-            <input type="text" name="title" defaultValue={script.title} />
-            <button type="submit">Rename</button>
-          </form>
-          <form action={duplicateScript}>
-            <input type="hidden" name="id" value={script.id} />
-            <button type="submit">Duplicate</button>
-          </form>
-          <form action={archiveScript}>
-            <input type="hidden" name="id" value={script.id} />
-            <button type="submit">Archive</button>
-          </form>
-        </li>
-      ))}
-    </ul>
+      {/* Trash lives in the bottom-left corner as a quiet archive control,
+          out of the way of the primary top-right actions. */}
+      <Link href="/trash" className="archive-fab" aria-label="Trash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="4" rx="1" />
+          <path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8" />
+          <path d="M10 12h4" />
+        </svg>
+        Trash
+      </Link>
+    </div>
   );
 }
