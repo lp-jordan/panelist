@@ -719,6 +719,204 @@
   color: var(--label);
 }
 
+/* --- version history sheet ------------------------------------------------ */
+
+/* Drop below the editor nav rather than under it: the nav sits in its own
+   stacking context and paints over a top:0 sheet, hiding this sheet's header
+   and Save-version field. Offsetting clears it and caps the height so the whole
+   panel fits between the nav and the bottom of the screen. */
+.form-sheet.sx-history {
+  width: min(460px, 92vw);
+  top: calc(var(--nav-height) + 10px);
+  max-height: calc(100vh - var(--nav-height) - 20px);
+}
+
+.sx-history-save {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 0.5px solid var(--separator);
+  font-family: var(--font-ui);
+}
+
+.sx-history-save input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 11px;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  color: var(--label);
+  font-family: inherit;
+  font-size: var(--text-sub);
+}
+
+.sx-history-save input::placeholder {
+  color: var(--label-3);
+}
+
+.sx-history-save-btn {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--blue);
+  color: #fff;
+  font-family: inherit;
+  font-size: var(--text-sub);
+  font-weight: 600;
+  transition: filter 0.15s var(--ease);
+}
+
+.sx-history-save-btn:hover {
+  filter: brightness(1.06);
+}
+
+.sx-history-save-btn:disabled {
+  opacity: 0.5;
+}
+
+.sx-history-body {
+  max-height: min(64vh, 520px);
+  overflow-y: auto;
+  padding: 8px 12px 12px;
+  font-family: var(--font-ui);
+}
+
+.sx-history-empty {
+  padding: 20px 8px;
+  color: var(--label-2);
+  font-size: var(--text-sub);
+  line-height: 1.45;
+  text-align: center;
+}
+
+.sx-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sx-history-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 8px;
+}
+
+.sx-history-item + .sx-history-item {
+  border-top: 0.5px solid var(--separator);
+}
+
+.sx-history-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--fill);
+  color: var(--label-2);
+}
+
+.sx-history-item[data-manual="true"] .sx-history-icon {
+  background: color-mix(in srgb, var(--blue) 15%, transparent);
+  color: var(--blue);
+}
+
+.sx-history-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sx-history-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.sx-history-label {
+  font-size: var(--text-sub);
+  font-weight: 500;
+  color: var(--label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sx-history-time {
+  font-size: var(--text-fine);
+  color: var(--label-2);
+}
+
+.sx-history-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sx-history-preview,
+.sx-history-restore,
+.sx-history-confirm,
+.sx-history-cancel {
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--text-fine);
+  font-weight: 500;
+  color: var(--blue);
+  transition: background 0.14s var(--ease);
+}
+
+.sx-history-preview:hover,
+.sx-history-restore:hover,
+.sx-history-cancel:hover {
+  background: var(--fill);
+}
+
+.sx-history-confirm {
+  background: var(--blue);
+  color: #fff;
+  font-weight: 600;
+}
+
+.sx-history-confirm:hover {
+  filter: brightness(1.06);
+}
+
+.sx-history-cancel {
+  color: var(--label-2);
+}
+
+.sx-history-delete {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  color: var(--label-3);
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+
+.sx-history-delete:hover {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+}
+
+.sx-history-delete svg {
+  width: 15px;
+  height: 15px;
+}
+
+.sx-history-actions button:disabled,
+.sx-history-actions a[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 /* --- mobile keyboard toolbar ---------------------------------------------- */
 
 /* Only exists on touch, where Tab (change type) and Mod+Enter (new page) have

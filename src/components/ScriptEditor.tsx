@@ -13,6 +13,8 @@ import { deleteSelectionRoundedToNodes } from "@/lib/editor/commands";
 import { findAncestorPos } from "@/lib/editor/positions";
 import type { JSONNode } from "@/lib/editor/serialize";
 import { saveScriptContent, addCastMemberFromEditor, updateScriptMeta } from "@/app/actions/editor";
+import { createAutoSnapshot } from "@/app/actions/snapshots";
+import { HistorySheet } from "./HistorySheet";
 import { ShortcutsSheet } from "./ShortcutsSheet";
 import { TitlePageSheet, type TitlePageValues } from "./TitlePageSheet";
 import { TitlePagePrint } from "./TitlePagePrint";
@@ -25,6 +27,12 @@ type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 // How long Delete must be held (pointer keyboards) before a section clears.
 const HOLD_MS = 650;
+
+// Automatic session checkpoints: at most one every few minutes of active
+// editing (plus one when the tab is hidden/left with unsaved edits), so the
+// history is a useful timeline rather than a checkpoint per keystroke. The
+// server also drops a checkpoint whose content matches the previous one.
+const AUTO_SNAPSHOT_INTERVAL_MS = 5 * 60 * 1000;
 
 // The guard toast has three faces: a hold-in-progress ring (desktop), a
 // tap-through "Clear it" button (touch, and the fallback after a released
@@ -62,6 +70,7 @@ export function ScriptEditor({
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [scrolled, setScrolled] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
   // Desktop-only: whether the floating page navigator is collapsed to a chip.
@@ -91,6 +100,11 @@ export function ScriptEditor({
   const autosaveTimer = useRef<number | undefined>(undefined);
   const savingRef = useRef(false);
   const dirtyDuringSave = useRef(false);
+  // Version-history bookkeeping: whether the document changed since the last
+  // checkpoint, and when that checkpoint was taken. Seeded to now so the first
+  // checkpoint waits out the interval (or fires on tab-hide, whichever's first).
+  const dirtySinceSnapshot = useRef(false);
+  const lastSnapshotAt = useRef(Date.now());
 
   // The toast shown when a keystroke would land on the page's auto-formatting
   // rather than editable text.
@@ -383,6 +397,7 @@ export function ScriptEditor({
   useEffect(() => {
     if (!editor) return;
     const onUpdate = () => {
+      dirtySinceSnapshot.current = true;
       window.clearTimeout(autosaveTimer.current);
       autosaveTimer.current = window.setTimeout(save, 1000);
     };
@@ -397,6 +412,49 @@ export function ScriptEditor({
       window.clearTimeout(autosaveTimer.current);
     };
   }, [editor, save, saveNow]);
+
+  // The current editor state as the snapshot envelope expects it. Kept behind a
+  // ref so the interval/visibility listeners below don't re-bind on every edit.
+  const getLiveState = useCallback(() => {
+    const doc = editor
+      ? (JSON.parse(JSON.stringify(editor.getJSON())) as JSONNode)
+      : ({ type: "doc", content: [] } as JSONNode);
+    return { doc, meta };
+  }, [editor, meta]);
+  const liveStateRef = useRef(getLiveState);
+  useEffect(() => {
+    liveStateRef.current = getLiveState;
+  }, [getLiveState]);
+
+  // Write an automatic checkpoint if the doc has changed since the last one and
+  // enough time has passed (or `force`, on tab-hide). Fire-and-forget: a failed
+  // checkpoint must never interrupt writing, and autosave is the real safety net.
+  const maybeAutoSnapshot = useCallback(
+    (force: boolean) => {
+      if (!dirtySinceSnapshot.current) return;
+      if (!force && Date.now() - lastSnapshotAt.current < AUTO_SNAPSHOT_INTERVAL_MS) return;
+      const { doc, meta: liveMeta } = liveStateRef.current();
+      dirtySinceSnapshot.current = false;
+      lastSnapshotAt.current = Date.now();
+      createAutoSnapshot(scriptId, doc, liveMeta).catch((err) => console.error("auto snapshot failed", err));
+    },
+    [scriptId],
+  );
+
+  useEffect(() => {
+    const id = window.setInterval(() => maybeAutoSnapshot(false), 60_000);
+    // Leaving or backgrounding the tab ends the session — checkpoint any edits
+    // that haven't been captured yet, regardless of the interval.
+    const onHidden = () => {
+      if (document.visibilityState === "hidden") maybeAutoSnapshot(true);
+    };
+    document.addEventListener("visibilitychange", onHidden);
+    window.addEventListener("pagehide", () => maybeAutoSnapshot(true));
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onHidden);
+    };
+  }, [maybeAutoSnapshot]);
 
   // The nav bar only earns its hairline once there is content behind it.
   useEffect(() => {
@@ -460,6 +518,19 @@ export function ScriptEditor({
           <span className="nav-spacer" />
           <SavePill status={status} />
           <ThemeToggle />
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setHistoryOpen(true)}
+            title="Version history"
+            aria-label="Version history"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 3v5h5" />
+              <path d="M3.05 13A9 9 0 106 5.3L3 8" />
+              <path d="M12 7v5l4 2" />
+            </svg>
+          </button>
           <button
             type="button"
             className="icon-btn"
@@ -570,6 +641,12 @@ export function ScriptEditor({
       </div>
 
       <ShortcutsSheet open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+      <HistorySheet
+        scriptId={scriptId}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        getLiveState={getLiveState}
+      />
 
       <TitlePageSheet
         open={titlePageOpen}
