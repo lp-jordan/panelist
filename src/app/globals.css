@@ -158,7 +158,12 @@ html {
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
+  /* `clip`, not `hidden`: both guard against a stray horizontal scrollbar, but
+     `overflow-x: hidden` turns the root into a scroll container, which silently
+     kills `position: sticky` on everything inside it (the editor's top nav).
+     `clip` clips the same overflow without establishing a scroll container, so
+     the sticky bar keeps working. */
+  overflow-x: clip;
 }
 
 body {

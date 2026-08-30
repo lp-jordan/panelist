@@ -1294,6 +1294,10 @@
 
   .sx-shell .nav {
     gap: 6px;
+    /* On phones the bar scrolls away with the page — vertical space is scarce
+       and there's already a keyboard toolbar and bottom chrome. Sticky is a
+       desktop-only affordance here. */
+    position: static;
   }
 
   .sx-shell .sx-save-pill {
