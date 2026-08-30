@@ -473,23 +473,28 @@ export function ScriptEditor({
   // the difference from window.innerHeight is the keyboard's height, which we
   // apply as the toolbar's bottom offset so it rides just above the keys.
   const [keyboardInset, setKeyboardInset] = useState(0);
+  const recomputeInset = useCallback(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    setKeyboardInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+  }, []);
+
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     // Coalesce the flurry of resize/scroll events iOS fires while it scrolls the
     // caret into view into a single per-frame update. Reading them raw made the
-    // toolbar jump around (and briefly dip behind the keys) as the offset
-    // settled; one rAF-batched read per frame keeps it steady.
+    // toolbar jump around as the offset settled; one rAF-batched read per frame
+    // keeps it steady.
     let frame = 0;
-    const update = () => {
-      frame = 0;
-      setKeyboardInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
-    };
     const schedule = () => {
       if (frame) return;
-      frame = requestAnimationFrame(update);
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        recomputeInset();
+      });
     };
-    update();
+    recomputeInset();
     vv.addEventListener("resize", schedule);
     vv.addEventListener("scroll", schedule);
     return () => {
@@ -497,7 +502,19 @@ export function ScriptEditor({
       vv.removeEventListener("resize", schedule);
       vv.removeEventListener("scroll", schedule);
     };
-  }, []);
+  }, [recomputeInset]);
+
+  // When the editor gains focus the keyboard animates in, but iOS often doesn't
+  // fire a visualViewport event until the user scrolls — which is why the bar
+  // used to stay hidden until a "fake" scroll nudged it up. Re-measure across
+  // the keyboard's open animation so it lands in place on its own. (On blur the
+  // single trailing read settles it back to 0.)
+  useEffect(() => {
+    recomputeInset();
+    if (!editorFocused) return;
+    const timers = [120, 280, 480, 700].map((ms) => window.setTimeout(recomputeInset, ms));
+    return () => timers.forEach(window.clearTimeout);
+  }, [editorFocused, recomputeInset]);
 
   // The editor is client-only (immediatelyRender: false), so it's null for a
   // beat after mount — and stays null if Tiptap fails to initialise. Render the
@@ -689,9 +706,11 @@ export function ScriptEditor({
       <div
         className="sx-kbtoolbar-holder"
         data-visible={editorFocused}
-        style={keyboardInset > 0 ? { bottom: `${keyboardInset}px` } : undefined}
+        style={{ transform: `translateY(${-keyboardInset}px)` }}
       >
-        <KeyboardToolbar editor={editor} />
+        <div className="sx-kbtoolbar-slide">
+          <KeyboardToolbar editor={editor} />
+        </div>
       </div>
 
       <div

@@ -1038,12 +1038,23 @@
     right: 0;
     bottom: 0;
     z-index: 60;
+    /* Positioned by JS as `transform: translateY(-keyboardInset)` so it rides
+       just above the software keyboard. iOS Safari anchors `position: fixed` to
+       the *layout* viewport and does not repaint fixed elements mid-scroll, so a
+       `bottom`-based bar drifts with the page and only settles when scrolling
+       stops. A composited transform, by contrast, the compositor keeps pinned
+       during the scroll — which is the whole reason the position lives here and
+       not in `bottom`. No transition on this element: the position must track
+       scroll instantly, never lag behind it. */
+    will-change: transform;
+  }
+
+  /* The show/hide slide lives on an inner element so its transition never fights
+     the holder's per-frame position transform. */
+  .sx-kbtoolbar-slide {
     transform: translateY(110%);
     transition: transform 0.28s var(--spring);
-    /* iOS Safari overlays the keyboard on top of fixed elements rather than
-       pushing them up, so `bottom` is set from JS to the keyboard's height (see
-       keyboardInset in ScriptEditor). The safe-area padding clears the home
-       indicator when the keyboard is closed and the inset is 0. */
+    /* Clears the home indicator when the keyboard is closed and the inset is 0. */
     padding-bottom: env(safe-area-inset-bottom);
     background: var(--chrome);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -1052,12 +1063,12 @@
   }
 
   @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .sx-kbtoolbar-holder {
+    .sx-kbtoolbar-slide {
       background: var(--chrome-solid);
     }
   }
 
-  .sx-kbtoolbar-holder[data-visible="true"] {
+  .sx-kbtoolbar-holder[data-visible="true"] .sx-kbtoolbar-slide {
     transform: translateY(0);
   }
 }
