@@ -3,20 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { verifySession } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
-import { docJSONToScriptPagesInput, type JSONNode } from "@/lib/editor/serialize";
+import { writeScriptPages } from "@/lib/editor/persist";
+import { type JSONNode } from "@/lib/editor/serialize";
 
 export async function saveScriptContent(scriptId: string, doc: JSONNode) {
   await verifySession();
-  const pages = docJSONToScriptPagesInput(doc);
-
-  await prisma.$transaction([
-    prisma.page.deleteMany({ where: { scriptId } }),
-    prisma.script.update({
-      where: { id: scriptId },
-      data: { pages: { create: pages } },
-    }),
-  ]);
-
+  await writeScriptPages(scriptId, doc);
   revalidatePath(`/scripts/${scriptId}`);
   revalidatePath("/");
 }

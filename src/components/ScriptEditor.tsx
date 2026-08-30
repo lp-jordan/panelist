@@ -104,6 +104,9 @@ export function ScriptEditor({
   const autosaveTimer = useRef<number | undefined>(undefined);
   const savingRef = useRef(false);
   const dirtyDuringSave = useRef(false);
+  // True while there are edits not yet written to the pages table. Drives the
+  // sendBeacon flush on unload, so a name typed just before a reload isn't lost.
+  const pendingSaveRef = useRef(false);
   // Version-history bookkeeping: whether the document changed since the last
   // checkpoint, and when that checkpoint was taken. Seeded to now so the first
   // checkpoint waits out the interval (or fires on tab-hide, whichever's first).
@@ -356,6 +359,10 @@ export function ScriptEditor({
       // boundary — Tiptap's getJSON() output tripped Next's "temporary
       // client reference" guard otherwise.
       const plainDoc = JSON.parse(JSON.stringify(editor.getJSON())) as JSONNode;
+      // Cleared before the await: this doc is now being persisted, and any edit
+      // that lands during the await flips it back on via onUpdate (and
+      // dirtyDuringSave re-runs the save).
+      pendingSaveRef.current = false;
       await saveScriptContent(scriptId, plainDoc);
       setStatus("saved");
       setTimeout(() => setStatus((s) => (s === "saved" ? "idle" : s)), 2000);
@@ -403,6 +410,7 @@ export function ScriptEditor({
     if (!editor) return;
     const onUpdate = () => {
       dirtySinceSnapshot.current = true;
+      pendingSaveRef.current = true;
       window.clearTimeout(autosaveTimer.current);
       autosaveTimer.current = window.setTimeout(save, 1000);
     };
@@ -448,18 +456,34 @@ export function ScriptEditor({
 
   useEffect(() => {
     const id = window.setInterval(() => maybeAutoSnapshot(false), 60_000);
-    // Leaving or backgrounding the tab ends the session — checkpoint any edits
-    // that haven't been captured yet, regardless of the interval.
+    // Leaving or backgrounding the tab ends the session — durably flush any
+    // unsaved edits and checkpoint, regardless of the debounce/interval.
+    const flush = () => {
+      // A beacon completes during unload where the autosave fetch would be
+      // cancelled — this is what saves a name typed just before a reload.
+      if (pendingSaveRef.current && editor) {
+        try {
+          const blob = new Blob([JSON.stringify(editor.getJSON())], { type: "application/json" });
+          if (navigator.sendBeacon(`/api/scripts/${scriptId}/save`, blob)) {
+            pendingSaveRef.current = false;
+          }
+        } catch {
+          // Ignore — the snapshot below is still taken as a fallback.
+        }
+      }
+      maybeAutoSnapshot(true);
+    };
     const onHidden = () => {
-      if (document.visibilityState === "hidden") maybeAutoSnapshot(true);
+      if (document.visibilityState === "hidden") flush();
     };
     document.addEventListener("visibilitychange", onHidden);
-    window.addEventListener("pagehide", () => maybeAutoSnapshot(true));
+    window.addEventListener("pagehide", flush);
     return () => {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onHidden);
+      window.removeEventListener("pagehide", flush);
     };
-  }, [maybeAutoSnapshot]);
+  }, [maybeAutoSnapshot, editor, scriptId]);
 
   // The nav bar only earns its hairline once there is content behind it.
   useEffect(() => {
