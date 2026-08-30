@@ -583,7 +583,10 @@
 }
 
 .sx-no-copy {
-  margin-top: 0.2rem;
+  /* Match the gap a dialogue line leaves below the action line (its 0.35rem
+     top margin), so an empty panel's NO COPY sits exactly where a first
+     character name would. */
+  margin-top: 0.35rem;
 }
 
 .sx-note {

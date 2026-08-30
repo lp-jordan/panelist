@@ -14,6 +14,13 @@ export const viewport = {
     { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
+  // Shrink the *layout* viewport when the software keyboard opens (the default,
+  // "resizes-visual", leaves it full-height and lets the keyboard overlay fixed
+  // bars). With this, a `position: fixed; bottom: 0` element — the editor's
+  // touch toolbar — sits above the keyboard natively on Chrome/Android with no
+  // JS. iOS Safari ignores it, so the keyboardInset fallback in ScriptEditor
+  // still handles that case.
+  interactiveWidget: "resizes-content" as const,
 };
 
 // Each page renders its own nav bar: the library and trash share one, the

@@ -476,15 +476,26 @@ export function ScriptEditor({
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
+    // Coalesce the flurry of resize/scroll events iOS fires while it scrolls the
+    // caret into view into a single per-frame update. Reading them raw made the
+    // toolbar jump around (and briefly dip behind the keys) as the offset
+    // settled; one rAF-batched read per frame keeps it steady.
+    let frame = 0;
     const update = () => {
+      frame = 0;
       setKeyboardInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
     };
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(update);
+    };
     update();
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
+    vv.addEventListener("resize", schedule);
+    vv.addEventListener("scroll", schedule);
     return () => {
-      vv.removeEventListener("resize", update);
-      vv.removeEventListener("scroll", update);
+      if (frame) cancelAnimationFrame(frame);
+      vv.removeEventListener("resize", schedule);
+      vv.removeEventListener("scroll", schedule);
     };
   }, []);
 
