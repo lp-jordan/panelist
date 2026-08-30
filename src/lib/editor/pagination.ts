@@ -135,21 +135,31 @@ function decideMove(view: EditorView): Move | null {
     if (content + nextFirstPanelEl.offsetHeight > target - PULL_SLACK) continue;
 
     let firstPanelPos: number | null = null;
+    let firstPanel: PMNode | null = null;
     let off = next.pos + 1;
     for (let c = 0; c < next.node.childCount; c++) {
       const child = next.node.child(c);
       if (child.type.name === "panel") {
         firstPanelPos = off;
+        firstPanel = child;
         break;
       }
       off += child.nodeSize;
     }
-    if (firstPanelPos == null) continue;
-    const firstPanel = next.node.maybeChild(0);
+    if (firstPanelPos == null || firstPanel == null) continue;
+
+    // Never pull an *empty* panel up. It has no content to fill space with, so
+    // the pull just deposits a stray empty panel on the previous page — and it
+    // would empty and drop a page the user explicitly created (a fresh "New
+    // page", whose lone panel is empty), which is the "New page makes a panel,
+    // not a page" bug. Leave empty panels where they are.
+    const panelIsEmpty = firstPanel.childCount === 1 && firstPanel.firstChild!.content.size === 0;
+    if (panelIsEmpty) continue;
+
     return {
       kind: "pull",
       panelPos: firstPanelPos,
-      panelSize: firstPanel ? firstPanel.nodeSize : 0,
+      panelSize: firstPanel.nodeSize,
       intoPageContentEnd: page.pos + page.node.nodeSize - 1, // just inside the page's closing token
     };
   }
