@@ -1250,8 +1250,12 @@
     scroll-margin-top: calc(var(--nav-height) + 6px);
   }
 
-  /* Separate pages with a hairline instead of a floating sheet edge. */
-  .sx-page + .sx-page {
+  /* Separate pages with a hairline instead of a floating sheet edge — between
+     any two adjacent sheets, script or blank (freeform), in either order. */
+  .sx-page + .sx-page,
+  .sx-page + .sx-freeform-page,
+  .sx-freeform-page + .sx-page,
+  .sx-freeform-page + .sx-freeform-page {
     border-top: 1px solid var(--separator);
   }
 
