@@ -330,7 +330,13 @@ export const TextElementNode = Node.create({
         input.style.width = `${sizer.offsetWidth + 1}px`;
       };
 
-      const commit = (raw: string) => {
+      // Write the typed name into the document node. The name field is a DOM
+      // input the editor never sees (stopEvent hides its events), so without
+      // this its value lives only in the input until something calls it back —
+      // meaning a save that fires while the field is focused would miss the
+      // name entirely. Syncing on every keystroke keeps getJSON() honest and
+      // marks the doc dirty so autosave runs for name edits too.
+      const syncAttr = (raw: string) => {
         const trimmed = raw.trim();
         const pos = typeof getPos === "function" ? getPos() : undefined;
         if (typeof pos === "number" && trimmed !== current.attrs.character) {
@@ -338,6 +344,14 @@ export const TextElementNode = Node.create({
             editor.state.tr.setNodeMarkup(pos, undefined, { ...current.attrs, character: trimmed }),
           );
         }
+      };
+
+      // On commit (blur / Tab / Enter) also register the name in the cast list
+      // for autocomplete. Kept out of the per-keystroke path so half-typed
+      // names ("B", "BO") never pollute the cast.
+      const commit = (raw: string) => {
+        syncAttr(raw);
+        const trimmed = raw.trim();
         if (trimmed) castStorage(editor).ensure(trimmed);
       };
 
@@ -362,10 +376,12 @@ export const TextElementNode = Node.create({
               input!.value = completed;
               input!.setSelectionRange(typed.length, completed.length);
               resize();
+              syncAttr(completed);
               return;
             }
           }
           resize();
+          syncAttr(typed);
         });
 
         input.addEventListener("blur", () => commit(input!.value));
