@@ -262,6 +262,11 @@
   align-items: center;
   gap: 12px;
   padding: 14px 0 6px;
+  /* On a narrow (or zoomed) screen the sort segment would otherwise be pushed
+     past the right edge and clipped by the body's overflow guard. Let it wrap
+     to a second line as a last resort — the search shrinks first (min-width: 0
+     below), so this only trips when there's genuinely no room. */
+  flex-wrap: wrap;
 }
 
 select.field {
@@ -277,7 +282,10 @@ select.field {
 }
 
 .search {
-  flex: 1;
+  flex: 1 1 200px;
+  /* Without this the flex item won't shrink below its content's min size, so
+     it holds full width and shoves the sort segment off-screen. */
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -702,12 +710,19 @@ select.field {
   background: rgba(0, 0, 0, 0.36);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s var(--ease);
+  /* `visibility` flips to hidden only after the fade completes (the 0.3s delay),
+     so the scrim still animates out — but once closed the layer is truly gone.
+     Without it, iOS Safari leaves the fixed overlay's tint smeared under the
+     status bar (it doesn't repaint that band when only opacity changes). */
+  visibility: hidden;
+  transition: opacity 0.3s var(--ease), visibility 0s 0.3s;
 }
 
 .scrim[data-open="true"] {
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
+  transition: opacity 0.3s var(--ease), visibility 0s 0s;
 }
 
 /* Action sheet — for anything irreversible. It names the object and states

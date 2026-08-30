@@ -8,6 +8,7 @@ import { AllSelection } from "@tiptap/pm/state";
 import type { EditorView } from "@tiptap/pm/view";
 import { scriptNodes } from "@/lib/editor/nodes";
 import { ScriptKeymap } from "@/lib/editor/keymap";
+import { CaretNormalizer } from "@/lib/editor/caret";
 import { AutoPaginate } from "@/lib/editor/pagination";
 import { deleteSelectionRoundedToNodes } from "@/lib/editor/commands";
 import { findAncestorPos } from "@/lib/editor/positions";
@@ -300,6 +301,7 @@ export function ScriptEditor({
       }),
       ...scriptNodes,
       ScriptKeymap,
+      CaretNormalizer,
       AutoPaginate,
     ],
     content: initialDoc,

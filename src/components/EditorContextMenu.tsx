@@ -108,41 +108,62 @@ export function EditorContextMenu({ editor }: { editor: Editor }) {
 
     // --- touch long-press -------------------------------------------------
     // Touch has no right-click, so a ~500ms press on a line/panel opens the same
-    // menu. The timer is cancelled if the finger moves (a scroll or a drag) or
-    // lifts early, so ordinary tapping and scrolling are untouched.
+    // menu. Two timers run: the first, well before the OS's own ~500ms word
+    // selection, disables selection on the editor so the press can't select the
+    // text underneath (the reported clunkiness); the second opens the menu. Both
+    // are cancelled if the finger moves (scroll/drag) or lifts early, and the
+    // suppression is lifted then too — so ordinary tapping and scrolling, and
+    // deliberate double-tap selection, are untouched.
+    const SUPPRESS_MS = 180;
     const LONG_PRESS_MS = 500;
     const MOVE_TOLERANCE = 10;
-    let timer: number | undefined;
+    let suppressTimer: number | undefined;
+    let pressTimer: number | undefined;
+    let opened = false;
     let startX = 0;
     let startY = 0;
 
-    const clearTimer = () => {
-      if (timer !== undefined) {
-        window.clearTimeout(timer);
-        timer = undefined;
-      }
+    const clearTimers = () => {
+      if (suppressTimer !== undefined) window.clearTimeout(suppressTimer);
+      if (pressTimer !== undefined) window.clearTimeout(pressTimer);
+      suppressTimer = undefined;
+      pressTimer = undefined;
+    };
+
+    // End of the gesture (lift / cancel / move away). If it never became a menu,
+    // lift the selection suppression so normal editing resumes; when the menu
+    // did open, the [ctx] effect owns removal on close instead.
+    const endGesture = () => {
+      clearTimers();
+      if (!opened) dom.classList.remove("sx-no-select");
     };
 
     const onTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) {
-        clearTimer();
+        endGesture();
         return;
       }
       const t = e.touches[0];
       startX = t.clientX;
       startY = t.clientY;
-      clearTimer();
-      timer = window.setTimeout(() => {
-        timer = undefined;
+      opened = false;
+      clearTimers();
+      // Past the tap window but before the OS selects: clamp selection off and
+      // clear anything nascent, so a held press can't leave a highlighted word.
+      suppressTimer = window.setTimeout(() => {
+        suppressTimer = undefined;
+        dom.classList.add("sx-no-select");
+        window.getSelection()?.removeAllRanges();
+      }, SUPPRESS_MS);
+      pressTimer = window.setTimeout(() => {
+        pressTimer = undefined;
         if (openAt(startX, startY)) {
-          // Block the OS from selecting the word under the finger (and its
-          // callout) now that our menu owns this press — synchronously, before
-          // the ~500ms selection fires. The class is also kept in sync by the
-          // effect below, which removes it when the menu closes.
-          dom.classList.add("sx-no-select");
-          // The browser may still fire its own contextmenu/selection callout
-          // off the same press — swallow the next one.
+          opened = true;
+          // The browser may still fire its own contextmenu off the same press —
+          // swallow the next one.
           suppressContextUntil.current = Date.now() + 700;
+        } else {
+          dom.classList.remove("sx-no-select");
         }
       }, LONG_PRESS_MS);
     };
@@ -151,22 +172,22 @@ export function EditorContextMenu({ editor }: { editor: Editor }) {
       const t = e.touches[0];
       if (!t) return;
       if (Math.abs(t.clientX - startX) > MOVE_TOLERANCE || Math.abs(t.clientY - startY) > MOVE_TOLERANCE) {
-        clearTimer();
+        endGesture();
       }
     };
 
     dom.addEventListener("contextmenu", onContextMenu);
     dom.addEventListener("touchstart", onTouchStart, { passive: true });
     dom.addEventListener("touchmove", onTouchMove, { passive: true });
-    dom.addEventListener("touchend", clearTimer);
-    dom.addEventListener("touchcancel", clearTimer);
+    dom.addEventListener("touchend", endGesture);
+    dom.addEventListener("touchcancel", endGesture);
     return () => {
-      clearTimer();
+      clearTimers();
       dom.removeEventListener("contextmenu", onContextMenu);
       dom.removeEventListener("touchstart", onTouchStart);
       dom.removeEventListener("touchmove", onTouchMove);
-      dom.removeEventListener("touchend", clearTimer);
-      dom.removeEventListener("touchcancel", clearTimer);
+      dom.removeEventListener("touchend", endGesture);
+      dom.removeEventListener("touchcancel", endGesture);
     };
   }, [editor]);
 

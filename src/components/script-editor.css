@@ -1053,13 +1053,18 @@
   transform: translate(-50%, 110%);
   opacity: 0;
   pointer-events: none;
-  transition: transform 0.42s var(--spring), opacity 0.28s var(--ease);
+  /* Hide outright once closed (after the slide finishes) so the card's
+     backdrop-filter can't leave a smear on iOS. */
+  visibility: hidden;
+  transition: transform 0.42s var(--spring), opacity 0.28s var(--ease), visibility 0s 0.42s;
 }
 
 .sx-format-sheet[data-open="true"] {
   transform: translate(-50%, 0);
   opacity: 1;
   pointer-events: auto;
+  visibility: visible;
+  transition: transform 0.42s var(--spring), opacity 0.28s var(--ease), visibility 0s 0s;
 }
 
 .sx-format-card {
