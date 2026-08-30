@@ -1309,7 +1309,9 @@
   }
 
   .sx-cover-titleblock {
-    margin: auto 0;
+    /* Sits near the top of the sheet (a little below the 1in padding), not
+       vertically centered — matches the reference cover. */
+    margin-top: 0.35in;
     width: 100%;
     text-align: center;
   }
@@ -1324,6 +1326,8 @@
   .sx-cover-writtenby {
     margin-top: 10px;
     font-size: 0.9rem;
+    /* One centered line under the title. */
+    text-align: center;
   }
 
   .sx-cover-draft {
@@ -1426,10 +1430,10 @@
 }
 
 .tp-titleblock {
-  /* The draft block is absolutely positioned (bottom-left), so this is the
-     sheet's only in-flow child — auto top/bottom margins center it vertically
-     on the page rather than pinning it a fixed distance down from the top. */
-  margin: auto 0;
+  /* Title sits near the top of the sheet (just below the top padding), matching
+     the reference cover — not vertically centered. The draft block is absolutely
+     positioned bottom-left, so nothing else competes for the vertical space. */
+  margin-top: 4%;
   width: 100%;
   text-align: center;
 }
