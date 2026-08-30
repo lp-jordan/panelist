@@ -465,6 +465,28 @@ export function ScriptEditor({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // How far the software keyboard overlaps the bottom of the layout viewport.
+  // On iOS Safari a `position: fixed; bottom: 0` element is NOT pushed above the
+  // keyboard — the keyboard overlays it — so the touch toolbar was rendering
+  // hidden behind the keyboard. visualViewport shrinks when the keyboard opens;
+  // the difference from window.innerHeight is the keyboard's height, which we
+  // apply as the toolbar's bottom offset so it rides just above the keys.
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      setKeyboardInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+
   // The editor is client-only (immediatelyRender: false), so it's null for a
   // beat after mount — and stays null if Tiptap fails to initialise. Render the
   // frame plus a loading state rather than nothing, so a slow or broken mount
@@ -651,12 +673,19 @@ export function ScriptEditor({
         </div>
       </div>
 
-      <div className="sx-kbtoolbar-holder" data-visible={editorFocused}>
+      <div
+        className="sx-kbtoolbar-holder"
+        data-visible={editorFocused}
+        style={keyboardInset > 0 ? { bottom: `${keyboardInset}px` } : undefined}
+      >
         <KeyboardToolbar editor={editor} />
       </div>
 
       <div
         className="sx-hint-toast"
+        // When the keyboard is up, ride above both it and the touch toolbar so
+        // the tap-through "Clear it" button stays reachable.
+        style={keyboardInset > 0 ? { bottom: `${keyboardInset + 68}px` } : undefined}
         data-show={guardToast !== null}
         data-holding={guardToast?.holding || undefined}
         role="status"

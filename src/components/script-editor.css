@@ -1003,8 +1003,10 @@
     z-index: 60;
     transform: translateY(110%);
     transition: transform 0.28s var(--spring);
-    /* Sits just above the soft keyboard; the browser keeps fixed elements above
-       it, and the safe-area padding clears the home indicator when it doesn't. */
+    /* iOS Safari overlays the keyboard on top of fixed elements rather than
+       pushing them up, so `bottom` is set from JS to the keyboard's height (see
+       keyboardInset in ScriptEditor). The safe-area padding clears the home
+       indicator when the keyboard is closed and the inset is 0. */
     padding-bottom: env(safe-area-inset-bottom);
     background: var(--chrome);
     -webkit-backdrop-filter: saturate(180%) blur(20px);
