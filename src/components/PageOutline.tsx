@@ -5,6 +5,7 @@ import type { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { toPageWordNumber } from "@/lib/editor/numberToWords";
 import { insertPage, insertBlankPage, deletePageAt, movePage } from "@/lib/editor/commands";
+import { Portal } from "@/components/ui/Portal";
 
 // `index` is the top-level child index in the document (script and blank pages
 // share the sequence). `pageNumber` is the 1-based number shown for script
@@ -276,6 +277,7 @@ export function PageOutline({
       </ol>
 
       {menu && (
+        <Portal>
         <div
           className="sx-outline-menu"
           role="menu"
@@ -295,6 +297,7 @@ export function PageOutline({
             Delete page
           </button>
         </div>
+        </Portal>
       )}
       <div className="sx-outline-adds">
         <button type="button" className="sx-outline-add" onClick={addPage}>
