@@ -296,19 +296,26 @@ export function PageOutline({
           </button>
         </div>
       )}
-      <button type="button" className="sx-outline-add" onClick={addPage}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        New page
-      </button>
-      <button type="button" className="sx-outline-add sx-outline-add-blank" onClick={addBlank} title="Freeform page, skipped by numbering (Ctrl/Cmd+Shift+B)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M7 3h7l4 4v14a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
-          <path d="M13 3v5h5" />
-        </svg>
-        Blank page
-      </button>
+      <div className="sx-outline-adds">
+        <button type="button" className="sx-outline-add" onClick={addPage}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          New page
+        </button>
+        <button
+          type="button"
+          className="sx-outline-add sx-outline-add-blank"
+          onClick={addBlank}
+          aria-label="Blank page"
+          title="Blank page — freeform, skipped by numbering (Ctrl/Cmd+Shift+B)"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M7 3h7l4 4v14a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />
+            <path d="M13 3v5h5" />
+          </svg>
+        </button>
+      </div>
     </aside>
   );
 }

@@ -7,6 +7,7 @@ import { NewMenu } from "@/components/library/NewMenu";
 import { AccountMenu } from "@/components/library/AccountMenu";
 import { ProjectMenu } from "@/components/library/ProjectMenu";
 import { ScriptRow } from "@/components/library/ScriptRow";
+import { ScriptDropZone } from "@/components/library/ScriptDropZone";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 type SearchParams = { q?: string; sort?: string };
@@ -39,6 +40,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
 
   const searching = q.trim().length > 0;
   const matches = projects.reduce((n, p) => n + p.scripts.length, 0) + unassignedScripts.length;
+  const projectOptions = projects.map((p) => ({ id: p.id, name: p.name }));
 
   return (
     <div className="shell">
@@ -85,25 +87,27 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   <ProjectMenu id={project.id} name={project.name} scriptCount={project.scripts.length} />
                 </span>
               </div>
-              <div className="list">
+              <ScriptDropZone projectId={project.id}>
                 {project.scripts.length === 0 ? (
                   <div className="empty">
                     <h4>No scripts yet</h4>
-                    <p>Add one from the + in the bar above.</p>
+                    <p>Add one from the + in the bar above, or drag one here.</p>
                   </div>
                 ) : (
                   project.scripts.map((script) => (
                     <ScriptRow
                       key={script.id}
                       id={script.id}
+                      projectId={project.id}
                       title={script.title}
                       draftLabel={script.draftLabel}
                       pageCount={script._count.pages}
                       editedLabel={formatRelativeTime(script.updatedAt)}
+                      projects={projectOptions}
                     />
                   ))
                 )}
-              </div>
+              </ScriptDropZone>
             </section>
           );
         })}
@@ -111,7 +115,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         {!(searching && unassignedScripts.length === 0) && (
           <section className="group">
             <div className="group-head">Unassigned</div>
-            <div className="list">
+            <ScriptDropZone projectId={null}>
               {unassignedScripts.length === 0 ? (
                 <div className="empty">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -127,14 +131,16 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   <ScriptRow
                     key={script.id}
                     id={script.id}
+                    projectId={null}
                     title={script.title}
                     draftLabel={script.draftLabel}
                     pageCount={script._count.pages}
                     editedLabel={formatRelativeTime(script.updatedAt)}
+                    projects={projectOptions}
                   />
                 ))
               )}
-            </div>
+            </ScriptDropZone>
           </section>
         )}
       </main>

@@ -98,6 +98,26 @@ export async function duplicateScript(formData: FormData) {
   revalidatePath("/");
 }
 
+export async function moveScript(scriptId: string, projectId: string | null) {
+  await verifySession();
+  if (typeof scriptId !== "string" || scriptId.length === 0) return;
+
+  // A dropped project must still exist and be un-trashed, else the script
+  // would vanish into a dangling group. Falling back to Unassigned (null) is
+  // safer than throwing on a stale drag target.
+  let target: string | null = null;
+  if (typeof projectId === "string" && projectId.length > 0) {
+    const project = await prisma.project.findFirst({
+      where: { id: projectId, deletedAt: null },
+      select: { id: true },
+    });
+    target = project?.id ?? null;
+  }
+
+  await prisma.script.update({ where: { id: scriptId }, data: { projectId: target } });
+  revalidatePath("/");
+}
+
 export async function archiveScript(formData: FormData) {
   await verifySession();
   const id = formData.get("id");

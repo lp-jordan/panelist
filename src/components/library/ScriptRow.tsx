@@ -5,33 +5,53 @@ import Link from "next/link";
 import { Menu } from "@/components/ui/Menu";
 import { FormSheet } from "@/components/ui/FormSheet";
 import { ActionSheet } from "@/components/ui/ActionSheet";
-import { archiveScript, duplicateScript, renameScript } from "@/app/actions/scripts";
+import { archiveScript, duplicateScript, moveScript, renameScript } from "@/app/actions/scripts";
+import { SCRIPT_DND_TYPE } from "./ScriptDropZone";
 
 export function ScriptRow({
   id,
+  projectId,
   title,
   draftLabel,
   pageCount,
   editedLabel,
+  projects,
 }: {
   id: string;
+  /* The group this row currently lives in; null for Unassigned. Lets a drop
+     target ignore a drop back into the same group. */
+  projectId: string | null;
   title: string;
   draftLabel: string;
   pageCount: number;
   /* Formatted on the server so the row doesn't shift after hydration. */
   editedLabel: string;
+  /* Every project the script could be moved into, for the "Move to…" sheet. */
+  projects: { id: string; name: string }[];
 }) {
   const [renaming, setRenaming] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [dragging, setDragging] = useState(false);
 
   return (
     <>
       {/* The row is a div, not a link: it contains a menu button and a form,
           and neither may sit inside an anchor. The title's stretched ::after
           makes the whole row clickable instead. */}
-      <div className="row">
+      <div
+        className={`row${dragging ? " row-dragging" : ""}`}
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData(SCRIPT_DND_TYPE, id);
+          e.dataTransfer.setData(`${SCRIPT_DND_TYPE}+project`, projectId ?? "");
+          setDragging(true);
+        }}
+        onDragEnd={() => setDragging(false)}
+      >
         <span className="row-main">
-          <Link href={`/scripts/${id}`} className="row-title row-link">
+          <Link href={`/scripts/${id}`} className="row-title row-link" draggable={false}>
             {title}
           </Link>
           <span className="row-sub">
@@ -71,6 +91,20 @@ export function ScriptRow({
                 </button>
               </form>
 
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  close();
+                  setMoving(true);
+                }}
+              >
+                Move to…
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 7h6l2 2h10v10H3z" />
+                </svg>
+              </button>
+
               <hr />
 
               <button
@@ -99,6 +133,26 @@ export function ScriptRow({
       <FormSheet open={renaming} onClose={() => setRenaming(false)} title="Rename script" action={renameScript}>
         <input type="hidden" name="id" value={id} />
         <input className="field" name="title" defaultValue={title} aria-label="Script title" required />
+      </FormSheet>
+
+      <FormSheet
+        open={moving}
+        onClose={() => setMoving(false)}
+        title="Move script"
+        submitLabel="Move"
+        action={async (formData) => {
+          const to = formData.get("projectId");
+          await moveScript(id, typeof to === "string" && to.length > 0 ? to : null);
+        }}
+      >
+        <select className="field" name="projectId" defaultValue={projectId ?? ""} aria-label="Project">
+          <option value="">No project (Unassigned)</option>
+          {projects.map((project) => (
+            <option key={project.id} value={project.id}>
+              {project.name}
+            </option>
+          ))}
+        </select>
       </FormSheet>
 
       <ActionSheet

@@ -405,6 +405,17 @@ select.field {
   overflow: hidden;
 }
 
+/* Drag-and-drop: a script row being dragged fades, and the group it's hovering
+   over lights up as the drop destination. */
+.list.drop-target {
+  box-shadow: 0 0 0 2px var(--blue);
+  background: var(--fill);
+}
+
+.row-dragging {
+  opacity: 0.4;
+}
+
 .row {
   position: relative;
   display: flex;

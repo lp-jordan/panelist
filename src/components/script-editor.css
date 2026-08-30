@@ -73,7 +73,7 @@
 }
 
 .sx-outline[data-collapsed="true"] .sx-outline-list,
-.sx-outline[data-collapsed="true"] .sx-outline-add,
+.sx-outline[data-collapsed="true"] .sx-outline-adds,
 .sx-outline[data-collapsed="true"] .sx-outline-title,
 .sx-outline[data-collapsed="true"] .sx-outline-count {
   display: none;
@@ -278,11 +278,19 @@
   color: var(--label-2);
 }
 
+/* New page (grows to fill) sits beside the square Blank-page button. */
+.sx-outline-adds {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
 .sx-outline-add {
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 6px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   color: var(--blue);
@@ -316,8 +324,15 @@
   height: 15px;
 }
 
+/* Blank page is the quieter, secondary add: a fixed square icon button pinned
+   to the right of "New page". */
 .sx-outline-add-blank {
-  margin-top: 0;
+  flex: none;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  gap: 0;
   color: var(--label-2);
   font-weight: 400;
 }
