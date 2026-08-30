@@ -174,6 +174,22 @@ export function PageOutline({
     // readPages re-syncs via the transaction listener.
   };
 
+  // Reorder by one step — the touch-reachable alternative to drag-and-drop,
+  // which is mouse-only. movePage takes plain from/to array indices.
+  const movePageBy = (index: number, dir: -1 | 1) => {
+    setMenu(null);
+    const to = index + dir;
+    if (to < 0 || to >= pages.length) return;
+    movePage(editor, index, to);
+  };
+
+  // Open the row menu anchored under its ··· button (the touch path; right-click
+  // still opens it at the cursor). Clamped so the 180px menu stays on-screen.
+  const openRowMenu = (index: number, trigger: HTMLElement) => {
+    const rect = trigger.getBoundingClientRect();
+    setMenu({ index, x: Math.min(rect.left, window.innerWidth - 196), y: rect.bottom + 4 });
+  };
+
   // Commit a drag: `dragIndex` moves to sit where `dropIndex` points. Dropping
   // after its original slot shifts the target down by one, as with any splice.
   const endDrag = () => {
@@ -272,6 +288,24 @@ export function PageOutline({
                 </>
               )}
             </button>
+
+            {/* Touch-reachable entry to the same menu as right-click. */}
+            <button
+              type="button"
+              className="sx-outline-more"
+              aria-label="Page actions"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                openRowMenu(i, e.currentTarget);
+              }}
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <circle cx="5" cy="12" r="1.8" />
+                <circle cx="12" cy="12" r="1.8" />
+                <circle cx="19" cy="12" r="1.8" />
+              </svg>
+            </button>
           </li>
         ))}
       </ol>
@@ -284,6 +318,31 @@ export function PageOutline({
           style={{ top: menu.y, left: menu.x }}
           onPointerDown={(e) => e.stopPropagation()}
         >
+          <button
+            type="button"
+            role="menuitem"
+            className="sx-outline-menu-item"
+            disabled={menu.index <= 0}
+            onClick={() => movePageBy(menu.index, -1)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 19V5M6 11l6-6 6 6" />
+            </svg>
+            Move up
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="sx-outline-menu-item"
+            disabled={menu.index >= pages.length - 1}
+            onClick={() => movePageBy(menu.index, 1)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 5v14M6 13l6 6 6-6" />
+            </svg>
+            Move down
+          </button>
+          <hr className="sx-outline-menu-sep" />
           <button
             type="button"
             role="menuitem"

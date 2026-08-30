@@ -21,6 +21,7 @@ import { TitlePagePrint } from "./TitlePagePrint";
 import { PageOutline } from "./PageOutline";
 import { KeyboardToolbar } from "./KeyboardToolbar";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { Menu } from "@/components/ui/Menu";
 import "./script-editor.css";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -472,11 +473,11 @@ export function ScriptEditor({
     return (
       <div className="sx-shell">
         <nav className="nav">
-          <Link href="/" className="nav-back">
+          <Link href="/" className="nav-back" aria-label="Library">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" />
             </svg>
-            Library
+            <span className="nav-back-label">Library</span>
           </Link>
           <span className="nav-spacer" />
           <span className="nav-title">{meta.title}</span>
@@ -494,11 +495,11 @@ export function ScriptEditor({
     <>
       <div className="sx-shell">
         <nav className="nav" data-scrolled={scrolled}>
-          <Link href="/" className="nav-back">
+          <Link href="/" className="nav-back" aria-label="Library">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" />
             </svg>
-            Library
+            <span className="nav-back-label">Library</span>
           </Link>
           {/* Opens the page outline as a left drawer; only shown where the
               persistent sidebar isn't (phones/tablets). */}
@@ -518,55 +519,100 @@ export function ScriptEditor({
           <span className="nav-spacer" />
           <SavePill status={status} />
           <ThemeToggle />
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={() => setHistoryOpen(true)}
-            title="Version history"
-            aria-label="Version history"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 3v5h5" />
-              <path d="M3.05 13A9 9 0 106 5.3L3 8" />
-              <path d="M12 7v5l4 2" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={() => setTitlePageOpen(true)}
-            title="Title page"
-            aria-label="Title page"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="5" y="3" width="14" height="18" rx="2" />
-              <path d="M9 8h6M10 12h4" />
-            </svg>
-          </button>
-          {/* Export to PDF is the browser's print-to-PDF against a print
-              stylesheet, so the exported sheets match the editor exactly.
-              Save first so the print reflects the latest edits. */}
-          <button
-            type="button"
-            className="icon-btn"
-            onClick={() => {
-              saveNow();
-              window.print();
-            }}
-            title="Export PDF"
-            aria-label="Export PDF"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-3a2 2 0 012-2h16a2 2 0 012 2v3a2 2 0 01-2 2h-2" />
-              <path d="M6 14h12v7H6z" />
-            </svg>
-          </button>
-          <button type="button" className="icon-btn" onClick={saveNow} title="Save (Ctrl/Cmd+S)" aria-label="Save">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-              <path d="M17 21v-8H7v8M7 3v5h8" />
-            </svg>
-          </button>
+
+          {/* The secondary actions. Inline on desktop; on phones they'd overrun
+              the bar and get clipped off-screen, so there they collapse into the
+              single overflow menu below (see .nav-actions in the CSS). */}
+          <span className="nav-actions-inline">
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => setHistoryOpen(true)}
+              title="Version history"
+              aria-label="Version history"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 3v5h5" />
+                <path d="M3.05 13A9 9 0 106 5.3L3 8" />
+                <path d="M12 7v5l4 2" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => setTitlePageOpen(true)}
+              title="Title page"
+              aria-label="Title page"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="5" y="3" width="14" height="18" rx="2" />
+                <path d="M9 8h6M10 12h4" />
+              </svg>
+            </button>
+            {/* Export to PDF is the browser's print-to-PDF against a print
+                stylesheet, so the exported sheets match the editor exactly.
+                Save first so the print reflects the latest edits. */}
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={() => {
+                saveNow();
+                window.print();
+              }}
+              title="Export PDF"
+              aria-label="Export PDF"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-3a2 2 0 012-2h16a2 2 0 012 2v3a2 2 0 01-2 2h-2" />
+                <path d="M6 14h12v7H6z" />
+              </svg>
+            </button>
+            <button type="button" className="icon-btn" onClick={saveNow} title="Save (Ctrl/Cmd+S)" aria-label="Save">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                <path d="M17 21v-8H7v8M7 3v5h8" />
+              </svg>
+            </button>
+          </span>
+
+          <span className="nav-actions-menu">
+            <Menu label="More actions" triggerClassName="icon-btn">
+              {(close) => (
+                <>
+                  <button type="button" role="menuitem" onClick={() => { close(); saveNow(); }}>
+                    Save
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                      <path d="M17 21v-8H7v8M7 3v5h8" />
+                    </svg>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => { close(); setTitlePageOpen(true); }}>
+                    Title page
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="5" y="3" width="14" height="18" rx="2" />
+                      <path d="M9 8h6M10 12h4" />
+                    </svg>
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => { close(); setHistoryOpen(true); }}>
+                    Version history
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M3 3v5h5" />
+                      <path d="M3.05 13A9 9 0 106 5.3L3 8" />
+                      <path d="M12 7v5l4 2" />
+                    </svg>
+                  </button>
+                  <hr />
+                  <button type="button" role="menuitem" onClick={() => { close(); saveNow(); window.print(); }}>
+                    Export PDF
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-3a2 2 0 012-2h16a2 2 0 012 2v3a2 2 0 01-2 2h-2" />
+                      <path d="M6 14h12v7H6z" />
+                    </svg>
+                  </button>
+                </>
+              )}
+            </Menu>
+          </span>
         </nav>
 
         <div className="sx-body">

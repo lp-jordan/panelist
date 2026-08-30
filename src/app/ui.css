@@ -550,6 +550,14 @@ select.field {
    the ~44px a fingertip needs — so on a coarse pointer the row menu is always
    visible and the tap targets grow. */
 @media (pointer: coarse) {
+  /* iOS Safari auto-zooms the page when a focused field's text is under 16px.
+     Bump every editable field to 16px on touch so focusing search or a form
+     never jerks the layout. */
+  .field,
+  .search input {
+    font-size: 16px;
+  }
+
   .more-btn {
     opacity: 1;
     width: 40px;

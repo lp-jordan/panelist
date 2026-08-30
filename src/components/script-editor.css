@@ -219,6 +219,46 @@
   color: var(--red);
 }
 
+.sx-outline-menu-sep {
+  height: 0.5px;
+  margin: 4px 6px;
+  border: 0;
+  background: var(--separator);
+}
+
+/* Per-row ··· trigger for the page menu — the touch path to delete/reorder,
+   since right-click and drag are pointer-only. Quiet until hover/focus on a
+   fine pointer; always shown on touch (see the coarse block below). */
+.sx-outline-more {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-sm);
+  color: var(--label-3);
+  opacity: 0;
+  transition: opacity 0.14s var(--ease), background 0.14s var(--ease);
+}
+
+.sx-outline-more svg {
+  width: 16px;
+  height: 16px;
+}
+
+.sx-outline-more:hover {
+  background: var(--fill);
+  color: var(--label);
+}
+
+.sx-outline-list li:hover .sx-outline-more,
+.sx-outline-list li:focus-within .sx-outline-more {
+  opacity: 1;
+}
+
 .sx-outline-menu-item:disabled {
   opacity: 0.4;
   cursor: not-allowed;
@@ -229,7 +269,8 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 8px 10px;
+  /* Right padding leaves room for the ··· button. */
+  padding: 8px 32px 8px 10px;
   border-radius: var(--radius-sm);
   text-align: left;
   color: var(--label);
@@ -941,6 +982,18 @@
 }
 
 @media (pointer: coarse) {
+  /* No hover on touch — the page ··· button is always shown, at a finger-sized
+     tap target, so delete/reorder are reachable without right-click or drag. */
+  .sx-outline-more {
+    opacity: 1;
+    width: 34px;
+    height: 34px;
+  }
+
+  .sx-outline-item {
+    padding-right: 40px;
+  }
+
   .sx-kbtoolbar-holder {
     display: block;
     position: fixed;
@@ -1202,6 +1255,58 @@
 
   .sx-hints {
     margin: 8px 12px 20px;
+  }
+}
+
+/* --- editor nav: inline actions vs. phone overflow menu ------------------ */
+
+/* On desktop the four secondary actions sit inline; the overflow menu is
+   hidden. The two swap on phones. */
+.nav-actions-inline {
+  display: contents;
+}
+
+.nav-actions-menu {
+  display: none;
+}
+
+/* The editor bar carries the back link, a save pill, a theme toggle and four
+   more icon actions (history, title page, export, save). On a phone that
+   overran the viewport and — because <body> hides horizontal overflow —
+   silently cut the rightmost buttons (title page, export, save) off-screen,
+   made worse by the 40px touch targets. Below 640px the four secondary actions
+   collapse into a single overflow menu, and the back link drops its "Library"
+   word to just the chevron, so the whole bar fits down to 320px. */
+@media (max-width: 640px) {
+  .nav-actions-inline {
+    display: none;
+  }
+
+  .nav-actions-menu {
+    display: inline-flex;
+  }
+
+  .nav-back-label {
+    display: none;
+  }
+
+  .sx-shell .nav {
+    gap: 6px;
+  }
+
+  .sx-shell .sx-save-pill {
+    min-width: 0;
+  }
+
+  /* Idle pill is invisible (opacity 0) but still reserved 84px — drop it from
+     the flow on phones where every pixel of the bar counts. */
+  .sx-shell .sx-save-pill[data-state="idle"] {
+    display: none;
+  }
+
+  /* Keyboard shortcut hints mean nothing on a touch keyboard. */
+  .sx-hints {
+    display: none;
   }
 }
 
