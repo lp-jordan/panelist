@@ -1010,13 +1010,7 @@
   pointer-events: none;
 }
 
-/* --- mobile keyboard toolbar ---------------------------------------------- */
-
-/* Only exists on touch, where Tab (change type) and Mod+Enter (new page) have
-   no keys. Hidden entirely on pointer devices, which have the shortcuts. */
-.sx-kbtoolbar-holder {
-  display: none;
-}
+/* --- touch affordances ---------------------------------------------------- */
 
 @media (pointer: coarse) {
   /* No hover on touch — the page ··· button is always shown, at a finger-sized
@@ -1030,101 +1024,159 @@
   .sx-outline-item {
     padding-right: 40px;
   }
+}
 
-  .sx-kbtoolbar-holder {
-    display: block;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 60;
-    /* Positioned by JS as `transform: translateY(-keyboardInset)` so it rides
-       just above the software keyboard. iOS Safari anchors `position: fixed` to
-       the *layout* viewport and does not repaint fixed elements mid-scroll, so a
-       `bottom`-based bar drifts with the page and only settles when scrolling
-       stops. A composited transform, by contrast, the compositor keeps pinned
-       during the scroll — which is the whole reason the position lives here and
-       not in `bottom`. No transition on this element: the position must track
-       scroll instantly, never lag behind it. */
-    will-change: transform;
-  }
+/* While the long-press context menu is engaged, block the OS text-selection and
+   callout the press would otherwise trigger — on touch a long-press opens our
+   menu, so a half-selected word underneath it only reads as glitchy. Applied to
+   the editor only for the life of the menu, so normal double-tap selection
+   (with its native Copy/Paste) is untouched. */
+.sx-no-select {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 
-  /* The show/hide slide lives on an inner element so its transition never fights
-     the holder's per-frame position transform. */
-  .sx-kbtoolbar-slide {
-    transform: translateY(110%);
-    transition: transform 0.28s var(--spring);
-    /* Clears the home indicator when the keyboard is closed and the inset is 0. */
-    padding-bottom: env(safe-area-inset-bottom);
-    background: var(--chrome);
-    -webkit-backdrop-filter: saturate(180%) blur(20px);
-    backdrop-filter: saturate(180%) blur(20px);
-    border-top: 1px solid var(--separator);
-  }
+/* --- mobile actions sheet (Home 2) --------------------------------------- */
 
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    .sx-kbtoolbar-slide {
-      background: var(--chrome-solid);
-    }
-  }
+/* A bottom sheet holding the deliberate, global actions (document commands,
+   inserts, appearance). It opens on tap with the keyboard already dismissed, so
+   there's no keyboard geometry to track — the failure mode of the old anchored
+   toolbar. Slides up from the bottom; hidden outright when closed so a short
+   sheet can't peek in from the edge. */
+.sx-format-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 80;
+  width: min(440px, 100vw);
+  transform: translate(-50%, 110%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.42s var(--spring), opacity 0.28s var(--ease);
+}
 
-  .sx-kbtoolbar-holder[data-visible="true"] .sx-kbtoolbar-slide {
-    transform: translateY(0);
+.sx-format-sheet[data-open="true"] {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sx-format-card {
+  /* Flush to the bottom edge; only the top corners round. */
+  border-radius: 16px 16px 0 0;
+  background: var(--menu);
+  -webkit-backdrop-filter: saturate(180%) blur(26px);
+  backdrop-filter: saturate(180%) blur(26px);
+  box-shadow: var(--shadow-sheet);
+  max-height: 82vh;
+  overflow-y: auto;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .sx-format-card {
+    background: var(--menu-solid);
   }
 }
 
-.sx-kbtoolbar {
+/* The grab handle — a familiar "drag/dismiss me" affordance at the sheet's top. */
+.sx-format-grip {
+  display: flex;
+  justify-content: center;
+  padding: 9px 0 5px;
+}
+
+.sx-format-grip span {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--separator-strong);
+}
+
+.sx-format-body {
+  /* The safe-area padding clears the home indicator on notched phones. */
+  padding: 4px 16px calc(16px + env(safe-area-inset-bottom));
+}
+
+.sx-format-label {
+  margin: 12px 2px 7px;
+  font-size: var(--text-fine);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--label-3);
+}
+
+.sx-format-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.sx-format-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  max-width: 720px;
-  margin: 0 auto;
-}
-
-.sx-kb-spacer {
-  flex: 1;
-}
-
-.sx-kb-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 40px;
+  gap: 10px;
+  min-height: 48px;
   padding: 0 14px;
-  border-radius: 10px;
+  border-radius: 11px;
+  border: 0.5px solid var(--separator-strong);
   background: var(--fill);
   color: var(--label);
   font-family: var(--font-ui);
-  font-size: var(--text-sub);
+  font-size: 0.9375rem;
   font-weight: 500;
-  transition: background 0.15s var(--ease), transform 0.12s var(--ease);
-}
-
-.sx-kb-btn:active {
-  background: var(--fill-press);
-  transform: scale(0.96);
-}
-
-.sx-kb-btn:disabled {
-  opacity: 0.45;
-}
-
-.sx-kb-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* The type button leads, tinted so it reads as the primary action. */
-.sx-kb-type {
-  background: var(--accent-soft, color-mix(in srgb, var(--blue) 13%, transparent));
-  color: var(--blue);
-  font-weight: 600;
-}
-
-.sx-kb-type-label {
-  min-width: 4.5em;
   text-align: left;
+  white-space: nowrap;
+  transition: background 0.14s var(--ease), transform 0.12s var(--ease);
+}
+
+.sx-format-btn svg {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  color: var(--label-2);
+}
+
+.sx-format-btn:active {
+  background: var(--fill-press);
+  transform: scale(0.97);
+}
+
+/* Appearance: a segmented control — the three modes are mutually exclusive, so
+   they read better as one grouped switch than three separate buttons. */
+.sx-format-seg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--fill);
+}
+
+.sx-format-seg-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border-radius: 9px;
+  color: var(--label-2);
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+
+.sx-format-seg-btn svg {
+  width: 17px;
+  height: 17px;
+}
+
+.sx-format-seg-btn[data-active="true"] {
+  background: var(--bg-elevated);
+  color: var(--label);
+  box-shadow: var(--shadow-menu);
 }
 
 /* --- formatting hint toast ------------------------------------------------ */
@@ -1340,15 +1392,19 @@
     display: inline-flex;
   }
 
+  /* Appearance moves into the actions sheet on phones, so the bar toggle goes. */
+  .nav-theme {
+    display: none;
+  }
+
   .nav-back-label {
     display: none;
   }
 
   .sx-shell .nav {
     gap: 6px;
-    /* On phones the bar scrolls away with the page — vertical space is scarce
-       and there's already a keyboard toolbar and bottom chrome. Sticky is a
-       desktop-only affordance here. */
+    /* On phones the bar scrolls away with the page — vertical space is scarce.
+       Sticky is a desktop-only affordance here. */
     position: static;
   }
 
@@ -1386,7 +1442,7 @@
   .sx-outline,
   .sx-outline-scrim,
   .sx-hints,
-  .sx-kbtoolbar-holder,
+  .sx-format-sheet,
   .sx-hint-toast,
   .sx-shortcuts,
   .scrim {

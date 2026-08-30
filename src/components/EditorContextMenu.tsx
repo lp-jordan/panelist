@@ -135,6 +135,11 @@ export function EditorContextMenu({ editor }: { editor: Editor }) {
       timer = window.setTimeout(() => {
         timer = undefined;
         if (openAt(startX, startY)) {
+          // Block the OS from selecting the word under the finger (and its
+          // callout) now that our menu owns this press — synchronously, before
+          // the ~500ms selection fires. The class is also kept in sync by the
+          // effect below, which removes it when the menu closes.
+          dom.classList.add("sx-no-select");
           // The browser may still fire its own contextmenu/selection callout
           // off the same press — swallow the next one.
           suppressContextUntil.current = Date.now() + 700;
@@ -164,6 +169,17 @@ export function EditorContextMenu({ editor }: { editor: Editor }) {
       dom.removeEventListener("touchcancel", clearTimer);
     };
   }, [editor]);
+
+  // Suppress the editor's native selection/callout for the life of the menu,
+  // then restore it. (The touch path also adds this synchronously on long-press
+  // so it beats the OS word-selection; this keeps it correct for right-click and
+  // guarantees removal on close.)
+  useEffect(() => {
+    const dom = editor.view.dom as HTMLElement;
+    if (ctx) dom.classList.add("sx-no-select");
+    else dom.classList.remove("sx-no-select");
+    return () => dom.classList.remove("sx-no-select");
+  }, [ctx, editor]);
 
   // Dismiss on any outside pointer or Escape (matches the page outline's menu).
   useEffect(() => {

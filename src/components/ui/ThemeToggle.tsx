@@ -1,53 +1,16 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
-import { THEME_COOKIE, THEME_LABEL, THEME_ORDER, isTheme, type Theme } from "@/lib/theme";
+import { THEME_LABEL } from "@/lib/theme";
+import { useTheme } from "./useTheme";
 
 /**
- * Cycles system → light → dark.
- *
- * The choice lives in a cookie so the server can stamp `data-theme` on <html>
- * in the first byte of HTML — there is no pre-paint script and no flash. The
- * token layer keys off that stamp, with an explicit choice beating the OS
- * preference in either direction (see globals.css).
+ * Cycles system → light → dark. State and persistence live in useTheme, shared
+ * with the format sheet's appearance control so both stay in step. The choice
+ * is a cookie the server reads to stamp `data-theme` on <html> before first
+ * paint, so there is no pre-paint script and no flash.
  */
-
-function readTheme(): Theme {
-  const match = document.cookie.match(/(?:^|;\s*)panelist-theme=([^;]*)/);
-  const value = match?.[1];
-  return isTheme(value) ? value : "system";
-}
-
-function applyTheme(theme: Theme) {
-  const root = document.documentElement;
-  if (theme === "system") root.removeAttribute("data-theme");
-  else root.setAttribute("data-theme", theme);
-  root.style.colorScheme = theme === "system" ? "light dark" : theme;
-
-  // A year for a choice, or an immediate expiry to fall back to the system.
-  document.cookie =
-    theme === "system"
-      ? `${THEME_COOKIE}=; path=/; max-age=0; samesite=lax`
-      : `${THEME_COOKIE}=${theme}; path=/; max-age=31536000; samesite=lax`;
-}
-
-// A store rather than an effect, so the button never renders the wrong icon
-// after hydration and every toggle in the app stays in step.
-const listeners = new Set<() => void>();
-const subscribe = (listener: () => void) => {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-};
-
 export function ThemeToggle() {
-  // The server can't read document.cookie; it already stamped <html>, and the
-  // first client read corrects the icon without changing what's painted.
-  const theme = useSyncExternalStore<Theme>(subscribe, readTheme, () => "system");
-
-  const cycle = useCallback(() => {
-    applyTheme(THEME_ORDER[(THEME_ORDER.indexOf(readTheme()) + 1) % THEME_ORDER.length]);
-    listeners.forEach((listener) => listener());
-  }, []);
+  const { theme, cycle } = useTheme();
 
   return (
     <button

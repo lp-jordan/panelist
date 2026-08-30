@@ -20,9 +20,8 @@ import { TitlePageSheet, type TitlePageValues } from "./TitlePageSheet";
 import { TitlePagePrint } from "./TitlePagePrint";
 import { PageOutline } from "./PageOutline";
 import { EditorContextMenu } from "./EditorContextMenu";
-import { KeyboardToolbar } from "./KeyboardToolbar";
+import { FormatSheet } from "./FormatSheet";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { Menu } from "@/components/ui/Menu";
 import "./script-editor.css";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -74,6 +73,8 @@ export function ScriptEditor({
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [outlineOpen, setOutlineOpen] = useState(false);
+  // The mobile actions sheet (Home 2).
+  const [formatOpen, setFormatOpen] = useState(false);
   const [editorFocused, setEditorFocused] = useState(false);
   // Desktop-only: whether the floating page navigator is collapsed to a chip.
   // Read lazily from localStorage — the editor is client-only, so there's no
@@ -569,11 +570,15 @@ export function ScriptEditor({
           <span className="nav-title">{meta.title}</span>
           <span className="nav-spacer" />
           <SavePill status={status} />
-          <ThemeToggle />
+          {/* Desktop-only in the bar; on phones the appearance choice moves into
+              the actions sheet's Appearance section. */}
+          <span className="nav-theme">
+            <ThemeToggle />
+          </span>
 
           {/* The secondary actions. Inline on desktop; on phones they'd overrun
               the bar and get clipped off-screen, so there they collapse into the
-              single overflow menu below (see .nav-actions in the CSS). */}
+              single actions sheet (see .nav-actions in the CSS). */}
           <span className="nav-actions-inline">
             <button
               type="button"
@@ -626,44 +631,20 @@ export function ScriptEditor({
             </button>
           </span>
 
-          <span className="nav-actions-menu">
-            <Menu label="More actions" triggerClassName="icon-btn">
-              {(close) => (
-                <>
-                  <button type="button" role="menuitem" onClick={() => { close(); saveNow(); }}>
-                    Save
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
-                      <path d="M17 21v-8H7v8M7 3v5h8" />
-                    </svg>
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => { close(); setTitlePageOpen(true); }}>
-                    Title page
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="5" y="3" width="14" height="18" rx="2" />
-                      <path d="M9 8h6M10 12h4" />
-                    </svg>
-                  </button>
-                  <button type="button" role="menuitem" onClick={() => { close(); setHistoryOpen(true); }}>
-                    Version history
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M3 3v5h5" />
-                      <path d="M3.05 13A9 9 0 106 5.3L3 8" />
-                      <path d="M12 7v5l4 2" />
-                    </svg>
-                  </button>
-                  <hr />
-                  <button type="button" role="menuitem" onClick={() => { close(); saveNow(); window.print(); }}>
-                    Export PDF
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-3a2 2 0 012-2h16a2 2 0 012 2v3a2 2 0 01-2 2h-2" />
-                      <path d="M6 14h12v7H6z" />
-                    </svg>
-                  </button>
-                </>
-              )}
-            </Menu>
-          </span>
+          {/* Phones: one button that opens the actions sheet (Home 2). Hidden on
+              desktop, where the actions sit inline above. */}
+          <button
+            type="button"
+            className="icon-btn nav-actions-menu"
+            onClick={() => setFormatOpen(true)}
+            aria-label="Actions"
+            aria-haspopup="dialog"
+            aria-expanded={formatOpen}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 8h11M5 8a2 2 0 104 0 2 2 0 10-4 0M8 16h11M19 16a2 2 0 10-4 0 2 2 0 104 0" />
+            </svg>
+          </button>
         </nav>
 
         <div className="sx-body">
@@ -703,21 +684,24 @@ export function ScriptEditor({
         </div>
       </div>
 
-      <div
-        className="sx-kbtoolbar-holder"
-        data-visible={editorFocused}
-        style={{ transform: `translateY(${-keyboardInset}px)` }}
-      >
-        <div className="sx-kbtoolbar-slide">
-          <KeyboardToolbar editor={editor} />
-        </div>
-      </div>
+      <FormatSheet
+        editor={editor}
+        open={formatOpen}
+        onClose={() => setFormatOpen(false)}
+        onSave={saveNow}
+        onExport={() => {
+          saveNow();
+          window.print();
+        }}
+        onTitlePage={() => setTitlePageOpen(true)}
+        onHistory={() => setHistoryOpen(true)}
+      />
 
       <div
         className="sx-hint-toast"
-        // When the keyboard is up, ride above both it and the touch toolbar so
-        // the tap-through "Clear it" button stays reachable.
-        style={keyboardInset > 0 ? { bottom: `${keyboardInset + 68}px` } : undefined}
+        // When the keyboard is up, ride above it so the tap-through "Clear it"
+        // button stays reachable.
+        style={keyboardInset > 0 ? { bottom: `${keyboardInset + 12}px` } : undefined}
         data-show={guardToast !== null}
         data-holding={guardToast?.holding || undefined}
         role="status"
