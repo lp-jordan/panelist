@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { findAncestorPos } from "@/lib/editor/positions";
@@ -53,23 +53,25 @@ const KINDS: { value: string; label: string }[] = [
  */
 export function EditorContextMenu({ editor }: { editor: Editor }) {
   const [ctx, setCtx] = useState<MenuContext | null>(null);
+  // Suppresses the synthetic `contextmenu` some touch browsers fire right after
+  // a long-press, so the menu isn't opened twice from one gesture.
+  const suppressContextUntil = useRef(0);
 
   useEffect(() => {
     const dom = editor.view.dom;
 
-    const onContextMenu = (e: MouseEvent) => {
+    const openAt = (clientX: number, clientY: number): boolean => {
       const { state, view } = editor;
-      const hit = view.posAtCoords({ left: e.clientX, top: e.clientY });
-      if (!hit) return; // outside any text — let the browser menu through
+      const hit = view.posAtCoords({ left: clientX, top: clientY });
+      if (!hit) return false; // outside any text — let the browser menu through
 
-      e.preventDefault();
       const clickPos = hit.pos;
       const sel = state.selection;
       const withinSelection = !sel.empty && clickPos >= sel.from && clickPos <= sel.to;
 
       // Move the caret to the click, so a following keyboard action and the
       // menu's own commands share the same target — but never collapse a
-      // selection the user right-clicked inside (they may want "Delete selection").
+      // selection the click landed inside (they may want "Delete selection").
       if (!withinSelection) {
         const near = TextSelection.near(state.doc.resolve(clickPos), 1);
         view.dispatch(state.tr.setSelection(near));
@@ -82,8 +84,8 @@ export function EditorContextMenu({ editor }: { editor: Editor }) {
       setCtx({
         // Clamp so the menu stays on-screen (its height is small; a bottom flip
         // near the viewport edge keeps it from clipping).
-        x: Math.min(e.clientX, window.innerWidth - MENU_WIDTH - 8),
-        y: Math.min(e.clientY, window.innerHeight - 320),
+        x: Math.min(clientX, window.innerWidth - MENU_WIDTH - 8),
+        y: Math.min(clientY, window.innerHeight - 320),
         clickPos,
         pagePos: findAncestorPos(state, clickPos, "page"),
         panelPos: findAncestorPos(state, clickPos, "panel"),
@@ -93,10 +95,74 @@ export function EditorContextMenu({ editor }: { editor: Editor }) {
         kind: (textNode?.attrs.kind as string) ?? null,
         hasSelection: withinSelection,
       });
+      return true;
+    };
+
+    const onContextMenu = (e: MouseEvent) => {
+      if (Date.now() < suppressContextUntil.current) {
+        e.preventDefault();
+        return;
+      }
+      if (openAt(e.clientX, e.clientY)) e.preventDefault();
+    };
+
+    // --- touch long-press -------------------------------------------------
+    // Touch has no right-click, so a ~500ms press on a line/panel opens the same
+    // menu. The timer is cancelled if the finger moves (a scroll or a drag) or
+    // lifts early, so ordinary tapping and scrolling are untouched.
+    const LONG_PRESS_MS = 500;
+    const MOVE_TOLERANCE = 10;
+    let timer: number | undefined;
+    let startX = 0;
+    let startY = 0;
+
+    const clearTimer = () => {
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+        timer = undefined;
+      }
+    };
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) {
+        clearTimer();
+        return;
+      }
+      const t = e.touches[0];
+      startX = t.clientX;
+      startY = t.clientY;
+      clearTimer();
+      timer = window.setTimeout(() => {
+        timer = undefined;
+        if (openAt(startX, startY)) {
+          // The browser may still fire its own contextmenu/selection callout
+          // off the same press — swallow the next one.
+          suppressContextUntil.current = Date.now() + 700;
+        }
+      }, LONG_PRESS_MS);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (!t) return;
+      if (Math.abs(t.clientX - startX) > MOVE_TOLERANCE || Math.abs(t.clientY - startY) > MOVE_TOLERANCE) {
+        clearTimer();
+      }
     };
 
     dom.addEventListener("contextmenu", onContextMenu);
-    return () => dom.removeEventListener("contextmenu", onContextMenu);
+    dom.addEventListener("touchstart", onTouchStart, { passive: true });
+    dom.addEventListener("touchmove", onTouchMove, { passive: true });
+    dom.addEventListener("touchend", clearTimer);
+    dom.addEventListener("touchcancel", clearTimer);
+    return () => {
+      clearTimer();
+      dom.removeEventListener("contextmenu", onContextMenu);
+      dom.removeEventListener("touchstart", onTouchStart);
+      dom.removeEventListener("touchmove", onTouchMove);
+      dom.removeEventListener("touchend", clearTimer);
+      dom.removeEventListener("touchcancel", clearTimer);
+    };
   }, [editor]);
 
   // Dismiss on any outside pointer or Escape (matches the page outline's menu).
