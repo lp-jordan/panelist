@@ -158,6 +158,14 @@
 html {
   height: 100%;
   color-scheme: light dark;
+  /* Stop iOS (esp. the Home-Screen standalone webview) from auto-inflating
+     text. The locked read view scales its fixed-width sheets down with `zoom`;
+     WebKit then "boosts" the now-small text of that wide layout — but only
+     honours this property from the root, not a descendant, in standalone mode.
+     Confirmed: the sheet font rendered 21px in a tab vs 55px standalone with
+     everything else identical. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 html,
