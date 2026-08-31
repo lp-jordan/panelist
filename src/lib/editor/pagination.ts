@@ -10,8 +10,8 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 //
 // The reflow is measurement-based (a sheet's true rendered height only exists at
 // runtime), so it runs from the plugin's `view.update`, one structural move per
-// pass. Each move strictly reduces the imbalance, and a re-entrancy guard plus a
-// per-flush cap mean the worst case is "doesn't paginate", never a hang.
+// pass. Each move strictly reduces the imbalance, and a re-entrancy guard means
+// the worst case is "doesn't paginate", never a hang.
 
 const paginationKey = new PluginKey("autoPaginate");
 
@@ -239,15 +239,12 @@ export const AutoPaginate = Extension.create({
         if (busy || view.isDestroyed || view.composing) return;
         busy = true;
         try {
-          // One move per flush; the resulting update reschedules us until the
-          // document is balanced. The cap is a belt-and-braces stop.
-          for (let guard = 0; guard < 40; guard++) {
-            const move = decideMove(view);
-            if (!move) break;
-            if (!applyMove(view, move)) break;
-            // Re-measure on the next frame rather than looping on stale layout.
-            break;
-          }
+          // One move per flush: apply a single structural move, then let the
+          // resulting doc update reschedule us so the next decision reads fresh
+          // layout rather than stale measurements. Each move strictly reduces
+          // the imbalance, so the document converges over successive frames.
+          const move = decideMove(view);
+          if (move) applyMove(view, move);
         } finally {
           busy = false;
         }
