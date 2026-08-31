@@ -7,7 +7,6 @@
   },
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node scripts/clear-next-cache.mjs",
     "build": "next build",
     "start": "prisma migrate deploy && next start",
     "lint": "eslint",
