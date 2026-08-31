@@ -109,9 +109,9 @@ The key resequencing vs. the original artifact: the **reference library (B/C) co
 
 ---
 
-## 5. Open decisions (small; recommended defaults noted)
+## 5. Decisions (resolved 2026-08-30)
 
-1. **Folders or tags for collections?** — *Leaning tags.* A costume ref that's both "Bone" and "1890s" is the case that pushes past one-shelf folders. (Data model above already supports many-to-many.)
-2. **Do "character" collections tie into the existing `CastMember` cast, or stay free-form?** — *Leaning free-form* named collections for simplicity, matching Milanote.
-3. **Marker numbering** — *Leaning count-per-panel* (a panel with two refs shows a **2**) over global sequential ids; more intuitive for the artist.
-4. **Marker placement** — *Leaning start-of-panel* (next to `Panel N:`) for scannability, vs. end-of-line to keep the description uninterrupted.
+1. **Organization = free-form tags, not fixed folders.** A reference can carry several tags, so one image can live under more than one grouping (e.g. "Bone" *and* "1890s costume") without duplicating it. Groupings are user-defined and created per issue as you go — no fixed taxonomy. The "shelves" in the library UI are just views of a tag. (`ReferenceInCollection` many-to-many in §3 already supports this; read "Collection" as "tag".)
+2. **Collections/tags are free-form, not linked to `CastMember`.** They change per issue; Jordan sets them as he goes.
+3. **Markers: one circle per reference, numbered sequentially per script** (footnote-style stable id). Multiple refs on a panel render as multiple circles, so the count is visible by glance and each ref keeps a stable id — no separate per-panel count needed.
+4. **Marker placement: start of the panel** (next to `Panel N:`) — to try first; revisit if it crowds the panel label.
