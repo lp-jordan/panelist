@@ -169,7 +169,6 @@ export function ScriptRow({
         }}
       >
         <select className="field" name="projectId" defaultValue={projectId ?? ""} aria-label="Project">
-          <option value="">No project (Unassigned)</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>
               {project.name}

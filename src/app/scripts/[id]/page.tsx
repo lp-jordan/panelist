@@ -11,6 +11,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
   const script = await prisma.script.findUnique({
     where: { id, deletedAt: null },
     include: {
+      project: { select: { name: true } },
       pages: {
         include: {
           items: {
@@ -35,6 +36,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
     <ScriptEditor
       scriptId={script.id}
       projectId={script.projectId}
+      projectName={script.project?.name ?? null}
       title={script.title}
       author={script.author}
       draftLabel={script.draftLabel}

@@ -1,47 +1,32 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
-import { formatRelativeTime } from "@/lib/format";
 import { LibraryToolbar } from "@/components/library/LibraryToolbar";
 import { NewMenu } from "@/components/library/NewMenu";
 import { AccountMenu } from "@/components/library/AccountMenu";
 import { ProjectMenu } from "@/components/library/ProjectMenu";
-import { ScriptRow } from "@/components/library/ScriptRow";
-import { ScriptDropZone } from "@/components/library/ScriptDropZone";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
-type SearchParams = { q?: string; sort?: string };
+type SearchParams = { q?: string };
 
-// The Library is a project index: projects open to their own hub of issues.
-// Loose scripts that belong to no project still live here, under Unassigned.
+// The Library is a project index. Scripts are created and live inside their
+// project's hub, so there's no loose-script section here anymore.
 export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await getCurrentUser();
-  const { q = "", sort = "updated" } = await searchParams;
+  const { q = "" } = await searchParams;
 
   const query = q.trim();
   const searching = query.length > 0;
-  const orderBy = sort === "title" ? { title: "asc" as const } : { updatedAt: "desc" as const };
-  const titleFilter = searching ? { title: { contains: query } } : {};
 
-  const [projects, unassignedScripts] = await Promise.all([
-    prisma.project.findMany({
-      where: { deletedAt: null, ...(searching ? { name: { contains: query } } : {}) },
-      orderBy: { name: "asc" },
-      select: {
-        id: true,
-        name: true,
-        scripts: { where: { deletedAt: null }, select: { id: true } },
-      },
-    }),
-    prisma.script.findMany({
-      where: { projectId: null, deletedAt: null, ...titleFilter },
-      orderBy,
-      include: { _count: { select: { pages: true } } },
-    }),
-  ]);
-
-  const projectOptions = projects.map((p) => ({ id: p.id, name: p.name }));
-  const matches = projects.length + unassignedScripts.length;
+  const projects = await prisma.project.findMany({
+    where: { deletedAt: null, ...(searching ? { name: { contains: query } } : {}) },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      scripts: { where: { deletedAt: null }, select: { id: true } },
+    },
+  });
 
   return (
     <div className="shell">
@@ -49,31 +34,39 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         <span className="nav-title">Panelist</span>
         <span className="nav-spacer" />
         <ThemeToggle />
-        <NewMenu projects={projectOptions} />
+        <NewMenu mode="project" />
         <AccountMenu />
       </nav>
 
       <main className="shell-inner pullback">
         <h1 className="large-title">Library</h1>
 
-        <LibraryToolbar q={q} sort={sort} />
+        <LibraryToolbar q={q} />
 
-        {searching && matches === 0 && (
+        {projects.length === 0 ? (
           <div className="group">
             <div className="list">
-              <div className="empty">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
-                  <circle cx="11" cy="11" r="7" />
-                  <path d="M20 20l-3.5-3.5" />
-                </svg>
-                <h4>No matches</h4>
-                <p>Nothing named “{query}”. Try a shorter search.</p>
-              </div>
+              {searching ? (
+                <div className="empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M20 20l-3.5-3.5" />
+                  </svg>
+                  <h4>No matches</h4>
+                  <p>No project named “{query}”. Try a shorter search.</p>
+                </div>
+              ) : (
+                <div className="empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M3 7h6l2 2h10v10H3z" />
+                  </svg>
+                  <h4>No projects yet</h4>
+                  <p>Create your first project from the + in the bar above. Scripts live inside a project.</p>
+                </div>
+              )}
             </div>
           </div>
-        )}
-
-        {projects.length > 0 && (
+        ) : (
           <section className="group">
             <div className="group-head">Projects</div>
             <div className="list">
@@ -94,38 +87,6 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                 </div>
               ))}
             </div>
-          </section>
-        )}
-
-        {!(searching && unassignedScripts.length === 0) && (
-          <section className="group">
-            <div className="group-head">Unassigned</div>
-            <ScriptDropZone projectId={null}>
-              {unassignedScripts.length === 0 ? (
-                <div className="empty">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M4 4h11l5 5v11H4z" />
-                    <path d="M15 4v5h5" />
-                    <path d="M8 13h8M8 17h5" />
-                  </svg>
-                  <h4>Nothing loose</h4>
-                  <p>Scripts that don’t belong to a project land here.</p>
-                </div>
-              ) : (
-                unassignedScripts.map((script) => (
-                  <ScriptRow
-                    key={script.id}
-                    id={script.id}
-                    projectId={null}
-                    title={script.title}
-                    draftLabel={script.draftLabel}
-                    pageCount={script._count.pages}
-                    editedLabel={formatRelativeTime(script.updatedAt)}
-                    projects={projectOptions}
-                  />
-                ))
-              )}
-            </ScriptDropZone>
           </section>
         )}
       </main>

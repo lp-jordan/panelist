@@ -22,6 +22,7 @@ export async function createScript(formData: FormData) {
     },
   });
   revalidatePath("/");
+  if (projectId) revalidatePath(`/projects/${projectId}`);
 }
 
 export async function renameScript(formData: FormData) {

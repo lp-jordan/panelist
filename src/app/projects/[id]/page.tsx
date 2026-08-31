@@ -44,7 +44,7 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
         </Link>
         <span className="nav-spacer" />
         <ThemeToggle />
-        <NewMenu projects={projects} defaultProjectId={project.id} />
+        <NewMenu mode="script" projectId={project.id} />
       </nav>
 
       <main className="shell-inner pullback">

@@ -1,94 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { Menu } from "@/components/ui/Menu";
 import { FormSheet } from "@/components/ui/FormSheet";
 import { createScript } from "@/app/actions/scripts";
 import { createProject } from "@/app/actions/projects";
 
-/** The `+` in the nav bar — the one way to add anything. */
-export function NewMenu({
-  projects,
-  defaultProjectId = "",
-}: {
-  projects: { id: string; name: string }[];
-  /* Preselects the project in the New-script sheet — set on a project hub so a
-     new issue lands in the project you're looking at. */
-  defaultProjectId?: string;
-}) {
-  const [sheet, setSheet] = useState<"script" | "project" | null>(null);
+/**
+ * The `+` in the nav bar. Its one action follows the hierarchy: from the
+ * Library you make a project, from inside a project you make a script (an
+ * issue) that lands in that project. A single action, so `+` opens its sheet
+ * directly rather than a menu.
+ */
+export function NewMenu({ mode, projectId }: { mode: "project" | "script"; projectId?: string }) {
+  const [open, setOpen] = useState(false);
+  const label = mode === "project" ? "New project" : "New script";
 
   return (
     <>
-      <Menu
-        label="New"
-        triggerClassName="icon-btn"
-        icon={
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-        }
-      >
-        {(close) => (
-          <>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                close();
-                setSheet("script");
-              }}
-            >
-              New script
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M4 4h11l5 5v11H4z" />
-                <path d="M15 4v5h5" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                close();
-                setSheet("project");
-              }}
-            >
-              New project
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M3 7h6l2 2h10v10H3z" />
-              </svg>
-            </button>
-          </>
-        )}
-      </Menu>
+      <button type="button" className="icon-btn" aria-label={label} onClick={() => setOpen(true)}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </button>
 
-      <FormSheet
-        open={sheet === "script"}
-        onClose={() => setSheet(null)}
-        title="New script"
-        submitLabel="Create"
-        action={createScript}
-      >
-        <input className="field" name="title" placeholder="Script title" aria-label="Script title" required />
-        <select className="field" name="projectId" defaultValue={defaultProjectId} aria-label="Project">
-          <option value="">No project</option>
-          {projects.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
-      </FormSheet>
-
-      <FormSheet
-        open={sheet === "project"}
-        onClose={() => setSheet(null)}
-        title="New project"
-        submitLabel="Create"
-        action={createProject}
-      >
-        <input className="field" name="name" placeholder="Project name" aria-label="Project name" required />
-      </FormSheet>
+      {mode === "project" ? (
+        <FormSheet open={open} onClose={() => setOpen(false)} title="New project" submitLabel="Create" action={createProject}>
+          <input className="field" name="name" placeholder="Project name" aria-label="Project name" required />
+        </FormSheet>
+      ) : (
+        <FormSheet open={open} onClose={() => setOpen(false)} title="New script" submitLabel="Create" action={createScript}>
+          <input type="hidden" name="projectId" value={projectId ?? ""} />
+          <input className="field" name="title" placeholder="Script title" aria-label="Script title" required />
+        </FormSheet>
+      )}
     </>
   );
 }

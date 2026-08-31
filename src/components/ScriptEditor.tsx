@@ -44,6 +44,7 @@ type GuardToast = { text: string; holding?: boolean; onConfirm?: () => void };
 export function ScriptEditor({
   scriptId,
   projectId,
+  projectName,
   title,
   author,
   draftLabel,
@@ -53,6 +54,7 @@ export function ScriptEditor({
 }: {
   scriptId: string;
   projectId: string | null;
+  projectName: string | null;
   title: string;
   author: string;
   draftLabel: string;
@@ -60,6 +62,11 @@ export function ScriptEditor({
   initialDoc: JSONNode;
   initialCastNames: string[];
 }) {
+  // Backing out lands on the script's project hub, not the Library, so you
+  // return to where the script lives. Unassigned scripts still fall back home.
+  const backHref = projectId ? `/projects/${projectId}` : "/";
+  const backLabel = projectName ?? "Library";
+
   const [castNames, setCastNames] = useState(initialCastNames);
   // Title-page fields live here so an edit updates the nav title immediately,
   // without waiting on a server round trip / revalidation.
@@ -551,11 +558,11 @@ export function ScriptEditor({
     return (
       <div className="sx-shell">
         <nav className="nav">
-          <Link href="/" className="nav-back" aria-label="Library">
+          <Link href={backHref} className="nav-back" aria-label={backLabel}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" />
             </svg>
-            <span className="nav-back-label">Library</span>
+            <span className="nav-back-label">{backLabel}</span>
           </Link>
           <span className="nav-spacer" />
           <span className="nav-title">{meta.title}</span>
@@ -573,11 +580,11 @@ export function ScriptEditor({
     <>
       <div className="sx-shell">
         <nav className="nav" data-scrolled={scrolled}>
-          <Link href="/" className="nav-back" aria-label="Library">
+          <Link href={backHref} className="nav-back" aria-label={backLabel}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M15 5l-7 7 7 7" />
             </svg>
-            <span className="nav-back-label">Library</span>
+            <span className="nav-back-label">{backLabel}</span>
           </Link>
           {/* Opens the page outline as a left drawer; only shown where the
               persistent sidebar isn't (phones/tablets). */}
