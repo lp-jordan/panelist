@@ -76,6 +76,9 @@ model Script {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   deletedAt  DateTime?
+  // Locked = the read view (references shown/placed, no text editing).
+  // Unlocked = the editor. The mode switch for the whole reference layer (V2 C).
+  locked     Boolean   @default(false)
 
   project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
   pages       Page[]
@@ -134,9 +137,8 @@ model Panel {
   pageItemId  String @unique
   description String
 
-  pageItem     PageItem             @relation(fields: [pageItemId], references: [id], onDelete: Cascade)
+  pageItem     PageItem           @relation(fields: [pageItemId], references: [id], onDelete: Cascade)
   textElements PanelTextElement[]
-  placements   ReferencePlacement[]
 }
 
 enum PanelTextElementType {
@@ -252,18 +254,22 @@ model ReferenceInCollection {
   @@id([referenceId, collectionId])
 }
 
-/// Pins a reference to a specific Panel (stable Panel.id — §2.2). A reference
-/// can be pinned to several panels; a panel can hold several references.
+/// Pins a reference to a spot on a script page in the read view (V2 C).
+/// Anchored by page NUMBER + an x/y percentage of the page — deliberately NOT
+/// by Page.id/Panel.id, which are regenerated on every save (the editor
+/// wipes-and-recreates pages). A locked script freezes page numbers, so pins
+/// stay put; a late edit that drops the page just orphans the placement
+/// (pageNumber past the end) — the reference is kept, the link severed.
+/// x/y are 0–1 fractions so they're resolution-independent.
 model ReferencePlacement {
   id          String   @id @default(cuid())
   referenceId String
-  panelId     String
+  pageNumber  Int
+  xPct        Float
+  yPct        Float
   createdAt   DateTime @default(now())
 
   reference Reference @relation(fields: [referenceId], references: [id], onDelete: Cascade)
-  panel     Panel     @relation(fields: [panelId], references: [id], onDelete: Cascade)
-
-  @@unique([referenceId, panelId])
 }
 
 /// Future: append-only activity log. Not read anywhere in the MVP, but

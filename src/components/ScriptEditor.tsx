@@ -20,6 +20,7 @@ import { ShortcutsSheet } from "./ShortcutsSheet";
 import { TitlePageSheet, type TitlePageValues } from "./TitlePageSheet";
 import { TitlePagePrint } from "./TitlePagePrint";
 import { PageOutline } from "./PageOutline";
+import { LockToggle } from "@/components/reference/LockToggle";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { FormatSheet } from "./FormatSheet";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -608,6 +609,10 @@ export function ScriptEditor({
           <span className="nav-theme">
             <ThemeToggle />
           </span>
+
+          {/* Lock the script into the reference read view. Kept out of the
+              collapsing actions group so it stays reachable at every width. */}
+          <LockToggle id={scriptId} locked={false} />
 
           {/* The secondary actions. Inline on desktop; on phones they'd overrun
               the bar and get clipped off-screen, so there they collapse into the

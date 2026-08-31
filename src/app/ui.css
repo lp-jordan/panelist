@@ -1076,6 +1076,70 @@ body:has(.scrim[data-open="true"]) .pullback {
   color: var(--label-2);
 }
 
+/* --- lock toggle + read view (V2 C) -------------------------------------- */
+
+.lock-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.lock-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px 0 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sub);
+  font-weight: 500;
+  color: var(--label-2);
+  background: var(--fill);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.lock-toggle:hover {
+  background: var(--fill-press);
+  color: var(--label);
+}
+
+.lock-toggle svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Locked reads in the placement colour so the mode is unmistakable. */
+.lock-toggle--on {
+  color: var(--orange);
+  background: var(--orange-soft);
+}
+
+.lock-toggle--on:hover {
+  color: var(--orange);
+}
+
+.rv-shell {
+  background: var(--bg-canvas);
+}
+
+/* The desk the read-only sheets lie on. Sheets are fixed 8.5in wide (print
+   geometry), so narrow screens scroll them horizontally for now — fitting the
+   sheet to phone width is a later polish. */
+.rv-stage {
+  flex: 1;
+  overflow: auto;
+  padding: 24px 16px 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rv-stage .px-page,
+.rv-stage .px-freeform-page,
+.rv-stage .px-cover {
+  box-shadow: var(--shadow-paper);
+  margin-bottom: 20px;
+}
+
 /* Per-issue action icons on a script row (References, Art) — kept above the
    title's stretched hit area so they stay independently clickable. */
 .row-act {

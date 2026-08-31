@@ -4,6 +4,18 @@ import { revalidatePath } from "next/cache";
 import { verifySession, getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 
+// Flips a script between the editor (unlocked) and the reference read view
+// (locked). Note for Phase D auth: gate this to the owner.
+export async function setScriptLock(formData: FormData) {
+  await verifySession();
+  const id = formData.get("id");
+  const locked = formData.get("locked") === "true";
+  if (typeof id !== "string") return;
+
+  await prisma.script.update({ where: { id }, data: { locked } });
+  revalidatePath(`/scripts/${id}`);
+}
+
 export async function createScript(formData: FormData) {
   const user = await getCurrentUser();
   const title = formData.get("title");
