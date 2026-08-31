@@ -616,6 +616,16 @@
   text-indent: 0;
 }
 
+/* Long cue (name wider than the tab stop): the name + ":" keep the first line to
+   themselves (the label overflows its box to the right), and the dialogue drops
+   to the next line, block-level so it starts at the tab stop and wraps there —
+   rather than the ":" getting stranded on a line of its own. Toggled by the node
+   view when it measures an overflowing name. */
+.sx-text-element.sx-long-name .sx-text-element-content {
+  display: block;
+  text-indent: 0;
+}
+
 /* The name field is sized to its own text so the colon sits right after the
    name instead of at a fixed offset. `.sx-name-sizer` is an invisible copy of
    that text, measured to get an exact width in a proportional font. */

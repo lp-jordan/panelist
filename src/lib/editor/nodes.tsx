@@ -324,10 +324,20 @@ export const TextElementNode = Node.create({
         if (input.value.length === 0) {
           sizer.textContent = "";
           input.style.width = "0px";
+          dom.classList.remove("sx-long-name");
           return;
         }
         sizer.textContent = input.value;
-        input.style.width = `${sizer.offsetWidth + 1}px`;
+        const nameWidth = sizer.offsetWidth + 1;
+        input.style.width = `${nameWidth}px`;
+        // When the cue is wider than the dialogue tab stop (narrow screens,
+        // long names like "ESCAPED MAN & FIELDS"), the ":" would otherwise be
+        // orphaned onto its own line. Instead drop the dialogue to the next line
+        // at the tab stop, keeping the name and colon together. Measured against
+        // the tab from padding-left (which this class never changes, so the read
+        // stays stable and can't oscillate).
+        const tab = parseFloat(getComputedStyle(dom).paddingLeft) || 0;
+        dom.classList.toggle("sx-long-name", tab > 0 && nameWidth + 10 > tab);
       };
 
       // Write the typed name into the document node. The name field is a DOM
