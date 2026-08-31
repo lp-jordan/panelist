@@ -610,6 +610,10 @@
   vertical-align: baseline;
   text-indent: 0;
   font-weight: normal;
+  /* Keep the name and its ":" together: when the cue is wider than the tab
+     stop the label overflows its box to the right as one unit, rather than the
+     input filling the line and stranding the ":" on the next one. */
+  white-space: nowrap;
 }
 
 .sx-text-element-content {
