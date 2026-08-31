@@ -5,6 +5,17 @@ import { Menu } from "@/components/ui/Menu";
 import { FormSheet } from "@/components/ui/FormSheet";
 import { ActionSheet } from "@/components/ui/ActionSheet";
 import { uploadReference, updateReferenceCaption, deleteReference } from "@/app/actions/references";
+import { downscaleImage } from "@/lib/downscaleImage";
+
+// Shrink the picked image in the browser before it's uploaded, so a large
+// original never reaches the server or the DB blob store.
+async function downscaleUpload(formData: FormData): Promise<FormData> {
+  const file = formData.get("file");
+  if (file instanceof File && file.size > 0) {
+    formData.set("file", await downscaleImage(file));
+  }
+  return formData;
+}
 
 export type ReferenceCard = {
   id: string;
@@ -109,7 +120,7 @@ export function ReferenceLibraryClient({
         </div>
       )}
 
-      <FormSheet open={adding} onClose={() => setAdding(false)} title="Add reference" submitLabel="Add" action={uploadReference}>
+      <FormSheet open={adding} onClose={() => setAdding(false)} title="Add reference" submitLabel="Add" action={uploadReference} transform={downscaleUpload}>
         <input type="hidden" name="scriptId" value={scriptId} />
         <input className="field" type="file" name="file" accept="image/*" aria-label="Reference image" required />
         <input className="field" name="caption" placeholder="Caption (optional)" aria-label="Caption" />

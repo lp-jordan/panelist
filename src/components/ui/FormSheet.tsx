@@ -18,6 +18,7 @@ export function FormSheet({
   title,
   submitLabel = "Save",
   action,
+  transform,
   children,
 }: {
   open: boolean;
@@ -25,6 +26,9 @@ export function FormSheet({
   title: string;
   submitLabel?: string;
   action: (formData: FormData) => void | Promise<void>;
+  /* Optional last-mile step on the form data before it's sent — e.g. shrinking
+     an image client-side so the big original never leaves the browser. */
+  transform?: (formData: FormData) => FormData | Promise<FormData>;
   children: React.ReactNode;
 }) {
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -57,7 +61,8 @@ export function FormSheet({
         <form
           className="form-sheet-card"
           action={async (formData) => {
-            await action(formData);
+            const data = transform ? await transform(formData) : formData;
+            await action(data);
             onClose();
           }}
         >
