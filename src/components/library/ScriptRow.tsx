@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Menu } from "@/components/ui/Menu";
 import { FormSheet } from "@/components/ui/FormSheet";
 import { ActionSheet } from "@/components/ui/ActionSheet";
-import { archiveScript, duplicateScript, moveScript, renameScript } from "@/app/actions/scripts";
+import { archiveScript, duplicateScript, moveScript, renameScript, setScriptLock } from "@/app/actions/scripts";
 import { SCRIPT_DND_TYPE } from "./ScriptDropZone";
 
 export function ScriptRow({
@@ -16,6 +16,7 @@ export function ScriptRow({
   pageCount,
   editedLabel,
   projects,
+  locked = false,
 }: {
   id: string;
   /* The group this row currently lives in; null for Unassigned. Lets a drop
@@ -28,6 +29,8 @@ export function ScriptRow({
   editedLabel: string;
   /* Every project the script could be moved into, for the "Move to…" sheet. */
   projects: { id: string; name: string }[];
+  /* Whether the script is in the locked reference read view. */
+  locked?: boolean;
 }) {
   const [renaming, setRenaming] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -127,6 +130,19 @@ export function ScriptRow({
                   <path d="M3 7h6l2 2h10v10H3z" />
                 </svg>
               </button>
+
+              <form action={setScriptLock}>
+                <input type="hidden" name="id" value={id} />
+                <input type="hidden" name="projectId" value={projectId ?? ""} />
+                <input type="hidden" name="locked" value={locked ? "false" : "true"} />
+                <button type="submit" role="menuitem" onClick={close}>
+                  {locked ? "Unlock to edit" : "Lock for references"}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    {locked ? <path d="M8 11V7a4 4 0 018 0" /> : <path d="M8 11V7a4 4 0 018 0v4" />}
+                    <rect x="5" y="11" width="14" height="9" rx="2" />
+                  </svg>
+                </button>
+              </form>
 
               <hr />
 

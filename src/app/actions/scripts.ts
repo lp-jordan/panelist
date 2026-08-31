@@ -14,6 +14,10 @@ export async function setScriptLock(formData: FormData) {
 
   await prisma.script.update({ where: { id }, data: { locked } });
   revalidatePath(`/scripts/${id}`);
+  // When toggled from a project hub's row menu, refresh the hub too so the
+  // menu item reflects the new state.
+  const projectId = formData.get("projectId");
+  if (typeof projectId === "string" && projectId.length > 0) revalidatePath(`/projects/${projectId}`);
 }
 
 export async function createScript(formData: FormData) {

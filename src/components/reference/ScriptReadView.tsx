@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition, type MouseEvent } from "react";
+import { useMemo, useRef, useState, useTransition, type MouseEvent } from "react";
 import Link from "next/link";
+import { Menu } from "@/components/ui/Menu";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { LockToggle } from "@/components/reference/LockToggle";
 import { ScriptSheets, type TitlePageMeta } from "@/components/print/ScriptSheets";
@@ -18,11 +19,12 @@ export type Placement = {
 };
 
 /**
- * The locked read view (V2 C, slice 2). Renders the script's printed sheets and
- * overlays reference pins on them by x/y. Placing a pin: pick a reference, then
- * click a spot on a page. Reading a pin: click its orange dot → the reference
- * opens in the right gutter (desktop) or a bottom sheet (mobile). A References
- * toggle hides every marker so the script reads exactly as it prints.
+ * The locked read view (V2 C). The script's printed sheets on a desk, with
+ * reference pins overlaid by x/y. Placing a pin: pick a reference (button in
+ * the app bar), then click a spot on a page — a floating prompt follows you
+ * while you do. Reading a pin: click its orange dot → the reference floats in a
+ * card beside the page (desktop) or a bottom sheet (mobile), staying with you
+ * as you scroll. A References switch hides every marker.
  */
 export function ScriptReadView({
   scriptId,
@@ -51,6 +53,7 @@ export function ScriptReadView({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const stageRef = useRef<HTMLDivElement>(null);
 
   // Footnote-style numbering: stable order across the whole script.
   const placed = useMemo(
@@ -77,6 +80,13 @@ export function ScriptReadView({
   const orphans = useMemo(() => placements.filter((p) => p.pageNumber > pageCount), [placements, pageCount]);
 
   const active = placed.find((p) => p.id === activeId) ?? null;
+  const showingOrphans = activeId === "__orphans__";
+  const panelOpen = active !== null || showingOrphans;
+
+  function scrollToPage(pageNo: number) {
+    const sheets = stageRef.current?.querySelectorAll<HTMLElement>(".px-page");
+    sheets?.[pageNo - 1]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 
   function placeOnPage(pageNumber: number, event: MouseEvent<HTMLDivElement>) {
     if (!placingRef) return;
@@ -128,9 +138,44 @@ export function ScriptReadView({
           </svg>
           <span className="nav-back-label">{backLabel}</span>
         </Link>
+
+        {/* Page navigation — still useful when locked. */}
+        <Menu
+          label="Pages"
+          triggerClassName="icon-btn nav-pages-btn"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          }
+        >
+          {(close) =>
+            Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  scrollToPage(n);
+                  close();
+                }}
+              >
+                Page {n}
+              </button>
+            ))
+          }
+        </Menu>
+
         <span className="nav-spacer" />
         <span className="nav-title">{meta.title}</span>
         <span className="nav-spacer" />
+
+        <button type="button" className="ref-add ref-add--bar" onClick={() => setPickerOpen(true)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Pin
+        </button>
         <button
           type="button"
           className={`ref-switch${showRefs ? " ref-switch--on" : ""}`}
@@ -141,61 +186,52 @@ export function ScriptReadView({
           <span className="ref-switch-track"><span className="ref-switch-knob" /></span>
           References
         </button>
+        {orphans.length > 0 && (
+          <button type="button" className="orphan-chip" onClick={() => setActiveId("__orphans__")}>
+            {orphans.length} unplaced
+          </button>
+        )}
         <ThemeToggle />
         <LockToggle id={scriptId} locked />
       </nav>
 
-      {/* Placement affordance / mode banner. */}
-      <div className="rc-toolbar">
-        {placingRef ? (
-          <div className="place-banner">
-            <span className="place-thumb" style={{ backgroundImage: `url(/api/assets/${placingRef.assetId})` }} />
-            <span className="place-text">
-              Click a spot on a page to place{placingRef.caption ? ` “${placingRef.caption}”` : " this reference"}.
-            </span>
-            <button type="button" className="place-cancel" onClick={() => setPlacingRef(null)}>
-              Cancel
-            </button>
-          </div>
-        ) : (
-          <>
-            <button type="button" className="ref-add" onClick={() => setPickerOpen(true)}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-              Pin a reference
-            </button>
-            {orphans.length > 0 && (
-              <button type="button" className="orphan-chip" onClick={() => setActiveId("__orphans__")}>
-                {orphans.length} unplaced
-              </button>
-            )}
-          </>
-        )}
+      <div className="rc-stage" ref={stageRef}>
+        <ScriptSheets doc={doc} meta={meta} renderPageOverlay={renderPageOverlay} />
       </div>
 
-      <div className="rc-body">
-        <div className="rc-stage">
-          <ScriptSheets doc={doc} meta={meta} renderPageOverlay={renderPageOverlay} />
+      {/* Floating placement prompt — follows the reader while they pick a spot. */}
+      {placingRef && (
+        <div className="place-float">
+          <span className="place-thumb" style={{ backgroundImage: `url(/api/assets/${placingRef.assetId})` }} />
+          <span className="place-text">
+            Click a spot on a page to place{placingRef.caption ? ` “${placingRef.caption}”` : " this reference"}.
+          </span>
+          <button type="button" className="place-cancel" onClick={() => setPlacingRef(null)}>
+            Cancel
+          </button>
         </div>
+      )}
 
-        {/* Desktop gutter. On mobile it's hidden and the sheet below is used. */}
-        <aside className="rc-gutter">
-          {activeId === "__orphans__" ? (
+      {/* Desktop: the selected reference floats beside the page and travels with
+          the reader (fixed). One at a time. */}
+      {panelOpen && (
+        <aside className="rc-float">
+          <button type="button" className="rc-float-close" onClick={() => setActiveId(null)} aria-label="Close">
+            ✕
+          </button>
+          {showingOrphans ? (
             <OrphanList orphans={orphans} onRemove={removePin} />
           ) : active ? (
             <PinDetail placement={active} number={numberOf.get(active.id) ?? 0} onRemove={removePin} />
-          ) : (
-            <p className="rc-hint">Click a marker to see its reference.</p>
-          )}
+          ) : null}
         </aside>
-      </div>
+      )}
 
-      {/* Mobile bottom sheet: the same detail, revealed on demand. */}
-      <div className={`rc-scrim${active || activeId === "__orphans__" ? " open" : ""}`} onClick={() => setActiveId(null)} />
-      <div className={`rc-sheet${active || activeId === "__orphans__" ? " open" : ""}`} role="dialog" aria-hidden={!active && activeId !== "__orphans__"}>
+      {/* Mobile: same content as a bottom sheet. */}
+      <div className={`rc-scrim${panelOpen ? " open" : ""}`} onClick={() => setActiveId(null)} />
+      <div className={`rc-sheet${panelOpen ? " open" : ""}`} role="dialog" aria-hidden={!panelOpen}>
         <div className="rc-sheet-grab" />
-        {activeId === "__orphans__" ? (
+        {showingOrphans ? (
           <OrphanList orphans={orphans} onRemove={removePin} />
         ) : active ? (
           <PinDetail placement={active} number={numberOf.get(active.id) ?? 0} onRemove={removePin} />
@@ -222,14 +258,15 @@ function PinDetail({ placement, number, onRemove }: { placement: Placement; numb
   return (
     <div className="pin-detail">
       <div className="pin-detail-img" style={{ backgroundImage: `url(/api/assets/${placement.reference.assetId})` }} />
-      <div className="pin-detail-head">
-        <span className="pin-detail-num">{number}</span>
-        <span className="pin-detail-where">Page {placement.pageNumber}</span>
-      </div>
       {placement.reference.caption && <p className="pin-detail-cap">{placement.reference.caption}</p>}
-      <button type="button" className="pin-detail-remove" onClick={() => onRemove(placement.id)}>
-        Remove pin
-      </button>
+      <div className="pin-detail-foot">
+        <span className="pin-detail-where">
+          <span className="pin-detail-num">{number}</span>Page {placement.pageNumber}
+        </span>
+        <button type="button" className="pin-detail-remove" onClick={() => onRemove(placement.id)}>
+          Remove
+        </button>
+      </div>
     </div>
   );
 }

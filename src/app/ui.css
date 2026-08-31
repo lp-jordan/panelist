@@ -1147,44 +1147,65 @@ body:has(.scrim[data-open="true"]) .pullback {
   margin-bottom: 20px;
 }
 
-/* Body splits into the scrolling desk and a desktop gutter. */
-.rc-body {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-}
-
-.rc-gutter {
-  flex: none;
-  width: 300px;
-  overflow: auto;
-  padding: 16px;
-  border-left: 1px solid var(--separator);
-  background: var(--bg-elevated);
-}
-
 .rc-hint {
   color: var(--label-2);
   font-size: var(--text-sub);
   padding: 8px 2px;
 }
 
-/* Toolbar under the nav: place a pin / mode banner. */
-.rc-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  padding: 6px 16px;
-  border-bottom: 1px solid var(--separator);
-  background: var(--bg-elevated);
+/* Desktop: the selected reference floats beside the page — no panel, just the
+   image with its caption under it — and travels with the reader (fixed). */
+.rc-float {
+  position: fixed;
+  top: calc(var(--nav-height) + 24px);
+  right: 24px;
+  z-index: 40;
+  width: 260px;
+  max-height: calc(100vh - var(--nav-height) - 48px);
+  overflow: auto;
 }
 
-.place-banner {
+.rc-float .pin-detail-img {
+  box-shadow: var(--shadow-paper);
+}
+
+.rc-float-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.rc-float-close:hover {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Placement prompt — a floating pill that follows the reader while they pick a
+   spot, rather than a bar pinned to the top. */
+.place-float {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 62;
   display: flex;
   align-items: center;
   gap: 10px;
-  width: 100%;
+  max-width: min(440px, calc(100vw - 32px));
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--menu-solid);
+  box-shadow: var(--shadow-menu);
   font-size: var(--text-sub);
   color: var(--label);
 }
@@ -1217,6 +1238,19 @@ body:has(.scrim[data-open="true"]) .pullback {
 .orphan-chip {
   color: var(--orange);
   background: var(--orange-soft);
+}
+
+/* The pin button lives in the read-view app bar beside the References switch. */
+.ref-add--bar {
+  margin-left: 0;
+  height: 32px;
+  padding: 0 13px 0 9px;
+  font-size: var(--text-sub);
+}
+
+.ref-add--bar svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* References show/hide switch in the app bar. */
@@ -1316,11 +1350,28 @@ body:has(.scrim[data-open="true"]) .pullback {
   background-color: var(--fill);
 }
 
-.pin-detail-head {
+.pin-detail-cap {
+  font-size: 0.9375rem;
+  line-height: 1.4;
+  color: var(--label);
+  margin: 10px 2px 0;
+}
+
+.pin-detail-foot {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  margin: 12px 0 6px;
+  margin: 10px 2px 0;
+}
+
+.pin-detail-where {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--text-sub);
+  color: var(--label-2);
+  font-weight: 500;
 }
 
 .pin-detail-num {
@@ -1334,19 +1385,6 @@ body:has(.scrim[data-open="true"]) .pullback {
   font-size: var(--text-fine);
   font-weight: 600;
   flex: none;
-}
-
-.pin-detail-where {
-  font-size: var(--text-sub);
-  color: var(--orange);
-  font-weight: 500;
-}
-
-.pin-detail-cap {
-  font-size: 0.9375rem;
-  line-height: 1.4;
-  color: var(--label);
-  margin-bottom: 12px;
 }
 
 .pin-detail-remove,
@@ -1448,7 +1486,7 @@ body:has(.scrim[data-open="true"]) .pullback {
 }
 
 @media (max-width: 767px) {
-  .rc-gutter {
+  .rc-float {
     display: none;
   }
 }

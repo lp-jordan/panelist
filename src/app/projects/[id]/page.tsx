@@ -76,6 +76,7 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
                   pageCount={script._count.pages}
                   editedLabel={formatRelativeTime(script.updatedAt)}
                   projects={projects}
+                  locked={script.locked}
                 />
               ))
             )}
