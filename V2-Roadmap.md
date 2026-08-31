@@ -90,6 +90,7 @@ Autosave, version history/restore, character memory, and PDF export (via the `/p
 - `Reference`, `Collection`, `ReferenceInCollection`, `ReferencePlacement` tables.
 - `Asset` extended (`kind`, `mime`, `bytes`, `originalName`, `thumbKey`).
 - Lightweight image upload path.
+- **Constraint (keeps Phase D cheap):** hang everything off `projectId`, and route any ownership / "current user" logic through the app's existing current-user accessor — do **not** add new single-owner (`isOwner`-style) checks in A–C. Auth in Phase D replaces the single-owner gate; the fewer places that assumption is hardcoded now, the smaller that rebuild is.
 
 **Phase B — Reference library (single-user; the Milanote replacement)**
 - Upload image + caption; group into collections; browse/filter.

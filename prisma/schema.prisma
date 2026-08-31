@@ -38,16 +38,18 @@ model Project {
   createdAt DateTime  @default(now())
   deletedAt DateTime?
 
-  scripts      Script[]
-  castMembers  CastMember[]
-  members      ProjectMember[]
+  scripts     Script[]
+  castMembers CastMember[]
+  members     ProjectMember[]
+  references  Reference[]
+  collections Collection[]
 }
 
 model ProjectMember {
-  id        String   @id @default(cuid())
+  id        String @id @default(cuid())
   projectId String
   userId    String
-  role      Role     @default(COLLABORATOR)
+  role      Role   @default(COLLABORATOR)
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -127,8 +129,9 @@ model Panel {
   pageItemId  String @unique
   description String
 
-  pageItem     PageItem          @relation(fields: [pageItemId], references: [id], onDelete: Cascade)
+  pageItem     PageItem             @relation(fields: [pageItemId], references: [id], onDelete: Cascade)
   textElements PanelTextElement[]
+  placements   ReferencePlacement[]
 }
 
 enum PanelTextElementType {
@@ -139,7 +142,7 @@ enum PanelTextElementType {
 }
 
 model PanelTextElement {
-  id        String                @id @default(cuid())
+  id        String               @id @default(cuid())
   panelId   String
   order     Int
   type      PanelTextElementType
@@ -163,19 +166,84 @@ model Snapshot {
   script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
 }
 
-/// Future: uploaded art pages, out of scope for MVP UI/logic.
-/// No stage/pipeline enum — an asset stack for a page is just all its
-/// Asset rows ordered by createdAt (newest first).
-model Asset {
-  id         String   @id @default(cuid())
-  pageId     String
-  uploadedBy String
-  storageKey String
-  note       String?
-  createdAt  DateTime @default(now())
+enum AssetKind {
+  REFERENCE
+  ART
+}
 
-  page     Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  uploader User @relation(fields: [uploadedBy], references: [id])
+/// Backs both the future art pipeline (`kind = ART`, pinned to a Page) and
+/// V2 reference images (`kind = REFERENCE`, owned by a Project via Reference,
+/// no Page). `pageId`/`uploadedBy` are nullable because a reference has no page
+/// and — until Phase D auth exists — no user. Don't reintroduce a required
+/// uploader here; route ownership through the current-user accessor instead.
+model Asset {
+  id           String    @id @default(cuid())
+  pageId       String?
+  uploadedBy   String?
+  storageKey   String
+  note         String?
+  kind         AssetKind @default(ART)
+  mime         String?
+  bytes        Int?
+  originalName String?
+  thumbKey     String?
+  createdAt    DateTime  @default(now())
+
+  page      Page?      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  uploader  User?      @relation(fields: [uploadedBy], references: [id])
+  reference Reference?
+}
+
+/// V2 Reference Library (see V2-Roadmap.md §2–3). Additive; single-user for now.
+/// A reference = one image (Asset) + an optional caption, owned by a Project.
+model Reference {
+  id        String   @id @default(cuid())
+  projectId String
+  assetId   String   @unique
+  caption   String?
+  createdAt DateTime @default(now())
+
+  project     Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  asset       Asset                   @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  collections ReferenceInCollection[]
+  placements  ReferencePlacement[]
+}
+
+/// A free-form tag/group ("Bone", "The Cathedral", "1890s streetwear").
+/// Read "Collection" as "tag": many-to-many, user-defined per issue (§5).
+model Collection {
+  id        String @id @default(cuid())
+  projectId String
+  name      String
+
+  project    Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  references ReferenceInCollection[]
+
+  @@unique([projectId, name])
+}
+
+model ReferenceInCollection {
+  referenceId  String
+  collectionId String
+
+  reference  Reference  @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([referenceId, collectionId])
+}
+
+/// Pins a reference to a specific Panel (stable Panel.id — §2.2). A reference
+/// can be pinned to several panels; a panel can hold several references.
+model ReferencePlacement {
+  id          String   @id @default(cuid())
+  referenceId String
+  panelId     String
+  createdAt   DateTime @default(now())
+
+  reference Reference @relation(fields: [referenceId], references: [id], onDelete: Cascade)
+  panel     Panel     @relation(fields: [panelId], references: [id], onDelete: Cascade)
+
+  @@unique([referenceId, panelId])
 }
 
 /// Future: append-only activity log. Not read anywhere in the MVP, but
