@@ -67,6 +67,33 @@ function measurePage(pageEl: HTMLElement): { usable: number; content: number } {
 
 function decideMove(view: EditorView): Move | null {
   const { state } = view;
+
+  // Structural cleanup, ahead of any measurement: a script page emptied of all
+  // its content — every panel and note deleted — has nowhere to place a caret,
+  // so it removes itself. Scoped tightly to avoid ever deleting something a
+  // writer still wants:
+  //   - only `page` nodes; a freeformPage holds paragraphs and legitimately has
+  //     no panels, so it's never "empty" by this rule.
+  //   - only when childCount === 0. A page still holding a note is content, not
+  //     an empty sheet, so we leave it (deleting it would silently drop the note).
+  //   - never the last remaining script page: numbering/pagination/outline all
+  //     assume one exists, and the schema forbids a doc with zero pages.
+  // This runs even in the fluid phone layout, since it's purely structural.
+  let scriptPageCount = 0;
+  state.doc.forEach((node) => {
+    if (node.type.name === "page") scriptPageCount++;
+  });
+  if (scriptPageCount > 1) {
+    let emptyPage: { pagePos: number; pageSize: number } | null = null;
+    state.doc.forEach((node, offset) => {
+      if (emptyPage) return;
+      if (node.type.name === "page" && node.childCount === 0) {
+        emptyPage = { pagePos: offset, pageSize: node.nodeSize };
+      }
+    });
+    if (emptyPage) return { kind: "dropEmptyPage", ...emptyPage };
+  }
+
   const pageEls: HTMLElement[] = [];
   state.doc.forEach((node, offset) => {
     if (node.type.name !== "page") return;
