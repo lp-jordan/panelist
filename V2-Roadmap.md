@@ -83,8 +83,8 @@ Reference images are small (screenshots, photo grabs — MBs, not the 20–250 M
 
 ## 4. Reassessed build sequence (easiest / no-rebuild first)
 
-**Phase 0 — MVP safety net (prerequisite, not V2)**
-Finish debounced autosave + version snapshots/restore before inviting any real collaborator into a project. (PDF export & character memory can trail.)
+**Phase 0 — MVP status: complete**
+Autosave, version history/restore, character memory, and PDF export (via the `/print` route + `window.print()`) are all built. The only deferred piece is the headless-Chromium/Playwright PDF, intentionally held until hosting setup — not a blocker for anything in V2.
 
 **Phase A — Reference foundations (additive migrations)**
 - `Reference`, `Collection`, `ReferenceInCollection`, `ReferencePlacement` tables.
