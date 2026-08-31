@@ -285,6 +285,15 @@ export const TextElementNode = Node.create({
       const label = document.createElement("span");
       label.className = "sx-text-element-label";
       label.contentEditable = "false";
+      // Keep the name and its ":" on one line. This is ALSO declared in the
+      // stylesheet (.sx-text-element-label { white-space: nowrap }), but that
+      // rule empirically does not take effect in the deployed build — removing
+      // this inline style reproduces the bug on the live app (the ":" strands
+      // onto its own line for long cues) even though it renders fine locally
+      // and in a standalone repro. Root cause in the Next.js 16 / Turbopack CSS
+      // bundle is still unconfirmed; the inline style is load-bearing until it
+      // is. Do not remove without verifying long cues on the deployed app.
+      label.style.whiteSpace = "nowrap";
 
       const content = document.createElement("span");
       content.className = "sx-text-element-content";
