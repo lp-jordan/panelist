@@ -6,13 +6,25 @@ import { FormSheet } from "@/components/ui/FormSheet";
 import { ActionSheet } from "@/components/ui/ActionSheet";
 import { archiveProject, renameProject } from "@/app/actions/projects";
 
-export function ProjectMenu({ id, name, scriptCount }: { id: string; name: string; scriptCount: number }) {
+export function ProjectMenu({
+  id,
+  name,
+  scriptCount,
+  contextSelector = ".group-head",
+}: {
+  id: string;
+  name: string;
+  scriptCount: number;
+  /* The element the menu anchors within — a group header on the old library,
+     a row on the project-list home. */
+  contextSelector?: string;
+}) {
   const [renaming, setRenaming] = useState(false);
   const [archiving, setArchiving] = useState(false);
 
   return (
     <>
-      <Menu label={`Actions for ${name}`} contextSelector=".group-head">
+      <Menu label={`Actions for ${name}`} contextSelector={contextSelector}>
         {(close) => (
           <>
             <button

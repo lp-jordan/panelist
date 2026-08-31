@@ -41,8 +41,6 @@ model Project {
   scripts     Script[]
   castMembers CastMember[]
   members     ProjectMember[]
-  references  Reference[]
-  collections Collection[]
 }
 
 model ProjectMember {
@@ -79,9 +77,11 @@ model Script {
   updatedAt  DateTime  @updatedAt
   deletedAt  DateTime?
 
-  project   Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  pages     Page[]
-  snapshots Snapshot[]
+  project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  pages       Page[]
+  snapshots   Snapshot[]
+  references  Reference[]
+  collections Collection[]
 }
 
 enum PageKind {
@@ -211,32 +211,35 @@ model AssetData {
   asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 }
 
-/// V2 Reference Library (see V2-Roadmap.md §2–3). Additive; single-user for now.
-/// A reference = one image (Asset) + an optional caption, owned by a Project.
+/// V2 Reference Library (see V2-Roadmap.md §2–3). Single-user for now.
+/// A reference = one image (Asset) + an optional caption, scoped to a Script
+/// (an issue): each issue carries its own reference set (project-hub decision
+/// 2026-08-31 — references live per issue, not per series).
 model Reference {
   id        String   @id @default(cuid())
-  projectId String
+  scriptId  String
   assetId   String   @unique
   caption   String?
   createdAt DateTime @default(now())
 
-  project     Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script      Script                  @relation(fields: [scriptId], references: [id], onDelete: Cascade)
   asset       Asset                   @relation(fields: [assetId], references: [id], onDelete: Cascade)
   collections ReferenceInCollection[]
   placements  ReferencePlacement[]
 }
 
-/// A free-form tag/group ("Bone", "The Cathedral", "1890s streetwear").
-/// Read "Collection" as "tag": many-to-many, user-defined per issue (§5).
+/// A free-form tag/group ("Bone", "The Cathedral", "1890s streetwear") within a
+/// single issue's reference set. Read "Collection" as "tag": many-to-many,
+/// user-defined per issue (§5).
 model Collection {
-  id        String @id @default(cuid())
-  projectId String
-  name      String
+  id       String @id @default(cuid())
+  scriptId String
+  name     String
 
-  project    Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  script     Script                  @relation(fields: [scriptId], references: [id], onDelete: Cascade)
   references ReferenceInCollection[]
 
-  @@unique([projectId, name])
+  @@unique([scriptId, name])
 }
 
 model ReferenceInCollection {

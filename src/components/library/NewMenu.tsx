@@ -7,7 +7,15 @@ import { createScript } from "@/app/actions/scripts";
 import { createProject } from "@/app/actions/projects";
 
 /** The `+` in the nav bar — the one way to add anything. */
-export function NewMenu({ projects }: { projects: { id: string; name: string }[] }) {
+export function NewMenu({
+  projects,
+  defaultProjectId = "",
+}: {
+  projects: { id: string; name: string }[];
+  /* Preselects the project in the New-script sheet — set on a project hub so a
+     new issue lands in the project you're looking at. */
+  defaultProjectId?: string;
+}) {
   const [sheet, setSheet] = useState<"script" | "project" | null>(null);
 
   return (
@@ -62,7 +70,7 @@ export function NewMenu({ projects }: { projects: { id: string; name: string }[]
         action={createScript}
       >
         <input className="field" name="title" placeholder="Script title" aria-label="Script title" required />
-        <select className="field" name="projectId" defaultValue="" aria-label="Project">
+        <select className="field" name="projectId" defaultValue={defaultProjectId} aria-label="Project">
           <option value="">No project</option>
           {projects.map((project) => (
             <option key={project.id} value={project.id}>

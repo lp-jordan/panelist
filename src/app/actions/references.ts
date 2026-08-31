@@ -12,11 +12,11 @@ const MAX_BYTES = 20 * 1024 * 1024;
 export async function uploadReference(formData: FormData) {
   await verifySession();
 
-  const projectId = formData.get("projectId");
+  const scriptId = formData.get("scriptId");
   const file = formData.get("file");
   const captionRaw = formData.get("caption");
 
-  if (typeof projectId !== "string" || projectId.length === 0) return;
+  if (typeof scriptId !== "string" || scriptId.length === 0) return;
   if (!(file instanceof File) || file.size === 0) return;
   if (!file.type.startsWith("image/")) return;
   if (file.size > MAX_BYTES) return;
@@ -25,7 +25,7 @@ export async function uploadReference(formData: FormData) {
   const bytes = Buffer.from(await file.arrayBuffer());
 
   // One transaction: the Asset (metadata), its bytes, and the Reference that
-  // ties the image to the project. storageKey stays non-null for the art
+  // ties the image to the issue. storageKey stays non-null for the art
   // pipeline's sake; a DB-backed reference just points it at its own id.
   await prisma.$transaction(async (tx) => {
     const asset = await tx.asset.create({
@@ -39,31 +39,31 @@ export async function uploadReference(formData: FormData) {
     });
     await tx.asset.update({ where: { id: asset.id }, data: { storageKey: `db:${asset.id}` } });
     await tx.assetData.create({ data: { assetId: asset.id, data: bytes } });
-    await tx.reference.create({ data: { projectId, assetId: asset.id, caption } });
+    await tx.reference.create({ data: { scriptId, assetId: asset.id, caption } });
   });
 
-  revalidatePath(`/projects/${projectId}/reference`);
+  revalidatePath(`/scripts/${scriptId}/reference`);
 }
 
 export async function updateReferenceCaption(formData: FormData) {
   await verifySession();
 
   const id = formData.get("id");
-  const projectId = formData.get("projectId");
+  const scriptId = formData.get("scriptId");
   const captionRaw = formData.get("caption");
-  if (typeof id !== "string" || typeof projectId !== "string") return;
+  if (typeof id !== "string" || typeof scriptId !== "string") return;
 
   const caption = typeof captionRaw === "string" && captionRaw.trim().length > 0 ? captionRaw.trim() : null;
   await prisma.reference.update({ where: { id }, data: { caption } });
-  revalidatePath(`/projects/${projectId}/reference`);
+  revalidatePath(`/scripts/${scriptId}/reference`);
 }
 
 export async function deleteReference(formData: FormData) {
   await verifySession();
 
   const id = formData.get("id");
-  const projectId = formData.get("projectId");
-  if (typeof id !== "string" || typeof projectId !== "string") return;
+  const scriptId = formData.get("scriptId");
+  if (typeof id !== "string" || typeof scriptId !== "string") return;
 
   const reference = await prisma.reference.findUnique({ where: { id }, select: { assetId: true } });
   if (!reference) return;
@@ -71,5 +71,5 @@ export async function deleteReference(formData: FormData) {
   // Deleting the Asset cascades to AssetData and, via Reference.assetId's
   // onDelete: Cascade, to the Reference (and its placements) in one shot.
   await prisma.asset.delete({ where: { id: reference.assetId } });
-  revalidatePath(`/projects/${projectId}/reference`);
+  revalidatePath(`/scripts/${scriptId}/reference`);
 }

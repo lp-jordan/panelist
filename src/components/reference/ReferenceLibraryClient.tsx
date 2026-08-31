@@ -14,15 +14,15 @@ export type ReferenceCard = {
 };
 
 /**
- * The per-project reference grid — the Milanote replacement (V2 §2.3, screen
+ * The per-issue reference grid — the Milanote replacement (V2 §2.3, screen
  * 2). One image + a caption per card; an orange badge marks a reference already
  * pinned to a panel (placement lands in Phase C, so it only shows once count > 0).
  */
 export function ReferenceLibraryClient({
-  projectId,
+  scriptId,
   references,
 }: {
-  projectId: string;
+  scriptId: string;
   references: ReferenceCard[];
 }) {
   const [adding, setAdding] = useState(false);
@@ -110,7 +110,7 @@ export function ReferenceLibraryClient({
       )}
 
       <FormSheet open={adding} onClose={() => setAdding(false)} title="Add reference" submitLabel="Add" action={uploadReference}>
-        <input type="hidden" name="projectId" value={projectId} />
+        <input type="hidden" name="scriptId" value={scriptId} />
         <input className="field" type="file" name="file" accept="image/*" aria-label="Reference image" required />
         <input className="field" name="caption" placeholder="Caption (optional)" aria-label="Caption" />
       </FormSheet>
@@ -122,7 +122,7 @@ export function ReferenceLibraryClient({
         action={updateReferenceCaption}
       >
         <input type="hidden" name="id" value={editing?.id ?? ""} />
-        <input type="hidden" name="projectId" value={projectId} />
+        <input type="hidden" name="scriptId" value={scriptId} />
         <input
           className="field"
           name="caption"
@@ -141,7 +141,7 @@ export function ReferenceLibraryClient({
         description="The image and its caption are removed. Any panel pins to it go too."
         confirmLabel="Delete"
         action={deleteReference}
-        hidden={{ id: deleting?.id ?? "", projectId }}
+        hidden={{ id: deleting?.id ?? "", scriptId }}
       />
     </>
   );

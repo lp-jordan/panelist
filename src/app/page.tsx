@@ -12,23 +12,25 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 type SearchParams = { q?: string; sort?: string };
 
+// The Library is a project index: projects open to their own hub of issues.
+// Loose scripts that belong to no project still live here, under Unassigned.
 export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await getCurrentUser();
   const { q = "", sort = "updated" } = await searchParams;
 
+  const query = q.trim();
+  const searching = query.length > 0;
   const orderBy = sort === "title" ? { title: "asc" as const } : { updatedAt: "desc" as const };
-  const titleFilter = q.trim().length > 0 ? { title: { contains: q.trim() } } : {};
+  const titleFilter = searching ? { title: { contains: query } } : {};
 
   const [projects, unassignedScripts] = await Promise.all([
     prisma.project.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null, ...(searching ? { name: { contains: query } } : {}) },
       orderBy: { name: "asc" },
-      include: {
-        scripts: {
-          where: { deletedAt: null, ...titleFilter },
-          orderBy,
-          include: { _count: { select: { pages: true } } },
-        },
+      select: {
+        id: true,
+        name: true,
+        scripts: { where: { deletedAt: null }, select: { id: true } },
       },
     }),
     prisma.script.findMany({
@@ -38,9 +40,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
     }),
   ]);
 
-  const searching = q.trim().length > 0;
-  const matches = projects.reduce((n, p) => n + p.scripts.length, 0) + unassignedScripts.length;
   const projectOptions = projects.map((p) => ({ id: p.id, name: p.name }));
+  const matches = projects.length + unassignedScripts.length;
 
   return (
     <div className="shell">
@@ -48,7 +49,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
         <span className="nav-title">Panelist</span>
         <span className="nav-spacer" />
         <ThemeToggle />
-        <NewMenu projects={projects.map((p) => ({ id: p.id, name: p.name }))} />
+        <NewMenu projects={projectOptions} />
         <AccountMenu />
       </nav>
 
@@ -66,59 +67,35 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   <path d="M20 20l-3.5-3.5" />
                 </svg>
                 <h4>No matches</h4>
-                <p>Nothing titled “{q.trim()}”. Try a shorter search.</p>
+                <p>Nothing named “{query}”. Try a shorter search.</p>
               </div>
             </div>
           </div>
         )}
 
-        {projects.map((project) => {
-          // While searching, a project with no matching scripts is noise.
-          if (searching && project.scripts.length === 0) return null;
-
-          return (
-            <section className="group" key={project.id}>
-              <div className="group-head">
-                {project.name}
-                <span className="count">
-                  {project.scripts.length} script{project.scripts.length === 1 ? "" : "s"}
-                </span>
-                <span className="group-head-actions">
-                  <Link href={`/projects/${project.id}/reference`} className="group-head-link" aria-label={`Reference for ${project.name}`}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="3" y="4" width="18" height="16" rx="2" />
-                      <circle cx="8.5" cy="9.5" r="1.5" />
-                      <path d="M21 15l-5-5L5 21" />
-                    </svg>
-                    Reference
-                  </Link>
-                  <ProjectMenu id={project.id} name={project.name} scriptCount={project.scripts.length} />
-                </span>
-              </div>
-              <ScriptDropZone projectId={project.id}>
-                {project.scripts.length === 0 ? (
-                  <div className="empty">
-                    <h4>No scripts yet</h4>
-                    <p>Add one from the + in the bar above, or drag one here.</p>
-                  </div>
-                ) : (
-                  project.scripts.map((script) => (
-                    <ScriptRow
-                      key={script.id}
-                      id={script.id}
-                      projectId={project.id}
-                      title={script.title}
-                      draftLabel={script.draftLabel}
-                      pageCount={script._count.pages}
-                      editedLabel={formatRelativeTime(script.updatedAt)}
-                      projects={projectOptions}
-                    />
-                  ))
-                )}
-              </ScriptDropZone>
-            </section>
-          );
-        })}
+        {projects.length > 0 && (
+          <section className="group">
+            <div className="group-head">Projects</div>
+            <div className="list">
+              {projects.map((project) => (
+                <div className="row" key={project.id}>
+                  <span className="row-main">
+                    <Link href={`/projects/${project.id}`} className="row-title row-link">
+                      {project.name}
+                    </Link>
+                    <span className="row-sub">
+                      {project.scripts.length} issue{project.scripts.length === 1 ? "" : "s"}
+                    </span>
+                  </span>
+                  <ProjectMenu id={project.id} name={project.name} scriptCount={project.scripts.length} contextSelector=".row" />
+                  <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {!(searching && unassignedScripts.length === 0) && (
           <section className="group">

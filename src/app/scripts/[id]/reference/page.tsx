@@ -5,17 +5,19 @@ import { prisma } from "@/lib/prisma";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ReferenceLibraryClient, type ReferenceCard } from "@/components/reference/ReferenceLibraryClient";
 
-// Per-project reference library (V2 §2 / roadmap decision: references live
-// inside a book). Reached from each project on the home Library.
-export default async function ProjectReferencePage({ params }: { params: Promise<{ id: string }> }) {
+// Per-issue reference library (project-hub decision: each script carries its
+// own reference set). Reached from the References action on an issue row.
+export default async function ScriptReferencePage({ params }: { params: Promise<{ id: string }> }) {
   await verifySession();
   const { id } = await params;
 
-  const project = await prisma.project.findUnique({
+  const script = await prisma.script.findUnique({
     where: { id, deletedAt: null },
     select: {
       id: true,
-      name: true,
+      title: true,
+      projectId: true,
+      project: { select: { name: true } },
       references: {
         orderBy: { createdAt: "desc" },
         select: {
@@ -28,33 +30,37 @@ export default async function ProjectReferencePage({ params }: { params: Promise
     },
   });
 
-  if (!project) notFound();
+  if (!script) notFound();
 
-  const references: ReferenceCard[] = project.references.map((ref) => ({
+  const references: ReferenceCard[] = script.references.map((ref) => ({
     id: ref.id,
     assetId: ref.assetId,
     caption: ref.caption,
     placementCount: ref._count.placements,
   }));
 
+  // Back to the issue's project hub, or the Library if it's unassigned.
+  const backHref = script.projectId ? `/projects/${script.projectId}` : "/";
+  const backLabel = script.project?.name ?? "Library";
+
   return (
     <div className="shell">
       <nav className="nav">
-        <Link href="/" className="nav-back" aria-label="Back to Library">
+        <Link href={backHref} className="nav-back" aria-label={`Back to ${backLabel}`}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" />
           </svg>
-          Library
+          {backLabel}
         </Link>
         <span className="nav-spacer" />
         <ThemeToggle />
       </nav>
 
       <main className="shell-inner pullback">
-        <h1 className="large-title">{project.name}</h1>
+        <h1 className="large-title">{script.title}</h1>
         <p className="ref-subtitle">Reference</p>
 
-        <ReferenceLibraryClient projectId={project.id} references={references} />
+        <ReferenceLibraryClient scriptId={script.id} references={references} />
       </main>
     </div>
   );

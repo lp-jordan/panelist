@@ -1075,3 +1075,41 @@ body:has(.scrim[data-open="true"]) .pullback {
   line-height: 1.35;
   color: var(--label-2);
 }
+
+/* Per-issue action icons on a script row (References, Art) — kept above the
+   title's stretched hit area so they stay independently clickable. */
+.row-act {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--label-2);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.row-act:hover {
+  background: var(--fill);
+  color: var(--blue);
+}
+
+.row-act svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* The art destination isn't built yet — visible so the issue reads as a
+   three-part hub, but plainly inert. */
+.row-act--soon {
+  color: var(--label-3);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.row-act--soon:hover {
+  background: none;
+  color: var(--label-3);
+}
