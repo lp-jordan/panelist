@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { Menu } from "@/components/ui/Menu";
+import { Portal } from "@/components/ui/Portal";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useTheme } from "@/components/ui/useTheme";
-import { THEME_LABEL } from "@/lib/theme";
-import { setScriptLock } from "@/app/actions/scripts";
+import { LockToggle } from "@/components/reference/LockToggle";
 import { ScriptSheets, type TitlePageMeta } from "@/components/print/ScriptSheets";
 import { toPageWordNumber } from "@/lib/editor/numberToWords";
 import { createPlacement, deletePlacement } from "@/app/actions/references";
+import type { Theme } from "@/lib/theme";
 import type { JSONNode } from "@/lib/editor/serialize";
 
 export type PinReference = { id: string; assetId: string; caption: string | null };
@@ -21,6 +22,38 @@ export type Placement = {
 };
 
 const SHEET_PX = 816; // 8.5in at 96dpi — the fixed sheet width to fit on mobile.
+
+const THEME_OPTIONS: { value: Theme; label: string; icon: ReactNode }[] = [
+  {
+    value: "light",
+    label: "Light",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.2" />
+        <path d="M12 2.5v2.2M12 19.3v2.2M4.2 12H2M22 12h-2.2M6.3 6.3L4.8 4.8M19.2 19.2l-1.5-1.5M17.7 6.3l1.5-1.5M4.8 19.2l1.5-1.5" />
+      </svg>
+    ),
+  },
+  {
+    value: "dark",
+    label: "Dark",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" />
+      </svg>
+    ),
+  },
+  {
+    value: "system",
+    label: "Auto",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="12" rx="2" />
+        <path d="M8 20h8M12 16v4" />
+      </svg>
+    ),
+  },
+];
 
 /**
  * The locked read view (V2 C). The script's printed sheets on a desk with the
@@ -56,9 +89,9 @@ export function ScriptReadView({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [outlineOpen, setOutlineOpen] = useState(false);
   const [outlineCollapsed, setOutlineCollapsed] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [, startTransition] = useTransition();
   const stageRef = useRef<HTMLDivElement>(null);
-  const { theme, cycle } = useTheme();
 
   // Page list for the outline (script pages only; freeform pages are unnumbered).
   const pages = useMemo(() => {
@@ -186,57 +219,50 @@ export function ScriptReadView({
         <span className="nav-title">{meta.title}</span>
         <span className="nav-spacer" />
 
-        <button type="button" className="ref-add ref-add--bar" onClick={() => setPickerOpen(true)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          Pin
-        </button>
-
-        {/* Same padlock glyph as the editor's Lock control, so the top-right
-            icon doesn't change shape between locked and unlocked. */}
-        <Menu
-          label="Settings"
-          triggerClassName="icon-btn"
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="4" y="10" width="16" height="10" rx="2" />
-              <path d="M8 10V7a4 4 0 017.9-1" />
+        {/* Desktop: inline. Below 640px these collapse into the actions sheet. */}
+        <span className="nav-actions-inline">
+          <button type="button" className="ref-add ref-add--bar" onClick={() => setPickerOpen(true)}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 5v14M5 12h14" />
             </svg>
-          }
-        >
-          {(close) => (
-            <>
-              <button type="button" role="menuitem" onClick={() => { setShowRefs((v) => !v); close(); }}>
-                {showRefs ? "Hide references" : "Show references"}
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  {showRefs ? <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /> : <path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.4 5.2A9.7 9.7 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3 3.8M6.1 6.1A17 17 0 002 12s3.5 7 10 7a9.7 9.7 0 003-.5" />}
-                  {showRefs && <circle cx="12" cy="12" r="3" />}
-                </svg>
-              </button>
-              {orphans.length > 0 && (
-                <button type="button" role="menuitem" onClick={() => { setActiveId("__orphans__"); close(); }}>
-                  {orphans.length} unplaced
-                </button>
-              )}
-              <button type="button" role="menuitem" onClick={cycle}>
-                Appearance: {THEME_LABEL[theme]}
-              </button>
-              <hr />
-              <form action={setScriptLock}>
-                <input type="hidden" name="id" value={scriptId} />
-                <input type="hidden" name="locked" value="false" />
-                <button type="submit" role="menuitem" onClick={close}>
-                  Unlock to edit
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="5" y="11" width="14" height="9" rx="2" />
-                    <path d="M8 11V7a4 4 0 018 0" />
-                  </svg>
-                </button>
-              </form>
-            </>
+            Pin
+          </button>
+          <button
+            type="button"
+            className={`ref-switch${showRefs ? " ref-switch--on" : ""}`}
+            onClick={() => setShowRefs((v) => !v)}
+            aria-pressed={showRefs}
+            title={showRefs ? "Hide reference markers" : "Show reference markers"}
+          >
+            <span className="ref-switch-track"><span className="ref-switch-knob" /></span>
+            References
+          </button>
+          {orphans.length > 0 && (
+            <button type="button" className="orphan-chip" onClick={() => setActiveId("__orphans__")}>
+              {orphans.length} unplaced
+            </button>
           )}
-        </Menu>
+        </span>
+        <span className="nav-theme">
+          <ThemeToggle />
+        </span>
+
+        {/* Unlock stays a standalone control in the bar, outside the menu. */}
+        <LockToggle id={scriptId} locked />
+
+        {/* Phones: the same sliders icon the editor uses for its actions sheet. */}
+        <button
+          type="button"
+          className="icon-btn nav-actions-menu"
+          onClick={() => setSheetOpen(true)}
+          aria-label="Actions"
+          aria-haspopup="dialog"
+          aria-expanded={sheetOpen}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M5 8h11M5 8a2 2 0 104 0 2 2 0 10-4 0M8 16h11M19 16a2 2 0 10-4 0 2 2 0 104 0" />
+          </svg>
+        </button>
       </nav>
 
       <div className="sx-body">
@@ -323,6 +349,16 @@ export function ScriptReadView({
         ) : null}
       </div>
 
+      <ReadSettingsSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        showRefs={showRefs}
+        onToggleRefs={() => setShowRefs((v) => !v)}
+        onPin={() => setPickerOpen(true)}
+        orphanCount={orphans.length}
+        onShowOrphans={() => setActiveId("__orphans__")}
+      />
+
       {pickerOpen && (
         <ReferencePicker
           scriptId={scriptId}
@@ -372,6 +408,103 @@ function OrphanList({ orphans, onRemove }: { orphans: Placement[]; onRemove: (id
         </div>
       ))}
     </div>
+  );
+}
+
+/**
+ * The mobile actions sheet — same look as the editor's FormatSheet (reused
+ * .sx-format-* classes), holding the read view's actions: pin a reference,
+ * show/hide markers, and appearance. Unlock lives in the bar, not here.
+ */
+function ReadSettingsSheet({
+  open,
+  onClose,
+  showRefs,
+  onToggleRefs,
+  onPin,
+  orphanCount,
+  onShowOrphans,
+}: {
+  open: boolean;
+  onClose: () => void;
+  showRefs: boolean;
+  onToggleRefs: () => void;
+  onPin: () => void;
+  orphanCount: number;
+  onShowOrphans: () => void;
+}) {
+  const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  return (
+    <Portal>
+      <div className="scrim" data-open={open} onClick={onClose} />
+      <div className="sx-format-sheet" data-open={open} role="dialog" aria-modal="true" aria-label="Actions">
+        <div className="sx-format-card">
+          <div className="sx-format-grip" aria-hidden="true">
+            <span />
+          </div>
+          <div className="sx-format-body">
+            <p className="sx-format-label">Reference</p>
+            <div className="sx-format-grid">
+              <button type="button" className="sx-format-btn" onClick={() => { onPin(); onClose(); }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                Pin a reference
+              </button>
+              <button type="button" className="sx-format-btn" onClick={onToggleRefs}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  {showRefs ? (
+                    <>
+                      <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </>
+                  ) : (
+                    <path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.4 5.2A9.7 9.7 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3 3.8M6.1 6.1A17 17 0 002 12s3.5 7 10 7a9.7 9.7 0 003-.5" />
+                  )}
+                </svg>
+                {showRefs ? "Hide markers" : "Show markers"}
+              </button>
+              {orphanCount > 0 && (
+                <button type="button" className="sx-format-btn" onClick={() => { onShowOrphans(); onClose(); }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 9v4M12 17h.01M10.3 3.9L2 18a2 2 0 001.7 3h16.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z" />
+                  </svg>
+                  Unplaced ({orphanCount})
+                </button>
+              )}
+            </div>
+
+            <p className="sx-format-label">Appearance</p>
+            <div className="sx-format-seg" role="radiogroup" aria-label="Appearance">
+              {THEME_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={theme === opt.value}
+                  className="sx-format-seg-btn"
+                  data-active={theme === opt.value}
+                  onClick={() => setTheme(opt.value)}
+                >
+                  {opt.icon}
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </Portal>
   );
 }
 
