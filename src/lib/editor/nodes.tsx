@@ -357,6 +357,15 @@ export const TextElementNode = Node.create({
 
       if (input && sizer) {
         resize();
+        // At construction the node view's DOM isn't in the document yet, so the
+        // sizer measures offsetWidth 0 and a name loaded from the server gets
+        // clamped to ~0px — the field renders blank even though the value is
+        // there. Re-measure once ProseMirror has attached it (and again after
+        // web fonts settle) so loaded names show at their true width.
+        requestAnimationFrame(() => resize());
+        if (typeof document !== "undefined" && "fonts" in document) {
+          document.fonts.ready.then(() => resize()).catch(() => {});
+        }
 
         input.addEventListener("input", (event) => {
           const inputType = (event as InputEvent).inputType;

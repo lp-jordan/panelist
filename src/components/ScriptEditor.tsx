@@ -27,19 +27,6 @@ import "./script-editor.css";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-// TEMP DIAGNOSTIC — walk a doc's textElements and list every dialogue line's
-// (kind → character) so we can see where a name is lost. Remove once resolved.
-function collectCharacterNames(node: unknown): { kind: unknown; character: unknown }[] {
-  const out: { kind: unknown; character: unknown }[] = [];
-  const walk = (n: any) => {
-    if (!n || typeof n !== "object") return;
-    if (n.type === "textElement") out.push({ kind: n.attrs?.kind, character: n.attrs?.character });
-    if (Array.isArray(n.content)) n.content.forEach(walk);
-  };
-  walk(node);
-  return out;
-}
-
 // How long Delete must be held (pointer keyboards) before a section clears.
 const HOLD_MS = 650;
 
@@ -326,12 +313,6 @@ export function ScriptEditor({
     onBlur: () => setEditorFocused(false),
   });
 
-  // TEMP DIAGNOSTIC — what the server actually handed us on load. Remove once
-  // the character-name drop is resolved.
-  useEffect(() => {
-    console.log("[LOAD] character names received from server:", JSON.stringify(collectCharacterNames(initialDoc)));
-  }, [initialDoc]);
-
   const ensureCastName = useCallback(
     (name: string) => {
       const key = name.toLowerCase();
@@ -378,8 +359,6 @@ export function ScriptEditor({
       // boundary — Tiptap's getJSON() output tripped Next's "temporary
       // client reference" guard otherwise.
       const plainDoc = JSON.parse(JSON.stringify(editor.getJSON())) as JSONNode;
-      // TEMP DIAGNOSTIC — remove once the character-name drop is pinned down.
-      console.log("[SAVE] character names being sent:", JSON.stringify(collectCharacterNames(plainDoc)));
       // Cleared before the await: this doc is now being persisted, and any edit
       // that lands during the await flips it back on via onUpdate (and
       // dirtyDuringSave re-runs the save).
