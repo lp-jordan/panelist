@@ -1131,6 +1131,11 @@ body:has(.scrim[data-open="true"]) .pullback {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* The sheets are scaled to fit width (zoom, set in JS). Without this, iOS
+     Safari re-inflates the "small" text but not its line spacing, collapsing
+     the lines into each other. Pin it so scaling stays uniform. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 /* print.css paints .px-doc white ("paper"); on the read-view desk that reads
