@@ -84,14 +84,14 @@ function decideMove(view: EditorView): Move | null {
     if (node.type.name === "page") scriptPageCount++;
   });
   if (scriptPageCount > 1) {
-    let emptyPage: { pagePos: number; pageSize: number } | null = null;
+    let emptyPage: Move | null = null;
     state.doc.forEach((node, offset) => {
       if (emptyPage) return;
       if (node.type.name === "page" && node.childCount === 0) {
-        emptyPage = { pagePos: offset, pageSize: node.nodeSize };
+        emptyPage = { kind: "dropEmptyPage", pagePos: offset, pageSize: node.nodeSize };
       }
     });
-    if (emptyPage) return { kind: "dropEmptyPage", ...emptyPage };
+    if (emptyPage) return emptyPage;
   }
 
   const pageEls: HTMLElement[] = [];
