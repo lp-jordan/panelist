@@ -121,6 +121,22 @@ function decideMove(view: EditorView): Move | null {
     // Not overflowing: can we pull the next page's first panel up to fill space?
     const next = pages[p + 1];
     if (!next) continue;
+
+    // Never pull the sole panel off the next page. Doing so leaves that page
+    // empty, and it's then dropped — so the page vanishes into this one. A page
+    // the writer explicitly started (New page / Ctrl+Enter) has exactly one
+    // panel, so an unconditional back-fill deletes their new page the instant
+    // they type into it (the empty-panel guard below stops the pull only while
+    // the panel is still empty; the first keystroke defeats it). Pulling is a
+    // reflow to undo an earlier overflow spill, so only pull off pages that
+    // keep at least one panel behind. This is measured from structure, not a
+    // runtime flag, so the boundary survives save/reload.
+    let nextPanelCount = 0;
+    next.node.forEach((child) => {
+      if (child.type.name === "panel") nextPanelCount++;
+    });
+    if (nextPanelCount <= 1) continue;
+
     const nextFirstPanelEl = next.el.querySelector<HTMLElement>(".sx-panel");
     if (!nextFirstPanelEl) {
       // Next page has no panels left — fold the empty sheet away.
@@ -148,11 +164,10 @@ function decideMove(view: EditorView): Move | null {
     }
     if (firstPanelPos == null || firstPanel == null) continue;
 
-    // Never pull an *empty* panel up. It has no content to fill space with, so
-    // the pull just deposits a stray empty panel on the previous page — and it
-    // would empty and drop a page the user explicitly created (a fresh "New
-    // page", whose lone panel is empty), which is the "New page makes a panel,
-    // not a page" bug. Leave empty panels where they are.
+    // Never pull an *empty* panel up: it has no content to fill space with, so
+    // the pull just deposits a stray empty panel on the previous page. (The
+    // sole-panel guard above already covers a next page whose only panel is
+    // empty; this still catches a multi-panel page whose first panel is empty.)
     const panelIsEmpty = firstPanel.childCount === 1 && firstPanel.firstChild!.content.size === 0;
     if (panelIsEmpty) continue;
 
