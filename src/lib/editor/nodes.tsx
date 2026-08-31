@@ -285,6 +285,14 @@ export const TextElementNode = Node.create({
       const label = document.createElement("span");
       label.className = "sx-text-element-label";
       label.contentEditable = "false";
+      // Keep the name and its ":" on one line, enforced inline rather than only
+      // via .sx-text-element-label { white-space: nowrap } in the stylesheet.
+      // The CSS rule renders correctly in a standalone repro but not in the
+      // deployed Next.js 16 / Turbopack bundle — the label wraps as if nowrap
+      // never applied, stranding the ":" on its own line for long cues. An
+      // inline style can't be dropped by CSS bundling and outranks any selector,
+      // so it holds regardless of how the stylesheet is bundled or ordered.
+      label.style.whiteSpace = "nowrap";
 
       const content = document.createElement("span");
       content.className = "sx-text-element-content";
