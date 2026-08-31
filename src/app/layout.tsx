@@ -10,6 +10,15 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
+  // Be explicit rather than relying on framework defaults: iOS standalone
+  // ("Add to Home Screen") is stricter than a Safari tab and, without an
+  // initial scale, lays the page out at a ~980px desktop width. That made the
+  // locked read view's fit-to-width scaling compute to 1 (no shrink), so the
+  // 8.5in sheets rendered full-size and chunky in the home-screen app while a
+  // normal tab looked fine. viewportFit covers the notch/safe areas.
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
