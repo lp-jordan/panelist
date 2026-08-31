@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node -e \"require('fs').rmSync('.next/cache',{recursive:true,force:true})\" && next build",
     "start": "prisma migrate deploy && next start",
     "lint": "eslint",
     "postinstall": "prisma generate"
