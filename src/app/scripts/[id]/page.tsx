@@ -37,13 +37,37 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
 
   // Locked → the read-only reference view instead of the editor.
   if (script.locked) {
+    const doc = scriptToDocJSON(script);
+    const pageCount = (doc.content ?? []).filter((n) => n.type !== "freeformPage").length;
+
+    const [placements, references] = await Promise.all([
+      prisma.referencePlacement.findMany({
+        where: { reference: { scriptId: id } },
+        select: {
+          id: true,
+          pageNumber: true,
+          xPct: true,
+          yPct: true,
+          reference: { select: { id: true, assetId: true, caption: true } },
+        },
+      }),
+      prisma.reference.findMany({
+        where: { scriptId: id },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, assetId: true, caption: true },
+      }),
+    ]);
+
     return (
       <ScriptReadView
         scriptId={script.id}
         projectId={script.projectId}
         projectName={script.project?.name ?? null}
-        doc={scriptToDocJSON(script)}
+        doc={doc}
         meta={meta}
+        pageCount={pageCount}
+        placements={placements}
+        references={references}
       />
     );
   }

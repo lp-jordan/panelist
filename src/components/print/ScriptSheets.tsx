@@ -81,13 +81,24 @@ function Panel({ node, panelNo }: { node: JSONNode; panelNo: number }) {
   );
 }
 
-function PageSheet({ node, pageNo }: { node: JSONNode; pageNo: number }) {
+function PageSheet({
+  node,
+  pageNo,
+  renderPageOverlay,
+}: {
+  node: JSONNode;
+  pageNo: number;
+  renderPageOverlay?: (pageNo: number) => ReactNode;
+}) {
   const children = node.content ?? [];
   const panelCount = children.filter((c) => c.type === "panel").length;
   const heading = `${toPageWordNumber(pageNo)} (${panelCount} Panel${panelCount === 1 ? "" : "s"})`;
   let panelNo = 0;
   return (
     <section className="px-page">
+      {/* An optional overlay for the read view's reference pins. The sheet is
+          position:relative, so the overlay lays over the page by x/y. */}
+      {renderPageOverlay?.(pageNo)}
       <div className="px-page-heading">{heading}</div>
       <div className="px-page-body">
         {children.map((child, i) => {
@@ -154,7 +165,16 @@ function Cover({ title, author, draftLabel, draftDate }: TitlePageMeta) {
   );
 }
 
-export function ScriptSheets({ doc, meta }: { doc: JSONNode; meta: TitlePageMeta }) {
+export function ScriptSheets({
+  doc,
+  meta,
+  renderPageOverlay,
+}: {
+  doc: JSONNode;
+  meta: TitlePageMeta;
+  // Read view only: draws a pin overlay onto each numbered script page.
+  renderPageOverlay?: (pageNo: number) => ReactNode;
+}) {
   const pages = doc.content ?? [];
   // Freeform (blank) pages sit in the flow but are skipped by page numbering,
   // so a separate counter advances only on script pages.
@@ -167,7 +187,7 @@ export function ScriptSheets({ doc, meta }: { doc: JSONNode; meta: TitlePageMeta
           return <FreeformSheet key={i} node={node} />;
         }
         scriptPageNo += 1;
-        return <PageSheet key={i} node={node} pageNo={scriptPageNo} />;
+        return <PageSheet key={i} node={node} pageNo={scriptPageNo} renderPageOverlay={renderPageOverlay} />;
       })}
     </div>
   );

@@ -58,6 +58,36 @@ export async function updateReferenceCaption(formData: FormData) {
   revalidatePath(`/scripts/${scriptId}/reference`);
 }
 
+// --- placements (pins on the locked read view) -----------------------------
+
+export async function createPlacement(input: {
+  referenceId: string;
+  scriptId: string;
+  pageNumber: number;
+  xPct: number;
+  yPct: number;
+}) {
+  await verifySession();
+  const { referenceId, scriptId, pageNumber, xPct, yPct } = input;
+  if (!referenceId || !scriptId || !Number.isFinite(pageNumber)) return;
+
+  // Clamp to the page so a stray click near the edge can't store an off-sheet
+  // position. x/y are 0–1 fractions of the page box.
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+
+  await prisma.referencePlacement.create({
+    data: { referenceId, pageNumber, xPct: clamp(xPct), yPct: clamp(yPct) },
+  });
+  revalidatePath(`/scripts/${scriptId}`);
+}
+
+export async function deletePlacement(input: { id: string; scriptId: string }) {
+  await verifySession();
+  if (!input.id) return;
+  await prisma.referencePlacement.delete({ where: { id: input.id } });
+  revalidatePath(`/scripts/${input.scriptId}`);
+}
+
 export async function deleteReference(formData: FormData) {
   await verifySession();
 
