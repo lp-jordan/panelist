@@ -231,7 +231,16 @@ export function movePage(editor: Editor, fromIndex: number, toIndex: number) {
     return;
   }
 
-  const [moved] = pages.splice(fromIndex, 1);
+  let [moved] = pages.splice(fromIndex, 1);
+  // Deliberately repositioning a script page makes it a hard boundary: mark it
+  // manualBreak so auto-pagination never pulls its content back onto the page it
+  // now follows. Without this, dropping a page after one with spare room lets
+  // pull-back drain every panel upward and then delete the emptied husk — the
+  // "reorder dumped the whole page onto its neighbour" bug. (freeformPage has no
+  // such attr and is never paginated, so it's left untouched.)
+  if (moved.type.name === "page" && !moved.attrs.manualBreak) {
+    moved = moved.type.create({ ...moved.attrs, manualBreak: true }, moved.content, moved.marks);
+  }
   pages.splice(toIndex, 0, moved);
 
   try {
