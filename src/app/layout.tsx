@@ -33,40 +33,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const stored = (await cookies()).get(THEME_COOKIE)?.value;
   const theme: Theme = stored === "light" || stored === "dark" ? stored : "system";
 
-  // TEMP: which commit is actually deployed. Railway sets this at build time.
-  // Read on-screen (bottom-right) to confirm what version is live. Remove once
-  // the deploy question is settled.
-  const buildSha = (
-    process.env.RAILWAY_GIT_COMMIT_SHA ||
-    process.env.VERCEL_GIT_COMMIT_SHA ||
-    "unknown"
-  ).slice(0, 7);
-
   return (
     <html
       lang="en"
       data-theme={theme === "system" ? undefined : theme}
       style={{ colorScheme: theme === "system" ? "light dark" : theme }}
     >
-      <body>
-        {children}
-        <span
-          style={{
-            position: "fixed",
-            bottom: "6px",
-            right: "8px",
-            zIndex: 2147483647,
-            padding: "3px 7px",
-            borderRadius: "6px",
-            background: "rgba(255,59,48,0.92)",
-            color: "#fff",
-            font: "600 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace",
-            pointerEvents: "none",
-          }}
-        >
-          build {buildSha}
-        </span>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }
