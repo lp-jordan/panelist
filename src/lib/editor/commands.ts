@@ -315,6 +315,9 @@ export function insertPage(editor: Editor) {
   const endPos = editor.state.doc.content.size;
   insertNodeAndFocus(editor, endPos, {
     type: "page",
+    // A writer-initiated page break — auto-pagination must not pull its
+    // content back onto the previous page (see pagination.ts).
+    attrs: { manualBreak: true },
     content: [{ type: "panel", content: [{ type: "panelDescription" }] }],
   });
 }

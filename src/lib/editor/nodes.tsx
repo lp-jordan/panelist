@@ -96,6 +96,20 @@ export const PageNode = Node.create({
   name: "page",
   content: "(note|panel)*",
   isolating: true,
+  addAttributes() {
+    return {
+      // Set when the writer explicitly started this page (New page /
+      // Ctrl+Enter). Auto-pagination never pulls content back across a manual
+      // break, so a deliberate page survives even when the previous page has
+      // room. Persisted via the relational serializer (Page.manualBreak).
+      manualBreak: {
+        default: false,
+        parseHTML: (el) => el.getAttribute("data-manual-break") === "true",
+        renderHTML: (attrs) =>
+          attrs.manualBreak ? { "data-manual-break": "true" } : {},
+      },
+    };
+  },
   parseHTML: () => [{ tag: 'div[data-type="page"]' }],
   renderHTML: ({ HTMLAttributes }) => ["div", mergeAttributes(HTMLAttributes, { "data-type": "page" }), 0],
   addNodeView() {

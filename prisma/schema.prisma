@@ -98,6 +98,11 @@ model Page {
   // stores its paragraphs as ordered NOTE items — same run-serialized text
   // columns, no extra table.
   kind     PageKind @default(SCRIPT)
+  // True when the writer explicitly started this page (New page / Ctrl+Enter)
+  // rather than it being created by overflow. Auto-pagination never pulls
+  // content back up across a manual break, so a deliberate page stays put even
+  // when the previous page has room. Overflow-created pages default to false.
+  manualBreak Boolean @default(false)
 
   script Script     @relation(fields: [scriptId], references: [id], onDelete: Cascade)
   items  PageItem[]
@@ -192,6 +197,18 @@ model Asset {
   page      Page?      @relation(fields: [pageId], references: [id], onDelete: Cascade)
   uploader  User?      @relation(fields: [uploadedBy], references: [id])
   reference Reference?
+  data      AssetData?
+}
+
+/// Blob store for small reference images, kept in Postgres so uploads survive
+/// Railway's ephemeral filesystem without an object store (§3: "a simple upload
+/// path is fine for v1"). Split from Asset so the bytes never load unless a
+/// query asks for them. The future 20–250 MB art pipeline uses R2, not this.
+model AssetData {
+  assetId String @id
+  data    Bytes
+
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
 }
 
 /// V2 Reference Library (see V2-Roadmap.md §2–3). Additive; single-user for now.

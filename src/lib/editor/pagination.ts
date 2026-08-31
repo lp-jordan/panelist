@@ -122,20 +122,14 @@ function decideMove(view: EditorView): Move | null {
     const next = pages[p + 1];
     if (!next) continue;
 
-    // Never pull the sole panel off the next page. Doing so leaves that page
-    // empty, and it's then dropped — so the page vanishes into this one. A page
-    // the writer explicitly started (New page / Ctrl+Enter) has exactly one
-    // panel, so an unconditional back-fill deletes their new page the instant
-    // they type into it (the empty-panel guard below stops the pull only while
-    // the panel is still empty; the first keystroke defeats it). Pulling is a
-    // reflow to undo an earlier overflow spill, so only pull off pages that
-    // keep at least one panel behind. This is measured from structure, not a
-    // runtime flag, so the boundary survives save/reload.
-    let nextPanelCount = 0;
-    next.node.forEach((child) => {
-      if (child.type.name === "panel") nextPanelCount++;
-    });
-    if (nextPanelCount <= 1) continue;
+    // Never pull content up across a break the writer made themselves. Pulling
+    // exists only to undo an *overflow* spill, so a deliberate "New page" (or
+    // Ctrl+Enter) is a hard boundary: its panels stay on it even when this page
+    // has room, and even after they add more panels. Without this, back-fill
+    // reclaims the new page's first panel the moment there's space — the "typing
+    // into a new page collapses it into the previous one" bug. The flag is
+    // persisted (Page.manualBreak), so the boundary survives save/reload.
+    if (next.node.attrs.manualBreak) continue;
 
     const nextFirstPanelEl = next.el.querySelector<HTMLElement>(".sx-panel");
     if (!nextFirstPanelEl) {

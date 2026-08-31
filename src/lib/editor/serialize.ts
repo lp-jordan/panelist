@@ -90,6 +90,7 @@ function pageToJSON(page: ScriptWithContent["pages"][number]) {
   const items = [...page.items].sort((a, b) => a.order - b.order);
   return {
     type: "page",
+    attrs: { manualBreak: page.manualBreak },
     // A page is never rendered with zero children — there'd be no place to
     // put the cursor to start typing. commands.ts relies on this invariant.
     content: items.length > 0 ? items.map(itemToJSON) : [emptyPanelJSON()],
@@ -141,6 +142,7 @@ export function docJSONToScriptPagesInput(doc: JSONNode): Prisma.PageCreateWitho
       : {
           order: pageIndex,
           kind: "SCRIPT",
+          manualBreak: page.attrs?.manualBreak === true,
           items: {
             create: (page.content ?? []).map((item, itemIndex) => itemToInput(item, itemIndex)),
           },
