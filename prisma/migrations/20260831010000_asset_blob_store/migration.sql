@@ -1,6 +1,3 @@
--- AlterTable
-ALTER TABLE "Page" ADD COLUMN     "manualBreak" BOOLEAN NOT NULL DEFAULT false;
-
 -- CreateTable
 CREATE TABLE "AssetData" (
     "assetId" TEXT NOT NULL,
