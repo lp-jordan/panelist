@@ -33,11 +33,14 @@
   --fill: rgba(120, 120, 128, 0.12);
   --fill-press: rgba(120, 120, 128, 0.22);
 
-  /* Intent — blue means actionable, red means irreversible, and nothing else
-     in the app is allowed to be either colour. */
+  /* Intent — blue means actionable, red means irreversible, orange means
+     placement (a reference pinned to a panel — V2 §2.5), and nothing else in
+     the app is allowed to be any of these colours. */
   --blue: #007aff;
   --red: #ff3b30;
   --green: #34c759;
+  --orange: #ff7a00;
+  --orange-soft: rgba(255, 122, 0, 0.14);
 
   /* Translucent chrome. Backed by a solid fallback for browsers without
      backdrop-filter, which would otherwise render these as near-transparent. */
@@ -98,6 +101,8 @@
     --blue: #0a84ff;
     --red: #ff453a;
     --green: #30d158;
+    --orange: #ff9f45;
+    --orange-soft: rgba(255, 159, 69, 0.18);
 
     --chrome: rgba(28, 28, 30, 0.74);
     --chrome-solid: #1c1c1e;

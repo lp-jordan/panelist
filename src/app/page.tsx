@@ -84,6 +84,14 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                   {project.scripts.length} script{project.scripts.length === 1 ? "" : "s"}
                 </span>
                 <span className="group-head-actions">
+                  <Link href={`/projects/${project.id}/reference`} className="group-head-link" aria-label={`Reference for ${project.name}`}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3" y="4" width="18" height="16" rx="2" />
+                      <circle cx="8.5" cy="9.5" r="1.5" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                    Reference
+                  </Link>
                   <ProjectMenu id={project.id} name={project.name} scriptCount={project.scripts.length} />
                 </span>
               </div>

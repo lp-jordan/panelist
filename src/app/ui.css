@@ -932,3 +932,146 @@ body:has(.scrim[data-open="true"]) .pullback {
 .archive-fab:active {
   transform: scale(0.96);
 }
+
+/* --- reference library (V2 §2) ------------------------------------------- */
+
+/* The "Reference" entry beside each project's menu on the home Library. */
+.group-head-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px 3px 7px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sub);
+  font-weight: 500;
+  color: var(--blue);
+  background: var(--fill);
+  transition: background 0.15s var(--ease);
+}
+
+.group-head-link:hover {
+  background: var(--fill-press);
+}
+
+.group-head-link svg {
+  width: 15px;
+  height: 15px;
+}
+
+.ref-subtitle {
+  margin: -6px 0 18px;
+  font-size: var(--text-body);
+  color: var(--label-2);
+}
+
+.ref-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ref-count {
+  font-size: var(--text-sub);
+  color: var(--label-2);
+}
+
+.ref-add {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px 7px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-row);
+  font-weight: 500;
+  color: #fff;
+  background: var(--blue);
+  transition: filter 0.15s var(--ease), transform 0.1s var(--ease);
+}
+
+.ref-add:hover {
+  filter: brightness(1.05);
+}
+
+.ref-add:active {
+  transform: scale(0.97);
+}
+
+.ref-add svg {
+  width: 17px;
+  height: 17px;
+}
+
+/* A responsive masonry-ish grid — cards keep a comfortable min width and the
+   column count follows the viewport, the way the mockup's phone grid widens to
+   the desktop multi-column grid. */
+.ref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 14px;
+}
+
+.ref-card {
+  margin: 0;
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 0.5px var(--separator);
+  overflow: hidden;
+}
+
+.ref-thumb {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: var(--fill);
+}
+
+.ref-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Orange = placement, everywhere (§2.5). Shown only once a reference is
+   actually pinned; the count comes from Phase C. */
+.ref-pin {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--orange);
+  color: #fff;
+  font-size: var(--text-fine);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.ref-card-menu {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+}
+
+/* The card's overflow trigger sits on the image, so give it a scrim chip to
+   stay legible over any photo. */
+.ref-card-menu .more-btn {
+  opacity: 1;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: var(--radius-pill);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.ref-cap {
+  padding: 9px 11px 11px;
+  font-size: 0.84375rem;
+  line-height: 1.35;
+  color: var(--label-2);
+}
