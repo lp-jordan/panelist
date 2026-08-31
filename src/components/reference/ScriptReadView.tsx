@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition, type MouseEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition, type MouseEvent } from "react";
 import Link from "next/link";
 import { Menu } from "@/components/ui/Menu";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { LockToggle } from "@/components/reference/LockToggle";
+import { useTheme } from "@/components/ui/useTheme";
+import { THEME_LABEL } from "@/lib/theme";
+import { setScriptLock } from "@/app/actions/scripts";
 import { ScriptSheets, type TitlePageMeta } from "@/components/print/ScriptSheets";
+import { toPageWordNumber } from "@/lib/editor/numberToWords";
 import { createPlacement, deletePlacement } from "@/app/actions/references";
 import type { JSONNode } from "@/lib/editor/serialize";
 
@@ -18,13 +20,13 @@ export type Placement = {
   reference: PinReference;
 };
 
+const SHEET_PX = 816; // 8.5in at 96dpi — the fixed sheet width to fit on mobile.
+
 /**
- * The locked read view (V2 C). The script's printed sheets on a desk, with
- * reference pins overlaid by x/y. Placing a pin: pick a reference (button in
- * the app bar), then click a spot on a page — a floating prompt follows you
- * while you do. Reading a pin: click its orange dot → the reference floats in a
- * card beside the page (desktop) or a bottom sheet (mobile), staying with you
- * as you scroll. A References switch hides every marker.
+ * The locked read view (V2 C). The script's printed sheets on a desk with the
+ * same page-outline the editor uses (reused .sx-outline classes), reference
+ * pins overlaid by x/y, and References/lock/appearance folded into one settings
+ * menu so the bar stays clean. On phones the sheets scale to fit the screen.
  */
 export function ScriptReadView({
   scriptId,
@@ -52,10 +54,40 @@ export function ScriptReadView({
   const [placingRef, setPlacingRef] = useState<PinReference | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [outlineOpen, setOutlineOpen] = useState(false);
+  const [outlineCollapsed, setOutlineCollapsed] = useState(false);
   const [, startTransition] = useTransition();
   const stageRef = useRef<HTMLDivElement>(null);
+  const { theme, cycle } = useTheme();
 
-  // Footnote-style numbering: stable order across the whole script.
+  // Page list for the outline (script pages only; freeform pages are unnumbered).
+  const pages = useMemo(() => {
+    const out: { n: number; panelCount: number }[] = [];
+    let n = 0;
+    for (const node of doc.content ?? []) {
+      if (node.type === "freeformPage") continue;
+      n += 1;
+      out.push({ n, panelCount: (node.content ?? []).filter((c) => c.type === "panel").length });
+    }
+    return out;
+  }, [doc]);
+
+  // Fit the fixed-width sheets to the screen (phones especially). min(1, …)
+  // leaves desktop untouched. Measured off the document width so the element's
+  // own zoom can't feed back into the measurement.
+  useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const apply = () => {
+      const w = document.documentElement.clientWidth;
+      const fit = Math.min(1, (w - 32) / SHEET_PX);
+      el.style.setProperty("zoom", String(fit > 0 ? fit : 1));
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, []);
+
   const placed = useMemo(
     () =>
       placements
@@ -130,7 +162,7 @@ export function ScriptReadView({
   );
 
   return (
-    <div className="shell rv-shell">
+    <div className="sx-shell rv-shell">
       <nav className="nav">
         <Link href={backHref} className="nav-back" aria-label={`Back to ${backLabel}`}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -138,33 +170,17 @@ export function ScriptReadView({
           </svg>
           <span className="nav-back-label">{backLabel}</span>
         </Link>
-
-        {/* Page navigation — still useful when locked. */}
-        <Menu
-          label="Pages"
-          triggerClassName="icon-btn nav-pages-btn"
-          icon={
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          }
+        <button
+          type="button"
+          className="icon-btn nav-pages-btn"
+          onClick={() => setOutlineOpen((v) => !v)}
+          aria-label="Pages"
+          aria-expanded={outlineOpen}
         >
-          {(close) =>
-            Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
-              <button
-                key={n}
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  scrollToPage(n);
-                  close();
-                }}
-              >
-                Page {n}
-              </button>
-            ))
-          }
-        </Menu>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
 
         <span className="nav-spacer" />
         <span className="nav-title">{meta.title}</span>
@@ -176,30 +192,100 @@ export function ScriptReadView({
           </svg>
           Pin
         </button>
-        <button
-          type="button"
-          className={`ref-switch${showRefs ? " ref-switch--on" : ""}`}
-          onClick={() => setShowRefs((v) => !v)}
-          aria-pressed={showRefs}
-          title={showRefs ? "Hide reference markers" : "Show reference markers"}
+
+        <Menu
+          label="Settings"
+          triggerClassName="icon-btn"
+          icon={
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.2.61.76 1.05 1.42 1.09H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+            </svg>
+          }
         >
-          <span className="ref-switch-track"><span className="ref-switch-knob" /></span>
-          References
-        </button>
-        {orphans.length > 0 && (
-          <button type="button" className="orphan-chip" onClick={() => setActiveId("__orphans__")}>
-            {orphans.length} unplaced
-          </button>
-        )}
-        <ThemeToggle />
-        <LockToggle id={scriptId} locked />
+          {(close) => (
+            <>
+              <button type="button" role="menuitem" onClick={() => { setShowRefs((v) => !v); close(); }}>
+                {showRefs ? "Hide references" : "Show references"}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  {showRefs ? <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /> : <path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.4 5.2A9.7 9.7 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3 3.8M6.1 6.1A17 17 0 002 12s3.5 7 10 7a9.7 9.7 0 003-.5" />}
+                  {showRefs && <circle cx="12" cy="12" r="3" />}
+                </svg>
+              </button>
+              {orphans.length > 0 && (
+                <button type="button" role="menuitem" onClick={() => { setActiveId("__orphans__"); close(); }}>
+                  {orphans.length} unplaced
+                </button>
+              )}
+              <button type="button" role="menuitem" onClick={cycle}>
+                Appearance: {THEME_LABEL[theme]}
+              </button>
+              <hr />
+              <form action={setScriptLock}>
+                <input type="hidden" name="id" value={scriptId} />
+                <input type="hidden" name="locked" value="false" />
+                <button type="submit" role="menuitem" onClick={close}>
+                  Unlock to edit
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="5" y="11" width="14" height="9" rx="2" />
+                    <path d="M8 11V7a4 4 0 018 0" />
+                  </svg>
+                </button>
+              </form>
+            </>
+          )}
+        </Menu>
       </nav>
 
-      <div className="rc-stage" ref={stageRef}>
-        <ScriptSheets doc={doc} meta={meta} renderPageOverlay={renderPageOverlay} />
+      <div className="sx-body">
+        {/* Backs the mobile drawer; inert on desktop where the outline is a
+            persistent floating card (same as the editor). */}
+        <div className="sx-outline-scrim" data-open={outlineOpen} onClick={() => setOutlineOpen(false)} />
+        <aside className="sx-outline" data-open={outlineOpen} data-collapsed={outlineCollapsed} aria-label="Pages">
+          <div className="sx-outline-head">
+            <button
+              type="button"
+              className="sx-outline-collapse"
+              onClick={() => setOutlineCollapsed((v) => !v)}
+              aria-expanded={!outlineCollapsed}
+              aria-label={outlineCollapsed ? "Show pages" : "Collapse pages"}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <span className="sx-outline-title">Pages</span>
+            <span className="sx-outline-count">{pages.length}</span>
+          </div>
+          <ol className="sx-outline-list">
+            {pages.map((page) => (
+              <li key={page.n}>
+                <button
+                  type="button"
+                  className="sx-outline-item"
+                  onClick={() => {
+                    scrollToPage(page.n);
+                    setOutlineOpen(false);
+                  }}
+                >
+                  <span className="sx-outline-num">{page.n}</span>
+                  <span className="sx-outline-label">
+                    {toPageWordNumber(page.n)}
+                    <span className="sx-outline-sub">
+                      {page.panelCount} panel{page.panelCount === 1 ? "" : "s"}
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </aside>
+
+        <div className="rc-stage" ref={stageRef}>
+          <ScriptSheets doc={doc} meta={meta} renderPageOverlay={renderPageOverlay} />
+        </div>
       </div>
 
-      {/* Floating placement prompt — follows the reader while they pick a spot. */}
       {placingRef && (
         <div className="place-float">
           <span className="place-thumb" style={{ backgroundImage: `url(/api/assets/${placingRef.assetId})` }} />
@@ -212,8 +298,6 @@ export function ScriptReadView({
         </div>
       )}
 
-      {/* Desktop: the selected reference floats beside the page and travels with
-          the reader (fixed). One at a time. */}
       {panelOpen && (
         <aside className="rc-float">
           <button type="button" className="rc-float-close" onClick={() => setActiveId(null)} aria-label="Close">
@@ -227,7 +311,6 @@ export function ScriptReadView({
         </aside>
       )}
 
-      {/* Mobile: same content as a bottom sheet. */}
       <div className={`rc-scrim${panelOpen ? " open" : ""}`} onClick={() => setActiveId(null)} />
       <div className={`rc-sheet${panelOpen ? " open" : ""}`} role="dialog" aria-hidden={!panelOpen}>
         <div className="rc-sheet-grab" />
@@ -257,7 +340,8 @@ export function ScriptReadView({
 function PinDetail({ placement, number, onRemove }: { placement: Placement; number: number; onRemove: (id: string) => void }) {
   return (
     <div className="pin-detail">
-      <div className="pin-detail-img" style={{ backgroundImage: `url(/api/assets/${placement.reference.assetId})` }} />
+      {/* The whole image, uncropped — an artist needs to see all of it. */}
+      <img className="pin-detail-img" src={`/api/assets/${placement.reference.assetId}`} alt={placement.reference.caption ?? "Reference"} />
       {placement.reference.caption && <p className="pin-detail-cap">{placement.reference.caption}</p>}
       <div className="pin-detail-foot">
         <span className="pin-detail-where">

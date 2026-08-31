@@ -1341,13 +1341,16 @@ body:has(.scrim[data-open="true"]) .pullback {
   outline-offset: 2px;
 }
 
-/* Pin detail — shared by the gutter and the mobile sheet. */
+/* Pin detail — shared by the floating card and the mobile sheet. The image is
+   shown whole (not cropped): full card width, natural height. */
 .pin-detail-img {
-  aspect-ratio: 4 / 3;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 60vh;
+  object-fit: contain;
   border-radius: var(--radius);
-  background-size: cover;
-  background-position: center;
-  background-color: var(--fill);
+  background: var(--fill);
 }
 
 .pin-detail-cap {
