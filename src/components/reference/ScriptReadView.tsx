@@ -95,35 +95,6 @@ export function ScriptReadView({
   const fitRef = useRef<HTMLDivElement>(null);
   const scalerRef = useRef<HTMLDivElement>(null);
 
-  // TEMPORARY diagnostic: prints the real layout numbers so we can tell why the
-  // sheet text is oversized in the iOS Home-Screen app but not in a tab. Remove
-  // once diagnosed.
-  const [diag, setDiag] = useState("measuring…");
-  useEffect(() => {
-    const measure = () => {
-      const cw = document.documentElement.clientWidth;
-      const iw = window.innerWidth;
-      const vv = Math.round(window.visualViewport?.width ?? 0);
-      const fit = Math.min(1, (cw - 32) / SHEET_PX);
-      const page = stageRef.current?.querySelector<HTMLElement>(".px-page");
-      const line = stageRef.current?.querySelector<HTMLElement>(".px-panel-description, .px-panel-label, .px-text-element-content");
-      const pageW = page ? Math.round(page.getBoundingClientRect().width) : 0;
-      const fontPx = line ? getComputedStyle(line).fontSize : "?";
-      const lineRect = line ? Math.round(line.getBoundingClientRect().height) : 0;
-      const sa =
-        window.matchMedia?.("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone
-          ? "STANDALONE"
-          : "tab";
-      setDiag(`${sa} dpr${window.devicePixelRatio} cw${cw} iw${iw} vv${vv} fit${fit.toFixed(2)} pageW${pageW} font${fontPx} lineH${lineRect}`);
-    };
-    const t = window.setTimeout(measure, 500);
-    window.addEventListener("resize", measure);
-    return () => {
-      window.clearTimeout(t);
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
-
   // Page list for the outline (script pages only; freeform pages are unnumbered).
   const pages = useMemo(() => {
     const out: { n: number; panelCount: number }[] = [];
@@ -308,25 +279,6 @@ export function ScriptReadView({
           </svg>
         </button>
       </nav>
-
-      {/* TEMPORARY diagnostic badge — remove once the mobile sizing is solved. */}
-      <div
-        style={{
-          position: "fixed",
-          left: 0,
-          bottom: 0,
-          zIndex: 9999,
-          background: "#000",
-          color: "#0f0",
-          font: "10px/1.3 monospace",
-          padding: "3px 5px",
-          maxWidth: "100vw",
-          whiteSpace: "normal",
-          wordBreak: "break-all",
-        }}
-      >
-        {diag}
-      </div>
 
       <div className="sx-body">
         {/* Backs the mobile drawer; inert on desktop where the outline is a
