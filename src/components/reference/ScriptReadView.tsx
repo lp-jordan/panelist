@@ -92,6 +92,8 @@ export function ScriptReadView({
   const [sheetOpen, setSheetOpen] = useState(false);
   const [, startTransition] = useTransition();
   const stageRef = useRef<HTMLDivElement>(null);
+  const fitRef = useRef<HTMLDivElement>(null);
+  const scalerRef = useRef<HTMLDivElement>(null);
 
   // TEMPORARY diagnostic: prints the real layout numbers so we can tell why the
   // sheet text is oversized in the iOS Home-Screen app but not in a tab. Remove
@@ -138,16 +140,29 @@ export function ScriptReadView({
   // leaves desktop untouched. Measured off the document width so the element's
   // own zoom can't feed back into the measurement.
   useEffect(() => {
-    const el = stageRef.current;
-    if (!el) return;
+    const stage = stageRef.current;
+    const fit = fitRef.current;
+    const scaler = scalerRef.current;
+    if (!stage || !fit || !scaler) return;
     const apply = () => {
-      const w = document.documentElement.clientWidth;
-      const fit = Math.min(1, (w - 32) / SHEET_PX);
-      el.style.setProperty("zoom", String(fit > 0 ? fit : 1));
+      const avail = stage.clientWidth - 32;
+      const k = Math.min(1, avail / SHEET_PX);
+      // transform (not zoom): a purely visual scale of the whole subtree, so an
+      // iOS-boosted font is scaled back down along with everything else. The
+      // outer wrapper is sized to the scaled footprint so scrolling/centering
+      // stay correct (transform alone leaves the layout box full-size).
+      scaler.style.transform = `scale(${k})`;
+      fit.style.width = `${SHEET_PX * k}px`;
+      fit.style.height = `${scaler.offsetHeight * k}px`;
     };
     apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(scaler);
     window.addEventListener("resize", apply);
-    return () => window.removeEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+    };
   }, []);
 
   const placed = useMemo(
@@ -358,7 +373,11 @@ export function ScriptReadView({
         </aside>
 
         <div className="rc-stage" ref={stageRef}>
-          <ScriptSheets doc={doc} meta={meta} renderPageOverlay={renderPageOverlay} />
+          <div className="rc-fit" ref={fitRef}>
+            <div className="rc-scaler" ref={scalerRef}>
+              <ScriptSheets doc={doc} meta={meta} renderPageOverlay={renderPageOverlay} />
+            </div>
+          </div>
         </div>
       </div>
 

@@ -1126,16 +1126,22 @@ body:has(.scrim[data-open="true"]) .pullback {
    sheet to phone width is a later polish. */
 .rc-stage {
   flex: 1;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px 16px 64px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  /* The sheets are scaled to fit width (zoom, set in JS). Without this, iOS
-     Safari re-inflates the "small" text but not its line spacing, collapsing
-     the lines into each other. Pin it so scaling stays uniform. */
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+}
+
+/* The sheets are scaled to fit width with transform (set in JS). transform-only
+   leaves the layout box full-size, so this wrapper is sized to the scaled
+   footprint (in JS) and clips the overflow; margin auto centres it. */
+.rc-fit {
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.rc-scaler {
+  width: 816px; /* one 8.5in sheet wide; SHEET_PX in ScriptReadView */
+  transform-origin: top left;
 }
 
 /* print.css paints .px-doc white ("paper"); on the read-view desk that reads
