@@ -24,8 +24,13 @@ export default async function ScriptReferencePage({ params }: { params: Promise<
           id: true,
           caption: true,
           assetId: true,
+          collections: { select: { collectionId: true } },
           _count: { select: { placements: true } },
         },
+      },
+      collections: {
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, _count: { select: { references: true } } },
       },
     },
   });
@@ -37,7 +42,10 @@ export default async function ScriptReferencePage({ params }: { params: Promise<
     assetId: ref.assetId,
     caption: ref.caption,
     placementCount: ref._count.placements,
+    collectionIds: ref.collections.map((c) => c.collectionId),
   }));
+
+  const collections = script.collections.map((c) => ({ id: c.id, name: c.name, count: c._count.references }));
 
   // Back to the issue's project hub, or the Library if it's unassigned.
   const backHref = script.projectId ? `/projects/${script.projectId}` : "/";
@@ -60,7 +68,7 @@ export default async function ScriptReferencePage({ params }: { params: Promise<
         <h1 className="large-title">{script.title}</h1>
         <p className="ref-subtitle">Reference</p>
 
-        <ReferenceLibraryClient scriptId={script.id} references={references} />
+        <ReferenceLibraryClient scriptId={script.id} references={references} collections={collections} />
       </main>
     </div>
   );

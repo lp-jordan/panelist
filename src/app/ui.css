@@ -1003,6 +1003,72 @@ body:has(.scrim[data-open="true"]) .pullback {
   height: 17px;
 }
 
+/* Collection/tag filter chips — views of a tag (§5). */
+.ref-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ref-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-sub);
+  font-weight: 500;
+  color: var(--label-2);
+  background: var(--fill);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+
+.ref-chip:hover {
+  background: var(--fill-press);
+}
+
+.ref-chip--on {
+  color: #fff;
+  background: var(--blue);
+}
+
+.ref-chip-n {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+  font-size: var(--text-fine);
+}
+
+.ref-chip--on .ref-chip-n {
+  opacity: 0.85;
+}
+
+/* Tag checklist in the Collections sheet. */
+.tag-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+  max-height: 40vh;
+  overflow: auto;
+}
+
+.tag-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px;
+  font-size: var(--text-row);
+  cursor: pointer;
+}
+
+.tag-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--blue);
+  flex: none;
+}
+
 /* A responsive masonry-ish grid — cards keep a comfortable min width and the
    column count follows the viewport, the way the mockup's phone grid widens to
    the desktop multi-column grid. */

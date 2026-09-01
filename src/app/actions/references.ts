@@ -58,6 +58,48 @@ export async function updateReferenceCaption(formData: FormData) {
   revalidatePath(`/scripts/${scriptId}/reference`);
 }
 
+// --- collections / tags -----------------------------------------------------
+
+// Sets a reference's collections (free-form tags, §5) in one go, optionally
+// creating a new collection from the sheet's text field. Read "collection" as
+// "tag": many-to-many, per issue, created as you go.
+export async function updateReferenceTags(formData: FormData) {
+  await verifySession();
+  const referenceId = formData.get("referenceId");
+  const scriptId = formData.get("scriptId");
+  if (typeof referenceId !== "string" || typeof scriptId !== "string") return;
+
+  const ids = formData.getAll("collectionIds").filter((v): v is string => typeof v === "string");
+  const newName = typeof formData.get("newCollection") === "string" ? (formData.get("newCollection") as string).trim() : "";
+
+  if (newName) {
+    const created = await prisma.collection.upsert({
+      where: { scriptId_name: { scriptId, name: newName } },
+      create: { scriptId, name: newName },
+      update: {},
+    });
+    if (!ids.includes(created.id)) ids.push(created.id);
+  }
+
+  await prisma.$transaction([
+    prisma.referenceInCollection.deleteMany({ where: { referenceId } }),
+    ...(ids.length > 0
+      ? [prisma.referenceInCollection.createMany({ data: ids.map((collectionId) => ({ referenceId, collectionId })) })]
+      : []),
+  ]);
+  revalidatePath(`/scripts/${scriptId}/reference`);
+}
+
+export async function deleteCollection(formData: FormData) {
+  await verifySession();
+  const id = formData.get("id");
+  const scriptId = formData.get("scriptId");
+  if (typeof id !== "string" || typeof scriptId !== "string") return;
+  // Cascades the ReferenceInCollection rows; the references themselves stay.
+  await prisma.collection.delete({ where: { id } });
+  revalidatePath(`/scripts/${scriptId}/reference`);
+}
+
 // --- placements (pins on the locked read view) -----------------------------
 
 export async function createPlacement(input: {
