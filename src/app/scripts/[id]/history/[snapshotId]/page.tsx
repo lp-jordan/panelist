@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, accessibleScriptWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { parseSnapshotContent } from "@/lib/snapshot";
 import { ScriptSheets } from "@/components/print/ScriptSheets";
@@ -19,8 +19,15 @@ export default async function SnapshotPreviewPage({
 }: {
   params: Promise<{ id: string; snapshotId: string }>;
 }) {
-  await verifySession();
+  const user = await getCurrentUser();
   const { id, snapshotId } = await params;
+
+  // Gate on script access, then load the snapshot for that script.
+  const script = await prisma.script.findFirst({
+    where: { id, ...accessibleScriptWhere(user.id) },
+    select: { id: true },
+  });
+  if (!script) notFound();
 
   const snapshot = await prisma.snapshot.findUnique({
     where: { id: snapshotId },

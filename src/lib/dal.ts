@@ -14,6 +14,39 @@ export const verifySession = cache(async () => {
   return { userId: session.userId };
 });
 
+// --- access scoping (V2 D1) -------------------------------------------------
+// Access is by project membership; a script is also reachable by its owner
+// (covers loose scripts with no project). These return Prisma `where`
+// fragments so every list/read filters to what the current user may see.
+
+export function memberProjectWhere(userId: string) {
+  return { members: { some: { userId } } };
+}
+
+export function accessibleScriptWhere(userId: string) {
+  return {
+    OR: [{ ownerId: userId }, { project: { members: { some: { userId } } } }],
+  };
+}
+
+/** Throws (→ caller maps to notFound/redirect) if the user can't reach the script. */
+export async function assertScriptAccess(scriptId: string, userId: string) {
+  const ok = await prisma.script.findFirst({
+    where: { id: scriptId, ...accessibleScriptWhere(userId) },
+    select: { id: true },
+  });
+  if (!ok) throw new Error("forbidden");
+}
+
+/** Throws if the user isn't a member of the project. */
+export async function assertProjectAccess(projectId: string, userId: string) {
+  const ok = await prisma.projectMember.findFirst({
+    where: { projectId, userId },
+    select: { id: true },
+  });
+  if (!ok) throw new Error("forbidden");
+}
+
 export const getCurrentUser = cache(async () => {
   const session = await verifySession();
 

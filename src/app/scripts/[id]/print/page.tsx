@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, accessibleScriptWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { scriptToDocJSON, type JSONNode } from "@/lib/editor/serialize";
 import { ScriptSheets } from "@/components/print/ScriptSheets";
@@ -16,11 +16,11 @@ export const metadata: Metadata = {
 // A human can open it and print; the server-side PDF export renders this exact
 // URL through headless Chromium. Same auth gate as the editor.
 export default async function ScriptPrintPage({ params }: { params: Promise<{ id: string }> }) {
-  await verifySession();
+  const user = await getCurrentUser();
   const { id } = await params;
 
-  const script = await prisma.script.findUnique({
-    where: { id, deletedAt: null },
+  const script = await prisma.script.findFirst({
+    where: { id, deletedAt: null, ...accessibleScriptWhere(user.id) },
     include: {
       pages: {
         include: {

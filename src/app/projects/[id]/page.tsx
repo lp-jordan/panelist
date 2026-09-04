@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, memberProjectWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/format";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -12,12 +12,12 @@ import { ScriptDropZone } from "@/components/library/ScriptDropZone";
 // issue row is the jumping-off point into its script, its references, and
 // (later) its art page layout.
 export default async function ProjectHubPage({ params }: { params: Promise<{ id: string }> }) {
-  await verifySession();
+  const user = await getCurrentUser();
   const { id } = await params;
 
   const [project, projects] = await Promise.all([
-    prisma.project.findUnique({
-      where: { id, deletedAt: null },
+    prisma.project.findFirst({
+      where: { id, deletedAt: null, ...memberProjectWhere(user.id) },
       select: {
         id: true,
         name: true,
@@ -28,7 +28,11 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
         },
       },
     }),
-    prisma.project.findMany({ where: { deletedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.project.findMany({
+      where: { deletedAt: null, ...memberProjectWhere(user.id) },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
+    }),
   ]);
 
   if (!project) notFound();

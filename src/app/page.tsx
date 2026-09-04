@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/dal";
+import { getCurrentUser, memberProjectWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { LibraryToolbar } from "@/components/library/LibraryToolbar";
 import { NewMenu } from "@/components/library/NewMenu";
@@ -12,14 +12,18 @@ type SearchParams = { q?: string };
 // The Library is a project index. Scripts are created and live inside their
 // project's hub, so there's no loose-script section here anymore.
 export default async function Home({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  await getCurrentUser();
+  const user = await getCurrentUser();
   const { q = "" } = await searchParams;
 
   const query = q.trim();
   const searching = query.length > 0;
 
   const projects = await prisma.project.findMany({
-    where: { deletedAt: null, ...(searching ? { name: { contains: query } } : {}) },
+    where: {
+      deletedAt: null,
+      ...memberProjectWhere(user.id),
+      ...(searching ? { name: { contains: query } } : {}),
+    },
     orderBy: { name: "asc" },
     select: {
       id: true,

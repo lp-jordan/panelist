@@ -1,13 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, assertScriptAccess, assertProjectAccess } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { writeScriptPages } from "@/lib/editor/persist";
 import { type JSONNode } from "@/lib/editor/serialize";
 
 export async function saveScriptContent(scriptId: string, doc: JSONNode) {
-  await verifySession();
+  const user = await getCurrentUser();
+  await assertScriptAccess(scriptId, user.id);
   await writeScriptPages(scriptId, doc);
   revalidatePath(`/scripts/${scriptId}`);
   revalidatePath("/");
@@ -21,7 +22,8 @@ export async function updateScriptMeta(
   scriptId: string,
   meta: { title: string; author: string; draftLabel: string; draftDate: string },
 ) {
-  await verifySession();
+  const user = await getCurrentUser();
+  await assertScriptAccess(scriptId, user.id);
 
   const parsedDate = meta.draftDate ? new Date(meta.draftDate) : null;
   const draftDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : undefined;
@@ -41,7 +43,8 @@ export async function updateScriptMeta(
 }
 
 export async function addCastMemberFromEditor(projectId: string, name: string) {
-  await verifySession();
+  const user = await getCurrentUser();
+  await assertProjectAccess(projectId, user.id);
   const trimmed = name.trim();
   if (!trimmed) return;
 

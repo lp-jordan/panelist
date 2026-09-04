@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, assertScriptAccess } from "@/lib/dal";
 import { writeScriptPages } from "@/lib/editor/persist";
 import type { JSONNode } from "@/lib/editor/serialize";
 
@@ -10,8 +10,9 @@ import type { JSONNode } from "@/lib/editor/serialize";
 // last second before a reload — most visibly a character name you just typed —
 // never reached the pages the loader reads, and looked "dropped on load".
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  await verifySession();
+  const user = await getCurrentUser();
   const { id } = await params;
+  await assertScriptAccess(id, user.id);
   let doc: JSONNode;
   try {
     doc = (await request.json()) as JSONNode;

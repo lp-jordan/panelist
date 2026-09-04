@@ -1,16 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { verifySession, getCurrentUser } from "@/lib/dal";
+import { getCurrentUser, assertScriptAccess } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 
 // Flips a script between the editor (unlocked) and the reference read view
-// (locked). Note for Phase D auth: gate this to the owner.
+// (locked). D2 will additionally gate this to the owner role.
 export async function setScriptLock(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   const locked = formData.get("locked") === "true";
   if (typeof id !== "string") return;
+  await assertScriptAccess(id, user.id);
 
   await prisma.script.update({ where: { id }, data: { locked } });
   revalidatePath(`/scripts/${id}`);
@@ -26,12 +27,19 @@ export async function createScript(formData: FormData) {
   const projectIdRaw = formData.get("projectId");
   if (typeof title !== "string" || title.trim().length === 0) return;
 
-  const projectId = typeof projectIdRaw === "string" && projectIdRaw.length > 0 ? projectIdRaw : null;
+  let projectId = typeof projectIdRaw === "string" && projectIdRaw.length > 0 ? projectIdRaw : null;
+  // Only accept a project the creator actually belongs to; otherwise the script
+  // is created loose (owned, no project).
+  if (projectId) {
+    const member = await prisma.projectMember.findFirst({ where: { projectId, userId: user.id }, select: { id: true } });
+    if (!member) projectId = null;
+  }
 
   await prisma.script.create({
     data: {
       title: title.trim(),
       projectId,
+      ownerId: user.id,
       author: user.name,
       draftLabel: "Draft #1",
       draftDate: new Date(),
@@ -42,19 +50,21 @@ export async function createScript(formData: FormData) {
 }
 
 export async function renameScript(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   const title = formData.get("title");
   if (typeof id !== "string" || typeof title !== "string" || title.trim().length === 0) return;
+  await assertScriptAccess(id, user.id);
 
   await prisma.script.update({ where: { id }, data: { title: title.trim() } });
   revalidatePath("/");
 }
 
 export async function duplicateScript(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
+  await assertScriptAccess(id, user.id);
 
   const original = await prisma.script.findUniqueOrThrow({
     where: { id },
@@ -78,6 +88,7 @@ export async function duplicateScript(formData: FormData) {
   await prisma.script.create({
     data: {
       projectId: original.projectId,
+      ownerId: user.id,
       title: `${original.title} (Copy)`,
       author: original.author,
       draftLabel: original.draftLabel,
@@ -116,16 +127,17 @@ export async function duplicateScript(formData: FormData) {
 }
 
 export async function moveScript(scriptId: string, projectId: string | null) {
-  await verifySession();
+  const user = await getCurrentUser();
   if (typeof scriptId !== "string" || scriptId.length === 0) return;
+  await assertScriptAccess(scriptId, user.id);
 
-  // A dropped project must still exist and be un-trashed, else the script
-  // would vanish into a dangling group. Falling back to Unassigned (null) is
-  // safer than throwing on a stale drag target.
+  // A dropped project must still exist, be un-trashed, and be one the user
+  // belongs to, else the script would vanish into a group they can't see.
+  // Falling back to Unassigned (null) is safer than throwing on a stale drag.
   let target: string | null = null;
   if (typeof projectId === "string" && projectId.length > 0) {
     const project = await prisma.project.findFirst({
-      where: { id: projectId, deletedAt: null },
+      where: { id: projectId, deletedAt: null, members: { some: { userId: user.id } } },
       select: { id: true },
     });
     target = project?.id ?? null;
@@ -136,9 +148,10 @@ export async function moveScript(scriptId: string, projectId: string | null) {
 }
 
 export async function archiveScript(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
+  await assertScriptAccess(id, user.id);
 
   await prisma.script.update({ where: { id }, data: { deletedAt: new Date() } });
   revalidatePath("/");
@@ -146,9 +159,10 @@ export async function archiveScript(formData: FormData) {
 }
 
 export async function restoreScript(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
+  await assertScriptAccess(id, user.id);
 
   await prisma.script.update({ where: { id }, data: { deletedAt: null } });
   revalidatePath("/");
@@ -156,9 +170,10 @@ export async function restoreScript(formData: FormData) {
 }
 
 export async function deleteScriptForever(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
+  await assertScriptAccess(id, user.id);
 
   const script = await prisma.script.findUnique({ where: { id } });
   if (!script?.deletedAt) {

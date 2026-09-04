@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, accessibleScriptWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { scriptToDocJSON } from "@/lib/editor/serialize";
 import { ScriptEditor } from "@/components/ScriptEditor";
@@ -9,11 +9,11 @@ import { ScriptReadView } from "@/components/reference/ScriptReadView";
 import "./print/print.css";
 
 export default async function ScriptPage({ params }: { params: Promise<{ id: string }> }) {
-  await verifySession();
+  const user = await getCurrentUser();
   const { id } = await params;
 
-  const script = await prisma.script.findUnique({
-    where: { id, deletedAt: null },
+  const script = await prisma.script.findFirst({
+    where: { id, deletedAt: null, ...accessibleScriptWhere(user.id) },
     include: {
       project: { select: { name: true } },
       pages: {

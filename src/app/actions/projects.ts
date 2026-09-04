@@ -1,32 +1,40 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, assertProjectAccess } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 
 export async function createProject(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const name = formData.get("name");
   if (typeof name !== "string" || name.trim().length === 0) return;
 
-  await prisma.project.create({ data: { name: name.trim() } });
+  // The creator becomes the project's OWNER member — access is by membership.
+  await prisma.project.create({
+    data: {
+      name: name.trim(),
+      members: { create: { userId: user.id, role: "OWNER" } },
+    },
+  });
   revalidatePath("/");
 }
 
 export async function renameProject(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   const name = formData.get("name");
   if (typeof id !== "string" || typeof name !== "string" || name.trim().length === 0) return;
+  await assertProjectAccess(id, user.id);
 
   await prisma.project.update({ where: { id }, data: { name: name.trim() } });
   revalidatePath("/");
 }
 
 export async function archiveProject(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
+  await assertProjectAccess(id, user.id);
 
   const deletedAt = new Date();
   await prisma.$transaction([
@@ -41,9 +49,10 @@ export async function archiveProject(formData: FormData) {
 }
 
 export async function restoreProject(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
+  await assertProjectAccess(id, user.id);
 
   await prisma.project.update({ where: { id }, data: { deletedAt: null } });
   revalidatePath("/");
@@ -51,9 +60,10 @@ export async function restoreProject(formData: FormData) {
 }
 
 export async function deleteProjectForever(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
+  await assertProjectAccess(id, user.id);
 
   const project = await prisma.project.findUnique({ where: { id } });
   if (!project?.deletedAt) {

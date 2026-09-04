@@ -25,6 +25,7 @@ model User {
   projectMemberships ProjectMember[]
   uploadedAssets     Asset[]
   events             Event[]
+  ownedScripts       Script[]
 }
 
 enum Role {
@@ -79,8 +80,12 @@ model Script {
   // Locked = the read view (references shown/placed, no text editing).
   // Unlocked = the editor. The mode switch for the whole reference layer (V2 C).
   locked     Boolean   @default(false)
+  // The script's owner (V2 D). Access = ownerId is me OR I'm a member of its
+  // project. Nullable only for the backfill window; new scripts always set it.
+  ownerId    String?
 
   project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  owner       User?        @relation(fields: [ownerId], references: [id])
   pages       Page[]
   snapshots   Snapshot[]
   references  Reference[]

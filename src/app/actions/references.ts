@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, assertScriptAccess } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 
 // Reference images are small screen/photo grabs, not the layered art the future
@@ -10,13 +10,14 @@ import { prisma } from "@/lib/prisma";
 const MAX_BYTES = 20 * 1024 * 1024;
 
 export async function uploadReference(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
 
   const scriptId = formData.get("scriptId");
   const file = formData.get("file");
   const captionRaw = formData.get("caption");
 
   if (typeof scriptId !== "string" || scriptId.length === 0) return;
+  await assertScriptAccess(scriptId, user.id);
   if (!(file instanceof File) || file.size === 0) return;
   if (!file.type.startsWith("image/")) return;
   if (file.size > MAX_BYTES) return;
@@ -46,12 +47,13 @@ export async function uploadReference(formData: FormData) {
 }
 
 export async function updateReferenceCaption(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
 
   const id = formData.get("id");
   const scriptId = formData.get("scriptId");
   const captionRaw = formData.get("caption");
   if (typeof id !== "string" || typeof scriptId !== "string") return;
+  await assertScriptAccess(scriptId, user.id);
 
   const caption = typeof captionRaw === "string" && captionRaw.trim().length > 0 ? captionRaw.trim() : null;
   await prisma.reference.update({ where: { id }, data: { caption } });
@@ -64,10 +66,11 @@ export async function updateReferenceCaption(formData: FormData) {
 // creating a new collection from the sheet's text field. Read "collection" as
 // "tag": many-to-many, per issue, created as you go.
 export async function updateReferenceTags(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const referenceId = formData.get("referenceId");
   const scriptId = formData.get("scriptId");
   if (typeof referenceId !== "string" || typeof scriptId !== "string") return;
+  await assertScriptAccess(scriptId, user.id);
 
   const ids = formData.getAll("collectionIds").filter((v): v is string => typeof v === "string");
   const newName = typeof formData.get("newCollection") === "string" ? (formData.get("newCollection") as string).trim() : "";
@@ -91,10 +94,11 @@ export async function updateReferenceTags(formData: FormData) {
 }
 
 export async function deleteCollection(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
   const id = formData.get("id");
   const scriptId = formData.get("scriptId");
   if (typeof id !== "string" || typeof scriptId !== "string") return;
+  await assertScriptAccess(scriptId, user.id);
   // Cascades the ReferenceInCollection rows; the references themselves stay.
   await prisma.collection.delete({ where: { id } });
   revalidatePath(`/scripts/${scriptId}/reference`);
@@ -109,9 +113,10 @@ export async function createPlacement(input: {
   xPct: number;
   yPct: number;
 }) {
-  await verifySession();
+  const user = await getCurrentUser();
   const { referenceId, scriptId, pageNumber, xPct, yPct } = input;
   if (!referenceId || !scriptId || !Number.isFinite(pageNumber)) return;
+  await assertScriptAccess(scriptId, user.id);
 
   // Clamp to the page so a stray click near the edge can't store an off-sheet
   // position. x/y are 0–1 fractions of the page box.
@@ -124,18 +129,20 @@ export async function createPlacement(input: {
 }
 
 export async function deletePlacement(input: { id: string; scriptId: string }) {
-  await verifySession();
+  const user = await getCurrentUser();
   if (!input.id) return;
+  await assertScriptAccess(input.scriptId, user.id);
   await prisma.referencePlacement.delete({ where: { id: input.id } });
   revalidatePath(`/scripts/${input.scriptId}`);
 }
 
 export async function deleteReference(formData: FormData) {
-  await verifySession();
+  const user = await getCurrentUser();
 
   const id = formData.get("id");
   const scriptId = formData.get("scriptId");
   if (typeof id !== "string" || typeof scriptId !== "string") return;
+  await assertScriptAccess(scriptId, user.id);
 
   const reference = await prisma.reference.findUnique({ where: { id }, select: { assetId: true } });
   if (!reference) return;

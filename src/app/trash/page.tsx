@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, memberProjectWhere, accessibleScriptWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/format";
 import { restoreProject, deleteProjectForever } from "@/app/actions/projects";
@@ -8,12 +8,15 @@ import { TrashRow } from "@/components/library/TrashRow";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 export default async function TrashPage() {
-  await verifySession();
+  const user = await getCurrentUser();
 
   const [projects, scripts] = await Promise.all([
-    prisma.project.findMany({ where: { deletedAt: { not: null } }, orderBy: { deletedAt: "desc" } }),
+    prisma.project.findMany({
+      where: { deletedAt: { not: null }, ...memberProjectWhere(user.id) },
+      orderBy: { deletedAt: "desc" },
+    }),
     prisma.script.findMany({
-      where: { deletedAt: { not: null } },
+      where: { deletedAt: { not: null }, ...accessibleScriptWhere(user.id) },
       orderBy: { deletedAt: "desc" },
       include: { project: true },
     }),

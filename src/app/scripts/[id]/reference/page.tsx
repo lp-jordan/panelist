@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, accessibleScriptWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { ReferenceLibraryClient, type ReferenceCard } from "@/components/reference/ReferenceLibraryClient";
@@ -8,11 +8,11 @@ import { ReferenceLibraryClient, type ReferenceCard } from "@/components/referen
 // Per-issue reference library (project-hub decision: each script carries its
 // own reference set). Reached from the References action on an issue row.
 export default async function ScriptReferencePage({ params }: { params: Promise<{ id: string }> }) {
-  await verifySession();
+  const user = await getCurrentUser();
   const { id } = await params;
 
-  const script = await prisma.script.findUnique({
-    where: { id, deletedAt: null },
+  const script = await prisma.script.findFirst({
+    where: { id, deletedAt: null, ...accessibleScriptWhere(user.id) },
     select: {
       id: true,
       title: true,

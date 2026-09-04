@@ -1,13 +1,22 @@
-import { verifySession } from "@/lib/dal";
+import { getCurrentUser, accessibleScriptWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 
-// Streams a reference image's bytes out of Postgres (AssetData). Kept behind
-// the session gate like the rest of the app — this is a single-user tool, so
-// there's no public image surface. The bytes are immutable per asset id, so a
-// long immutable cache is safe once past auth.
+// Streams a reference image's bytes out of Postgres (AssetData). Scoped to the
+// requester: the asset must belong to a reference in a script they can access,
+// so image ids can't be enumerated across accounts. Bytes are immutable per
+// asset id, so a long private cache is safe.
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  await verifySession();
+  const user = await getCurrentUser();
   const { id } = await params;
+
+  // Gate on access before touching the bytes.
+  const reference = await prisma.reference.findFirst({
+    where: { assetId: id, script: accessibleScriptWhere(user.id) },
+    select: { id: true },
+  });
+  if (!reference) {
+    return new Response("Not found", { status: 404 });
+  }
 
   const [asset, blob] = await Promise.all([
     prisma.asset.findUnique({ where: { id }, select: { mime: true } }),
