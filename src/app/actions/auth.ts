@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSession, deleteSession } from "@/lib/session";
+import { claimInvitesForUser } from "@/lib/invites";
 
 export type LoginState = { error?: string } | undefined;
 
@@ -25,6 +26,9 @@ export async function login(_prevState: LoginState, formData: FormData): Promise
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
     return { error: "Incorrect email or password." };
   }
+
+  // Pick up any invitations sent to this address since the account was made.
+  await claimInvitesForUser(user.id, user.email);
 
   await createSession(user.id);
   redirect("/");
@@ -49,7 +53,8 @@ export async function register(_prevState: LoginState, formData: FormData): Prom
     data: { name, email, passwordHash, role: "COLLABORATOR" },
   });
 
-  // D2 will apply any pending email-keyed invitations here on sign-up.
+  // Apply any pending email-keyed invitations for this address on sign-up.
+  await claimInvitesForUser(user.id, user.email);
 
   await createSession(user.id);
   redirect("/");

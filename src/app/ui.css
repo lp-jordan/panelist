@@ -1794,3 +1794,134 @@ body:has(.scrim[data-open="true"]) .pullback {
   background: none;
   color: var(--label-3);
 }
+
+/* --- team / invites (V2 D3) --------------------------------------------- */
+.group-title {
+  padding: 0 4px 7px;
+  font-size: var(--text-fine);
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--label-2);
+}
+
+.member-list {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 4px;
+}
+
+.member-row + .member-row {
+  border-top: 1px solid var(--separator);
+}
+
+.member-id {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: var(--text-row);
+  color: var(--label);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.member-email {
+  font-size: var(--text-fine);
+  color: var(--label-3);
+}
+
+.member-role {
+  margin-left: auto;
+  font-size: var(--text-fine);
+  color: var(--label-2);
+}
+
+.member-row .btn-secondary,
+.member-row .btn-danger-quiet {
+  flex: none;
+}
+
+.invite-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 4px 0;
+}
+
+.invite-form .field {
+  flex: 1 1 auto;
+}
+
+.invite-form select.field {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.invite-form .btn-primary {
+  flex: none;
+}
+
+.btn-secondary {
+  height: 34px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--label);
+  font-size: var(--text-fine);
+  cursor: pointer;
+  transition: background 0.18s var(--ease);
+}
+
+.btn-secondary:hover {
+  background: var(--fill-press);
+}
+
+.btn-danger-quiet {
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--red);
+  font-size: var(--text-fine);
+  cursor: pointer;
+}
+
+.btn-danger-quiet:hover {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+}
+
+.form-error {
+  padding: 8px 4px 0;
+  color: var(--red);
+  font-size: var(--text-fine);
+}
+
+.invite-hint {
+  padding: 8px 4px 0;
+  font-size: var(--text-fine);
+  color: var(--label-2);
+}
+
+.invite-code {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 3px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--fill);
+  color: var(--label);
+  font-size: var(--text-fine);
+  word-break: break-all;
+}

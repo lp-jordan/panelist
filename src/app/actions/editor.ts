@@ -1,14 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser, assertScriptAccess, assertProjectAccess } from "@/lib/dal";
+import { getCurrentUser, assertScriptOwner, assertProjectAccess } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { writeScriptPages } from "@/lib/editor/persist";
 import { type JSONNode } from "@/lib/editor/serialize";
 
 export async function saveScriptContent(scriptId: string, doc: JSONNode) {
   const user = await getCurrentUser();
-  await assertScriptAccess(scriptId, user.id);
+  await assertScriptOwner(scriptId, user.id);
   await writeScriptPages(scriptId, doc);
   revalidatePath(`/scripts/${scriptId}`);
   revalidatePath("/");
@@ -23,7 +23,7 @@ export async function updateScriptMeta(
   meta: { title: string; author: string; draftLabel: string; draftDate: string },
 ) {
   const user = await getCurrentUser();
-  await assertScriptAccess(scriptId, user.id);
+  await assertScriptOwner(scriptId, user.id);
 
   const parsedDate = meta.draftDate ? new Date(meta.draftDate) : null;
   const draftDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate : undefined;

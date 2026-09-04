@@ -42,6 +42,7 @@ model Project {
   scripts     Script[]
   castMembers CastMember[]
   members     ProjectMember[]
+  invites     Invite[]
 }
 
 model ProjectMember {
@@ -54,6 +55,34 @@ model ProjectMember {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+/// V2 D3: a pending project membership. The owner invites by email, which mints
+/// a token (the shareable link). Claimed when someone signs up / logs in with
+/// the matching email — until an email provider lands (Resend), the email match
+/// is the proof; afterward the token becomes the real proof. One open invite per
+/// (project, email); accepting creates the ProjectMember and flips status.
+model Invite {
+  id        String       @id @default(cuid())
+  projectId String
+  email     String
+  role      Role         @default(COLLABORATOR)
+  token     String       @unique @default(cuid())
+  status    InviteStatus @default(PENDING)
+  invitedBy String
+  createdAt DateTime     @default(now())
+  acceptedAt DateTime?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, email])
+  @@index([email])
 }
 
 model CastMember {

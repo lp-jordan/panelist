@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCurrentUser, accessibleScriptWhere } from "@/lib/dal";
+import { getCurrentUser, accessibleScriptWhere, getScriptRole } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { scriptToDocJSON } from "@/lib/editor/serialize";
 import { ScriptEditor } from "@/components/ScriptEditor";
@@ -28,6 +28,11 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
 
   if (!script) notFound();
 
+  // Collaborators (artist/colorist) always get the read view: latest saved
+  // script, references only, no text editing — regardless of the lock flag.
+  const role = await getScriptRole(id, user.id);
+  const readOnly = script.locked || role === "COLLABORATOR";
+
   const meta = {
     title: script.title,
     author: script.author,
@@ -35,8 +40,8 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
     draftDate: script.draftDate.toISOString().slice(0, 10),
   };
 
-  // Locked → the read-only reference view instead of the editor.
-  if (script.locked) {
+  // Locked (or a collaborator) → the read-only reference view instead of the editor.
+  if (readOnly) {
     const doc = scriptToDocJSON(script);
     const pageCount = (doc.content ?? []).filter((n) => n.type !== "freeformPage").length;
 
@@ -68,6 +73,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
         pageCount={pageCount}
         placements={placements}
         references={references}
+        canEdit={role === "OWNER"}
       />
     );
   }

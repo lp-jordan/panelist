@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser, assertScriptAccess } from "@/lib/dal";
+import { getCurrentUser, assertScriptOwner } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 
 // Flips a script between the editor (unlocked) and the reference read view
@@ -11,7 +11,7 @@ export async function setScriptLock(formData: FormData) {
   const id = formData.get("id");
   const locked = formData.get("locked") === "true";
   if (typeof id !== "string") return;
-  await assertScriptAccess(id, user.id);
+  await assertScriptOwner(id, user.id);
 
   await prisma.script.update({ where: { id }, data: { locked } });
   revalidatePath(`/scripts/${id}`);
@@ -54,7 +54,7 @@ export async function renameScript(formData: FormData) {
   const id = formData.get("id");
   const title = formData.get("title");
   if (typeof id !== "string" || typeof title !== "string" || title.trim().length === 0) return;
-  await assertScriptAccess(id, user.id);
+  await assertScriptOwner(id, user.id);
 
   await prisma.script.update({ where: { id }, data: { title: title.trim() } });
   revalidatePath("/");
@@ -64,7 +64,7 @@ export async function duplicateScript(formData: FormData) {
   const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
-  await assertScriptAccess(id, user.id);
+  await assertScriptOwner(id, user.id);
 
   const original = await prisma.script.findUniqueOrThrow({
     where: { id },
@@ -129,7 +129,7 @@ export async function duplicateScript(formData: FormData) {
 export async function moveScript(scriptId: string, projectId: string | null) {
   const user = await getCurrentUser();
   if (typeof scriptId !== "string" || scriptId.length === 0) return;
-  await assertScriptAccess(scriptId, user.id);
+  await assertScriptOwner(scriptId, user.id);
 
   // A dropped project must still exist, be un-trashed, and be one the user
   // belongs to, else the script would vanish into a group they can't see.
@@ -151,7 +151,7 @@ export async function archiveScript(formData: FormData) {
   const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
-  await assertScriptAccess(id, user.id);
+  await assertScriptOwner(id, user.id);
 
   await prisma.script.update({ where: { id }, data: { deletedAt: new Date() } });
   revalidatePath("/");
@@ -162,7 +162,7 @@ export async function restoreScript(formData: FormData) {
   const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
-  await assertScriptAccess(id, user.id);
+  await assertScriptOwner(id, user.id);
 
   await prisma.script.update({ where: { id }, data: { deletedAt: null } });
   revalidatePath("/");
@@ -173,7 +173,7 @@ export async function deleteScriptForever(formData: FormData) {
   const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
-  await assertScriptAccess(id, user.id);
+  await assertScriptOwner(id, user.id);
 
   const script = await prisma.script.findUnique({ where: { id } });
   if (!script?.deletedAt) {

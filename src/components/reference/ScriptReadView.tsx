@@ -70,6 +70,7 @@ export function ScriptReadView({
   pageCount,
   placements,
   references,
+  canEdit = true,
 }: {
   scriptId: string;
   projectId: string | null;
@@ -79,6 +80,8 @@ export function ScriptReadView({
   pageCount: number;
   placements: Placement[];
   references: PinReference[];
+  // Owners can unlock back to the editor; collaborators are read-only for good.
+  canEdit?: boolean;
 }) {
   const backHref = projectId ? `/projects/${projectId}` : "/";
   const backLabel = projectName ?? "Library";
@@ -263,7 +266,7 @@ export function ScriptReadView({
         </span>
 
         {/* Unlock stays a standalone control in the bar, outside the menu. */}
-        <LockToggle id={scriptId} locked />
+        {canEdit && <LockToggle id={scriptId} locked />}
 
         {/* Phones: the same sliders icon the editor uses for its actions sheet. */}
         <button

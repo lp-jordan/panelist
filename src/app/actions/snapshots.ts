@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser, assertScriptAccess } from "@/lib/dal";
+import { getCurrentUser, assertScriptAccess, assertScriptOwner } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { docJSONToScriptPagesInput, scriptToDocJSON, type JSONNode } from "@/lib/editor/serialize";
 import { serializeSnapshot as serialize, parseSnapshotContent, type SnapshotMeta } from "@/lib/snapshot";
@@ -43,7 +43,7 @@ export async function createManualSnapshot(
   label: string,
 ) {
   const user = await getCurrentUser();
-  await assertScriptAccess(scriptId, user.id);
+  await assertScriptOwner(scriptId, user.id);
   const created = await prisma.snapshot.create({
     data: { scriptId, isManual: true, label: label.trim() || "Saved version", content: serialize(doc, meta) },
   });
@@ -55,7 +55,7 @@ export async function createManualSnapshot(
 // identical content, so a quiet session doesn't accrue duplicate checkpoints.
 export async function createAutoSnapshot(scriptId: string, doc: JSONNode, meta: SnapshotMeta) {
   const user = await getCurrentUser();
-  await assertScriptAccess(scriptId, user.id);
+  await assertScriptOwner(scriptId, user.id);
   const content = serialize(doc, meta);
 
   const latest = await prisma.snapshot.findFirst({
@@ -77,7 +77,7 @@ export async function createAutoSnapshot(scriptId: string, doc: JSONNode, meta: 
 // and title-page meta from the chosen snapshot.
 export async function restoreSnapshot(scriptId: string, snapshotId: string) {
   const user = await getCurrentUser();
-  await assertScriptAccess(scriptId, user.id);
+  await assertScriptOwner(scriptId, user.id);
 
   const snapshot = await prisma.snapshot.findUniqueOrThrow({
     where: { id: snapshotId },
@@ -131,7 +131,7 @@ export async function restoreSnapshot(scriptId: string, snapshotId: string) {
 
 export async function deleteSnapshot(scriptId: string, snapshotId: string) {
   const user = await getCurrentUser();
-  await assertScriptAccess(scriptId, user.id);
+  await assertScriptOwner(scriptId, user.id);
   const snapshot = await prisma.snapshot.findUnique({ where: { id: snapshotId }, select: { scriptId: true } });
   if (snapshot?.scriptId !== scriptId) throw new Error("Snapshot does not belong to this script.");
   await prisma.snapshot.delete({ where: { id: snapshotId } });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser, assertScriptAccess } from "@/lib/dal";
+import { getCurrentUser, assertScriptOwner } from "@/lib/dal";
 import { writeScriptPages } from "@/lib/editor/persist";
 import type { JSONNode } from "@/lib/editor/serialize";
 
@@ -12,7 +12,7 @@ import type { JSONNode } from "@/lib/editor/serialize";
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   const { id } = await params;
-  await assertScriptAccess(id, user.id);
+  await assertScriptOwner(id, user.id);
   let doc: JSONNode;
   try {
     doc = (await request.json()) as JSONNode;

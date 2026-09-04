@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NewMenu } from "@/components/library/NewMenu";
 import { ScriptRow } from "@/components/library/ScriptRow";
 import { ScriptDropZone } from "@/components/library/ScriptDropZone";
+import { MembersPanel } from "@/components/project/MembersPanel";
 
 // The project hub (V2 project-hub IA): a project opens to its issues, and each
 // issue row is the jumping-off point into its script, its references, and
@@ -26,6 +27,14 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
           orderBy: { updatedAt: "desc" },
           include: { _count: { select: { pages: true } } },
         },
+        members: {
+          select: { role: true, user: { select: { id: true, name: true, email: true } } },
+        },
+        invites: {
+          where: { status: "PENDING" },
+          orderBy: { createdAt: "desc" },
+          select: { id: true, email: true, role: true, token: true },
+        },
       },
     }),
     prisma.project.findMany({
@@ -36,6 +45,8 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
   ]);
 
   if (!project) notFound();
+
+  const isOwner = project.members.some((m) => m.user.id === user.id && m.role === "OWNER");
 
   return (
     <div className="shell">
@@ -86,6 +97,19 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
             )}
           </ScriptDropZone>
         </section>
+
+        <MembersPanel
+          projectId={project.id}
+          isOwner={isOwner}
+          members={project.members.map((m) => ({
+            id: m.user.id,
+            name: m.user.name,
+            email: m.user.email,
+            role: m.role,
+            isSelf: m.user.id === user.id,
+          }))}
+          invites={project.invites}
+        />
       </main>
     </div>
   );
