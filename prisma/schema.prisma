@@ -26,6 +26,8 @@ model User {
   uploadedAssets     Asset[]
   events             Event[]
   ownedScripts       Script[]
+  artVersions        ArtVersion[]
+  artComments        ArtComment[]
 }
 
 enum Role {
@@ -119,6 +121,7 @@ model Script {
   snapshots   Snapshot[]
   references  Reference[]
   collections Collection[]
+  artPages    ArtPage[]
 }
 
 enum PageKind {
@@ -205,6 +208,77 @@ model Snapshot {
   content   String
 
   script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+}
+
+/// V2 Phase E — art pipeline. One row per script page that has (or had) art.
+/// Deliberately keyed by (scriptId, pageNumber), NOT Page.id: the editor
+/// wipes-and-recreates Page rows on every save, so Page.id is unstable (same
+/// reasoning as ReferencePlacement). Lock the script before art starts so page
+/// numbers stay frozen under the uploaded art; a later edit that drops the page
+/// orphans its art (pageNumber past the end) rather than corrupting it.
+/// NB: this supersedes the unused `Asset.kind = ART` seam, which pinned to the
+/// unstable pageId. Art bytes live in a dedicated R2 bucket (ART_R2_*), never in
+/// Postgres — unlike reference images, which are AssetData blobs.
+model ArtPage {
+  id         String   @id @default(cuid())
+  scriptId   String
+  pageNumber Int
+  createdAt  DateTime @default(now())
+  // The version shown/downloaded as "current". Nullable while a page row exists
+  // with no live version. SetNull so deleting the pointed-at version never
+  // cascades the ArtPage away.
+  currentVersionId String? @unique
+
+  script         Script       @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  currentVersion ArtVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
+  versions       ArtVersion[] @relation("PageVersions")
+  comments       ArtComment[]
+
+  @@unique([scriptId, pageNumber])
+}
+
+/// One uploaded art file for a page = one immutable version. `version`
+/// increments per ArtPage. Bytes stored in R2 at
+/// art/<scriptId>/p<pageNumber>/v<version>/original.<ext>, with a generated
+/// preview.webp; storageKey/previewKey hold those object keys. Owner-only hard
+/// delete of a NON-current version removes this row + its R2 objects (an Event
+/// records the deletion so history survives even though the file doesn't).
+model ArtVersion {
+  id           String   @id @default(cuid())
+  artPageId    String
+  version      Int
+  storageKey   String
+  previewKey   String?
+  bytes        Int?
+  mime         String?
+  originalName String?
+  uploadedBy   String?
+  createdAt    DateTime @default(now())
+
+  artPage    ArtPage  @relation("PageVersions", fields: [artPageId], references: [id], onDelete: Cascade)
+  currentFor ArtPage? @relation("CurrentVersion")
+  uploader   User?    @relation(fields: [uploadedBy], references: [id])
+
+  @@unique([artPageId, version])
+}
+
+/// A note pinned to a spot on a page's art (the prototype's comment pins).
+/// Anchored by xPct/yPct (0–1 fractions) on the ArtPage — resolution-independent
+/// and version-independent: notes persist across new uploads. Authored by any
+/// project member; resolvable/reopenable, hard-deletable by the author.
+model ArtComment {
+  id         String    @id @default(cuid())
+  artPageId  String
+  authorId   String?
+  body       String
+  xPct       Float
+  yPct       Float
+  resolved   Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  artPage ArtPage @relation(fields: [artPageId], references: [id], onDelete: Cascade)
+  author  User?   @relation(fields: [authorId], references: [id])
 }
 
 enum AssetKind {

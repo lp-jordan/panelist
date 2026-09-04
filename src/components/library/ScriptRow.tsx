@@ -82,12 +82,18 @@ export function ScriptRow({
             <path d="M21 15l-5-5L5 21" />
           </svg>
         </Link>
-        <span className="row-act row-act--soon" role="img" aria-label="Art page layout — coming soon" title="Art page layout — coming soon">
+        <Link
+          href={`/scripts/${id}/art`}
+          className="row-act"
+          aria-label={`Art pages for ${title}`}
+          title="Art pages"
+          draggable={false}
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="3" y="3" width="18" height="18" rx="2" />
             <path d="M3 9h18M9 21V9" />
           </svg>
-        </span>
+        </Link>
 
         <Menu label={`Actions for ${title}`} contextSelector=".row">
           {(close) => (
