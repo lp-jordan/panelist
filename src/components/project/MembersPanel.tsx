@@ -50,9 +50,7 @@ export function MembersPanel({
   const [state, action] = useActionState<InviteResult, FormData>(createInvite, undefined);
 
   return (
-    <section className="group" aria-labelledby="members-heading">
-      <h2 id="members-heading" className="group-title">Team</h2>
-
+    <div className="members-panel">
       <ul className="member-list">
         {members.map((m) => (
           <li key={m.id} className="member-row">
@@ -119,6 +117,6 @@ export function MembersPanel({
           )}
         </>
       )}
-    </section>
+    </div>
   );
 }

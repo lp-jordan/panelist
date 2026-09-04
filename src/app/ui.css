@@ -1796,13 +1796,10 @@ body:has(.scrim[data-open="true"]) .pullback {
 }
 
 /* --- team / invites (V2 D3) --------------------------------------------- */
-.group-title {
-  padding: 0 4px 7px;
-  font-size: var(--text-fine);
-  font-weight: 600;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
-  color: var(--label-2);
+.members-body {
+  padding: 8px 16px 16px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .member-list {

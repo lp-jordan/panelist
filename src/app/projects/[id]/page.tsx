@@ -7,7 +7,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { NewMenu } from "@/components/library/NewMenu";
 import { ScriptRow } from "@/components/library/ScriptRow";
 import { ScriptDropZone } from "@/components/library/ScriptDropZone";
-import { MembersPanel } from "@/components/project/MembersPanel";
+import { ProjectSettings } from "@/components/project/ProjectSettings";
 
 // The project hub (V2 project-hub IA): a project opens to its issues, and each
 // issue row is the jumping-off point into its script, its references, and
@@ -59,6 +59,18 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
         </Link>
         <span className="nav-spacer" />
         <ThemeToggle />
+        <ProjectSettings
+          projectId={project.id}
+          isOwner={isOwner}
+          members={project.members.map((m) => ({
+            id: m.user.id,
+            name: m.user.name,
+            email: m.user.email,
+            role: m.role,
+            isSelf: m.user.id === user.id,
+          }))}
+          invites={project.invites}
+        />
         <NewMenu mode="script" projectId={project.id} />
       </nav>
 
@@ -97,19 +109,6 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
             )}
           </ScriptDropZone>
         </section>
-
-        <MembersPanel
-          projectId={project.id}
-          isOwner={isOwner}
-          members={project.members.map((m) => ({
-            id: m.user.id,
-            name: m.user.name,
-            email: m.user.email,
-            role: m.role,
-            isSelf: m.user.id === user.id,
-          }))}
-          invites={project.invites}
-        />
       </main>
     </div>
   );
