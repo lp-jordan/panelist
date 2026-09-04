@@ -11,6 +11,10 @@ set -eu
 : "${AWS_SECRET_ACCESS_KEY:?AWS_SECRET_ACCESS_KEY not set (R2 token secret)}"
 # R2 ignores region but the S3 client needs one.
 export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
+# R2's wildcard cert only covers one label, so virtual-hosted-style addressing
+# (bucket.<account>.r2.cloudflarestorage.com) fails the TLS handshake. Force
+# path-style (<account>.r2.cloudflarestorage.com/bucket).
+aws configure set default.s3.addressing_style path
 
 TS="$(date -u +%Y%m%dT%H%M%SZ)"
 FILE="panelist-${TS}.sql.gz"
