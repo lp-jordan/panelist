@@ -1092,11 +1092,135 @@ body:has(.scrim[data-open="true"]) .pullback {
   background: var(--fill);
 }
 
+.ref-open {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
 .ref-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+/* --- reference detail modal (V2 §2.3 screen 3) --------------------------- */
+
+.rd-modal {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 61;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow: auto;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-menu);
+}
+
+.rd-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  font-size: 13px;
+}
+
+.rd-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 62vh;
+  object-fit: contain;
+  background: var(--fill);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.rd-body {
+  padding: 14px 16px 16px;
+}
+
+.rd-cap {
+  font-size: var(--text-body);
+  line-height: 1.4;
+  color: var(--label);
+}
+
+.rd-cap-empty {
+  color: var(--label-3);
+}
+
+.rd-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.rd-tag {
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: var(--fill);
+  color: var(--label-2);
+  font-size: var(--text-sub);
+  font-weight: 500;
+}
+
+.rd-placed {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--orange-soft);
+  color: var(--orange);
+  font-size: var(--text-sub);
+  font-weight: 500;
+}
+
+.rd-placed svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.rd-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.rd-actions button {
+  flex: 1;
+  padding: 9px 6px;
+  border-radius: 9px;
+  background: var(--fill);
+  color: var(--blue);
+  font-size: var(--text-sub);
+  font-weight: 500;
+  transition: background 0.15s var(--ease);
+}
+
+.rd-actions button:hover {
+  background: var(--fill-press);
+}
+
+.rd-actions .rd-danger {
+  color: var(--red);
 }
 
 /* Orange = placement, everywhere (§2.5). Shown only once a reference is

@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Menu } from "@/components/ui/Menu";
+import { Portal } from "@/components/ui/Portal";
 import { FormSheet } from "@/components/ui/FormSheet";
 import { ActionSheet } from "@/components/ui/ActionSheet";
 import { uploadReference, updateReferenceCaption, deleteReference, updateReferenceTags } from "@/app/actions/references";
@@ -48,7 +49,10 @@ export function ReferenceLibraryClient({
   const [editing, setEditing] = useState<ReferenceCard | null>(null);
   const [deleting, setDeleting] = useState<ReferenceCard | null>(null);
   const [tagging, setTagging] = useState<ReferenceCard | null>(null);
+  const [viewing, setViewing] = useState<ReferenceCard | null>(null);
   const [filter, setFilter] = useState<string | null>(null);
+
+  const nameOf = useMemo(() => new Map(collections.map((c) => [c.id, c.name])), [collections]);
 
   const untaggedCount = useMemo(() => references.filter((r) => r.collectionIds.length === 0).length, [references]);
   const shown = useMemo(() => {
@@ -118,9 +122,12 @@ export function ReferenceLibraryClient({
           {shown.map((ref) => (
             <figure className="ref-card" key={ref.id}>
               <div className="ref-thumb">
-                {/* Plain <img>: bytes come from the session-gated /api/assets
-                    route, so Next's image optimizer would only add a hop. */}
-                <img src={`/api/assets/${ref.assetId}`} alt={ref.caption ?? "Reference image"} loading="lazy" />
+                {/* Tap the image to open the reference detail. Plain <img>:
+                    bytes come from the session-gated /api/assets route, so
+                    Next's image optimizer would only add a hop. */}
+                <button type="button" className="ref-open" onClick={() => setViewing(ref)} aria-label={`Open ${ref.caption ?? "reference"}`}>
+                  <img src={`/api/assets/${ref.assetId}`} alt={ref.caption ?? "Reference image"} loading="lazy" />
+                </button>
                 {ref.placementCount > 0 && (
                   <span className="ref-pin" title={`Pinned in ${ref.placementCount} place${ref.placementCount === 1 ? "" : "s"}`}>
                     {ref.placementCount}
@@ -208,6 +215,26 @@ export function ReferenceLibraryClient({
         />
       </FormSheet>
 
+      {viewing && (
+        <ReferenceDetail
+          reference={viewing}
+          tagNames={viewing.collectionIds.map((id) => nameOf.get(id)).filter((n): n is string => Boolean(n))}
+          onClose={() => setViewing(null)}
+          onEditCaption={() => {
+            setEditing(viewing);
+            setViewing(null);
+          }}
+          onTags={() => {
+            setTagging(viewing);
+            setViewing(null);
+          }}
+          onDelete={() => {
+            setDeleting(viewing);
+            setViewing(null);
+          }}
+        />
+      )}
+
       <FormSheet
         key={tagging?.id ?? "none"}
         open={tagging !== null}
@@ -245,5 +272,75 @@ export function ReferenceLibraryClient({
         hidden={{ id: deleting?.id ?? "", scriptId }}
       />
     </>
+  );
+}
+
+/**
+ * Reference detail (V2 §2.3, screen 3): the full image, its note, the
+ * collections it's in, and whether it's pinned in the script — opened by
+ * tapping a card. Editing routes back through the library's existing sheets.
+ */
+function ReferenceDetail({
+  reference,
+  tagNames,
+  onClose,
+  onEditCaption,
+  onTags,
+  onDelete,
+}: {
+  reference: ReferenceCard;
+  tagNames: string[];
+  onClose: () => void;
+  onEditCaption: () => void;
+  onTags: () => void;
+  onDelete: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <Portal>
+      <div className="scrim" data-open onClick={onClose} />
+      <div className="rd-modal" role="dialog" aria-modal="true" aria-label="Reference detail">
+        <button type="button" className="rd-close" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
+        <img className="rd-img" src={`/api/assets/${reference.assetId}`} alt={reference.caption ?? "Reference"} />
+        <div className="rd-body">
+          <p className="rd-cap">{reference.caption || <span className="rd-cap-empty">No caption</span>}</p>
+
+          {tagNames.length > 0 && (
+            <div className="rd-tags">
+              {tagNames.map((name) => (
+                <span className="rd-tag" key={name}>
+                  {name}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {reference.placementCount > 0 && (
+            <div className="rd-placed">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 21s-7-5.5-7-11a7 7 0 0114 0c0 5.5-7 11-7 11z" />
+                <circle cx="12" cy="10" r="2.5" />
+              </svg>
+              Pinned in {reference.placementCount} place{reference.placementCount === 1 ? "" : "s"} in this script
+            </div>
+          )}
+
+          <div className="rd-actions">
+            <button type="button" onClick={onEditCaption}>Edit caption</button>
+            <button type="button" onClick={onTags}>Collections</button>
+            <button type="button" className="rd-danger" onClick={onDelete}>Delete</button>
+          </div>
+        </div>
+      </div>
+    </Portal>
   );
 }
