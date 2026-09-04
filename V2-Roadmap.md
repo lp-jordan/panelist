@@ -99,12 +99,18 @@ Autosave, version history/restore, character memory, and PDF export (via the `/p
 - Pin a reference to a panel/page.
 - Artist reading view: numbered markers → gutter (desktop) / sheet (mobile); References toggle.
 
-**Phase D+ — collaboration (the original roadmap's back half, when the team stuff matters)**
-- Accounts + invites (per-user auth replacing the single-owner gate) — the one real "rebuild."
-- Read-only shared script view for the artist.
-- Page-grid art uploads + versions (R2 direct-upload + preview worker).
+**Phase D — accounts + collaboration (the one real "rebuild")**
+- Multi-tenant auth: email + password, sign-up *and* login (login/session already exist; sign-up + per-user ownership are new). Replaces the single-owner gate.
+- Access via project membership (reuse the existing `ProjectMember` seam) + a `Script.ownerId` for the owner. Every list/read/write scoped to the current user's access.
+- **Email-keyed invites:** the owner invites an email → a shareable invite link (token). Whether the invitee opens the link (email prefilled) or just signs up directly at the site, using the invited email grants access — pending invites for an email are applied on sign-up. Real email *sending* deferred (no mail service wired yet); an invite is a link you share manually for now.
+- Roles: OWNER edits scripts / locks-unlocks / invites; COLLABORATOR (the artist) gets the read-only locked view + references. (Confirms the earlier "only the owner edits/locks" note.)
+- Slices: **D1** = multi-tenant foundation (sign-up, ownership, scoped queries; backfill existing data to Jordan). **D2** = invites + roles + the read-only artist view.
+
+**Phase E — art pipeline (R2), separate from auth**
+- Page-grid art uploads + versions per issue (Cloudflare R2 direct-to-storage upload + preview worker) — the 20–250 MB layered PSDs that can't ride the DB (unlike reference images; see §3).
 - Download-all for final packaging.
 - Later: role-gated uploads; comments anchored to a specific art version; Milanote-style all-images board.
+- Dig in once D is settled; R2 is its own body of work (storage infra, worker, direct upload) independent of the auth rebuild.
 
 The key resequencing vs. the original artifact: the **reference library (B/C) comes before auth**, because it's useful to Jordan alone, needs only small-image storage, and reuses no fragile machinery.
 
