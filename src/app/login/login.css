@@ -76,3 +76,18 @@
     transform: translateX(7px);
   }
 }
+
+/* Toggle between log-in and sign-up. */
+.login-switch {
+  margin-top: 18px;
+  color: var(--label-2);
+  font-size: 0.9375rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.login-switch:hover {
+  color: var(--blue);
+  background: var(--fill);
+}
