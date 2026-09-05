@@ -11,12 +11,17 @@ import {
   createArtComment,
   toggleArtCommentResolved,
   deleteArtComment,
+  setArtVersionNote,
 } from "@/app/actions/art";
+
+export type PreviewStatus = "PENDING" | "PROCESSING" | "READY" | "FAILED";
 
 export type ArtVersionRow = {
   id: string;
   version: number;
   bytes: number | null;
+  note: string | null;
+  previewStatus: PreviewStatus;
   isCurrent: boolean;
   uploaderName: string;
   createdLabel: string;
@@ -34,7 +39,13 @@ export type ArtCommentRow = {
 export type ArtPageData = {
   pageNumber: number;
   versionCount: number;
-  current: { versionId: string; version: number; mime: string | null; previewUrl: string | null } | null;
+  current: {
+    versionId: string;
+    version: number;
+    mime: string | null;
+    previewUrl: string | null;
+    previewStatus: PreviewStatus;
+  } | null;
   versions: ArtVersionRow[];
   comments: ArtCommentRow[];
 };
@@ -95,6 +106,26 @@ export function ArtPipelineClient({
     if (window.location.hash) history.back();
     else setOpenPage(null);
   };
+
+  // While any current preview is still rendering, poll the server so the tile
+  // flips from "Processing…" to the real thumbnail on its own. Stops as soon as
+  // nothing is pending, and gives up after a few minutes so an idle tab doesn't
+  // refresh forever.
+  const anyPending = pages.some(
+    (p) => p.current && (p.current.previewStatus === "PENDING" || p.current.previewStatus === "PROCESSING"),
+  );
+  useEffect(() => {
+    if (!anyPending) return;
+    const started = Date.now();
+    const t = setInterval(() => {
+      if (Date.now() - started > 5 * 60 * 1000) {
+        clearInterval(t);
+        return;
+      }
+      router.refresh();
+    }, 5000);
+    return () => clearInterval(t);
+  }, [anyPending, router]);
 
   const uploadingRef = useRef(false);
   async function upload(pageNumber: number, file: File) {
@@ -162,7 +193,12 @@ export function ArtPipelineClient({
           latestUploadLabel={latestUploadLabel}
           onOpen={goPage}
           onDrop={upload}
-          onDownloadAll={() => showToast("Bulk download is coming soon")}
+          onDownloadAll={() => {
+            // A file-download endpoint (returns a zip attachment), not a page —
+            // a full navigation is correct here, not router.push.
+            // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+            window.location.href = `/scripts/${scriptId}/art/download`;
+          }}
         />
       ) : (
         <PageView
@@ -210,6 +246,13 @@ export function ArtPipelineClient({
             startTransition(async () => {
               await deleteArtComment({ scriptId, commentId });
               showToast("Note deleted");
+              router.refresh();
+            })
+          }
+          onSetVersionNote={(versionId, note) =>
+            startTransition(async () => {
+              await setArtVersionNote({ scriptId, versionId, note });
+              showToast(note.trim() ? "Note saved" : "Note cleared");
               router.refresh();
             })
           }
@@ -327,19 +370,40 @@ function GridTile({
     >
       <span className="art-thumb">
         {has && <span className="art-vbadge">v{p.current!.version}</span>}
-        {has && p.current!.previewUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.current!.previewUrl} alt={`Page ${p.pageNumber} art`} />
-        ) : has ? (
-          <span className="art-empty art-empty--file">{(p.current!.mime ?? "file").split("/").pop()?.toUpperCase()}</span>
-        ) : (
-          <span className="art-empty">No art yet</span>
-        )}
+        {has ? <ThumbInner cur={p.current!} pageNumber={p.pageNumber} /> : <span className="art-empty">No art yet</span>}
         <span className="art-droplay">Drop to upload<br />Page {p.pageNumber}</span>
       </span>
       <span className="art-cap">Page {p.pageNumber}</span>
     </button>
   );
+}
+
+function fmtType(mime: string | null) {
+  return (mime ?? "file").split("/").pop()?.toUpperCase() ?? "FILE";
+}
+
+// Shared thumbnail body: real preview when READY, a "Processing…" state while the
+// worker rasterizes a PSD/TIFF/PDF, and a format placeholder if it couldn't.
+function ThumbInner({
+  cur,
+  pageNumber,
+}: {
+  cur: NonNullable<ArtPageData["current"]>;
+  pageNumber: number;
+}) {
+  if (cur.previewStatus === "PENDING" || cur.previewStatus === "PROCESSING") {
+    return (
+      <span className="art-empty art-processing">
+        <span className="art-spin art-spin-dark" aria-hidden="true" />
+        Processing preview…
+      </span>
+    );
+  }
+  if (cur.previewUrl) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={cur.previewUrl} alt={`Page ${pageNumber} art`} />;
+  }
+  return <span className="art-empty art-empty--file">{fmtType(cur.mime)}</span>;
 }
 
 function PageView({
@@ -354,6 +418,7 @@ function PageView({
   onAddComment,
   onToggleResolve,
   onDeleteComment,
+  onSetVersionNote,
 }: {
   data: ArtPageData;
   scriptId: string;
@@ -367,6 +432,7 @@ function PageView({
   onAddComment: (body: string, xPct: number, yPct: number) => void;
   onToggleResolve: (commentId: string) => void;
   onDeleteComment: (commentId: string) => void;
+  onSetVersionNote: (versionId: string, note: string) => void;
 }) {
   const [showOlder, setShowOlder] = useState(false);
   const [hotStage, setHotStage] = useState(false);
@@ -423,11 +489,15 @@ function PageView({
             }}
           >
             <div className="art-canvas" title={cur ? "Click the art to leave a note" : undefined}>
-              {cur?.previewUrl ? (
+              {cur && (cur.previewStatus === "PENDING" || cur.previewStatus === "PROCESSING") ? (
+                <span className="art-canvas-empty">
+                  <span className="art-spin art-spin-dark" aria-hidden="true" /> Processing preview…
+                </span>
+              ) : cur?.previewUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={cur.previewUrl} alt={`Page ${data.pageNumber} art`} />
               ) : cur ? (
-                <span className="art-canvas-empty">{(cur.mime ?? "file").split("/").pop()?.toUpperCase()} — no web preview</span>
+                <span className="art-canvas-empty">{fmtType(cur.mime)} — no web preview</span>
               ) : (
                 <span className="art-canvas-empty">No art yet</span>
               )}
@@ -599,7 +669,7 @@ function PageView({
             ) : (
               <>
                 {shown.map((v) => (
-                  <VersionCard key={v.id} v={v} pageNumber={data.pageNumber} isOwner={isOwner} onDownload={onDownload} onMakeCurrent={onMakeCurrent} onAskDelete={onAskDelete} />
+                  <VersionCard key={v.id} v={v} pageNumber={data.pageNumber} isOwner={isOwner} onDownload={onDownload} onMakeCurrent={onMakeCurrent} onAskDelete={onAskDelete} onSetNote={onSetVersionNote} />
                 ))}
                 {older.length > 0 && !showOlder && (
                   <button className="art-lnk" onClick={() => setShowOlder(true)}>
@@ -608,7 +678,7 @@ function PageView({
                 )}
                 {showOlder &&
                   older.map((v) => (
-                    <VersionCard key={v.id} v={v} pageNumber={data.pageNumber} isOwner={isOwner} onDownload={onDownload} onMakeCurrent={onMakeCurrent} onAskDelete={onAskDelete} />
+                    <VersionCard key={v.id} v={v} pageNumber={data.pageNumber} isOwner={isOwner} onDownload={onDownload} onMakeCurrent={onMakeCurrent} onAskDelete={onAskDelete} onSetNote={onSetVersionNote} />
                   ))}
               </>
             )}
@@ -625,6 +695,7 @@ function VersionCard({
   onDownload,
   onMakeCurrent,
   onAskDelete,
+  onSetNote,
 }: {
   v: ArtVersionRow;
   pageNumber: number;
@@ -632,7 +703,11 @@ function VersionCard({
   onDownload: (versionId: string) => void;
   onMakeCurrent: (versionId: string) => void;
   onAskDelete: (v: ArtVersionRow) => void;
+  onSetNote: (versionId: string, note: string) => void;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(v.note ?? "");
+
   return (
     <div className={`art-ver${v.isCurrent ? " art-is-cur" : ""}`}>
       <div className="art-vcard">
@@ -655,10 +730,52 @@ function VersionCard({
             </>
           )}
         </div>
+
+        {editing ? (
+          <div className="art-noteedit">
+            <textarea
+              autoFocus
+              rows={2}
+              placeholder="What changed in this version?"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+            />
+            <div className="art-noteedit-act">
+              <button
+                className="art-lnk"
+                onClick={() => {
+                  setDraft(v.note ?? "");
+                  setEditing(false);
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                className="art-lnk"
+                onClick={() => {
+                  onSetNote(v.id, draft);
+                  setEditing(false);
+                }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : v.note ? (
+          <div className="art-vnote" onClick={() => setEditing(true)} title="Edit note">
+            {v.note}
+          </div>
+        ) : null}
+
         <div className="art-vactions">
           <button className="art-lnk" onClick={() => onDownload(v.id)}>
             ⤓ Download
           </button>
+          {!editing && !v.note && (
+            <button className="art-lnk art-restore" onClick={() => setEditing(true)}>
+              + Add note
+            </button>
+          )}
           {!v.isCurrent && (
             <button className="art-lnk art-restore" onClick={() => onMakeCurrent(v.id)}>
               ↩ Make current

@@ -1,0 +1,14 @@
+{
+  "name": "art-preview-worker",
+  "private": true,
+  "type": "module",
+  "description": "Renders web previews (preview.webp) for PSD/TIFF/PDF art uploads. Runs as its own persistent Railway service; polls Postgres for PENDING ArtVersion rows and rasterizes via ImageMagick + Ghostscript.",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "node index.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "pg": "^8.13.0"
+  }
+}

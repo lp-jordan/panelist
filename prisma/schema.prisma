@@ -249,6 +249,13 @@ model ArtVersion {
   version      Int
   storageKey   String
   previewKey   String?
+  // Web-preview lifecycle. Browser-renderable uploads (PNG/JPG/WEBP) are READY
+  // at once (previewKey = storageKey). PSD/TIFF/PDF land PENDING and the
+  // art-preview-worker (a separate Railway service) rasterizes a preview.webp,
+  // then flips this to READY (or FAILED). SKIP LOCKED on PENDING is the queue.
+  previewStatus PreviewStatus @default(READY)
+  // Optional "what changed" note for this version, editable from the timeline.
+  note         String?
   bytes        Int?
   mime         String?
   originalName String?
@@ -260,6 +267,14 @@ model ArtVersion {
   uploader   User?    @relation(fields: [uploadedBy], references: [id])
 
   @@unique([artPageId, version])
+  @@index([previewStatus])
+}
+
+enum PreviewStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
 }
 
 /// A note pinned to a spot on a page's art (the prototype's comment pins).

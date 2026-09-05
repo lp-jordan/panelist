@@ -2036,3 +2036,12 @@ body:has(.scrim[data-open="true"]) .pullback {
 @media (prefers-reduced-motion: reduce) { .art-tile, .art-pin, .art-spin { transition: none; animation: none; } }
 
 .art-lockhint { background: var(--orange-soft); color: var(--label); border: 0.5px solid color-mix(in srgb, var(--orange) 40%, transparent); border-radius: var(--radius); padding: 11px 14px; font-size: var(--text-sub); margin: 0 0 18px; line-height: 1.4; }
+
+/* Phase E part 2 — preview processing state + per-version note */
+.art-processing { flex-direction: column; gap: 8px; color: var(--label-2); }
+.art-spin-dark { border: 2px solid var(--separator); border-top-color: var(--label-2); }
+.art-canvas-empty .art-spin-dark { display: inline-block; margin-right: 6px; vertical-align: -2px; }
+.art-vnote { margin-top: 8px; font-size: var(--text-sub); color: var(--label); background: var(--fill); border-radius: var(--radius-sm); padding: 7px 9px; cursor: pointer; overflow-wrap: anywhere; }
+.art-noteedit { margin-top: 8px; }
+.art-noteedit textarea { width: 100%; border: 1px solid var(--blue); border-radius: var(--radius-sm); background: var(--bg-grouped); color: var(--label); font-family: inherit; font-size: var(--text-sub); padding: 7px 9px; resize: vertical; outline: none; }
+.art-noteedit-act { display: flex; justify-content: flex-end; gap: 12px; margin-top: 6px; }

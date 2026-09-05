@@ -90,12 +90,16 @@ export async function finalizeArtVersion(input: {
   });
   if (!artPage) throw new Error("not found");
 
+  // Browser-renderable uploads are their own preview and READY at once. Everything
+  // else (PSD/TIFF/PDF) lands PENDING for the art-preview-worker to rasterize.
+  const selfPreview = PREVIEWABLE.has(contentType);
   const created = await prisma.artVersion.create({
     data: {
       artPageId,
       version,
       storageKey: key,
-      previewKey: PREVIEWABLE.has(contentType) ? key : null,
+      previewKey: selfPreview ? key : null,
+      previewStatus: selfPreview ? "READY" : "PENDING",
       bytes,
       mime: contentType || null,
       originalName: fileName || null,
@@ -189,6 +193,26 @@ export async function getArtDownloadUrl(input: { scriptId: string; versionId: st
 
   const name = version.originalName || `page-${version.artPage.pageNumber}.bin`;
   return presignDownload(version.storageKey, name);
+}
+
+/** Set/clear a version's "what changed" note. Any user with script access. */
+export async function setArtVersionNote(input: { scriptId: string; versionId: string; note: string }) {
+  const user = await getCurrentUser();
+  const { scriptId, versionId } = input;
+  await assertScriptAccess(scriptId, user.id);
+
+  const version = await prisma.artVersion.findFirst({
+    where: { id: versionId, artPage: { scriptId } },
+    select: { id: true },
+  });
+  if (!version) throw new Error("not found");
+
+  const note = input.note.trim();
+  await prisma.artVersion.update({
+    where: { id: versionId },
+    data: { note: note.length > 0 ? note : null },
+  });
+  revalidatePath(`/scripts/${scriptId}/art`);
 }
 
 // --- comments (pins on the art) --------------------------------------------
