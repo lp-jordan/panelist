@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   createArtUploadUrl,
   finalizeArtVersion,
@@ -77,7 +77,7 @@ export function ArtPipelineClient({
   latestUploadLabel: string | null;
 }) {
   const router = useRouter();
-  const [openPage, setOpenPage] = useState<number | null>(null);
+  const searchParams = useSearchParams();
   const [toast, setToast] = useState<{ msg: string; busy?: boolean } | null>(null);
   const [confirm, setConfirm] = useState<null | { title: string; body: string; onYes: () => void }>(null);
   const [, startTransition] = useTransition();
@@ -89,22 +89,29 @@ export function ArtPipelineClient({
     if (!busy) toastTimer.current = setTimeout(() => setToast(null), 2400);
   }, []);
 
-  // Sync the open page to the URL hash so the browser back button closes it.
-  useEffect(() => {
-    const apply = () => {
-      const m = /#page\/(\d+)/.exec(window.location.hash);
-      setOpenPage(m ? Number(m[1]) : null);
-    };
-    apply();
-    window.addEventListener("hashchange", apply);
-    return () => window.removeEventListener("hashchange", apply);
-  }, []);
+  // The open page lives in the `?page=N` query param so the browser's own back
+  // button closes the detail. We drive it with the native History API, which Next
+  // syncs into `useSearchParams` — unlike a raw `location.hash` write, this stays
+  // in step with the App Router, so back returns to the grid instead of leaving
+  // the art view entirely.
+  const pageParam = searchParams.get("page");
+  const openPage = pageParam && /^\d+$/.test(pageParam) ? Number(pageParam) : null;
+  // Tracks whether *we* pushed the current detail entry, so the in-app back
+  // button pops it (symmetric with browser back) rather than trapping a
+  // deep-linked visitor who has no grid entry behind them.
+  const pushedRef = useRef(false);
   const goPage = (n: number) => {
-    window.location.hash = `#page/${n}`;
+    window.history.pushState(null, "", `?page=${n}`);
+    pushedRef.current = true;
   };
   const goGrid = () => {
-    if (window.location.hash) history.back();
-    else setOpenPage(null);
+    if (pushedRef.current) {
+      pushedRef.current = false;
+      window.history.back();
+    } else {
+      // Deep-linked straight into a page: no entry to pop, so drop the param.
+      window.history.pushState(null, "", window.location.pathname);
+    }
   };
 
   // While any current preview is still rendering, poll the server so the tile
