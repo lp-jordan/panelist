@@ -17,6 +17,7 @@ export function ScriptRow({
   editedLabel,
   projects,
   locked = false,
+  imported = false,
 }: {
   id: string;
   /* The group this row currently lives in; null for Unassigned. Lets a drop
@@ -31,6 +32,8 @@ export function ScriptRow({
   projects: { id: string; name: string }[];
   /* Whether the script is in the locked reference read view. */
   locked?: boolean;
+  /* Imported PDF: no editor, so no Duplicate or lock toggle. */
+  imported?: boolean;
 }) {
   const [renaming, setRenaming] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -112,16 +115,18 @@ export function ScriptRow({
                 </svg>
               </button>
 
-              <form action={duplicateScript}>
-                <input type="hidden" name="id" value={id} />
-                <button type="submit" role="menuitem" onClick={close}>
-                  Duplicate
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="9" y="9" width="11" height="11" rx="2" />
-                    <path d="M5 15V5h10" />
-                  </svg>
-                </button>
-              </form>
+              {!imported && (
+                <form action={duplicateScript}>
+                  <input type="hidden" name="id" value={id} />
+                  <button type="submit" role="menuitem" onClick={close}>
+                    Duplicate
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="9" y="9" width="11" height="11" rx="2" />
+                      <path d="M5 15V5h10" />
+                    </svg>
+                  </button>
+                </form>
+              )}
 
               <button
                 type="button"
@@ -137,18 +142,20 @@ export function ScriptRow({
                 </svg>
               </button>
 
-              <form action={setScriptLock}>
-                <input type="hidden" name="id" value={id} />
-                <input type="hidden" name="projectId" value={projectId ?? ""} />
-                <input type="hidden" name="locked" value={locked ? "false" : "true"} />
-                <button type="submit" role="menuitem" onClick={close}>
-                  {locked ? "Unlock to edit" : "Lock for references"}
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    {locked ? <path d="M8 11V7a4 4 0 018 0" /> : <path d="M8 11V7a4 4 0 018 0v4" />}
-                    <rect x="5" y="11" width="14" height="9" rx="2" />
-                  </svg>
-                </button>
-              </form>
+              {!imported && (
+                <form action={setScriptLock}>
+                  <input type="hidden" name="id" value={id} />
+                  <input type="hidden" name="projectId" value={projectId ?? ""} />
+                  <input type="hidden" name="locked" value={locked ? "false" : "true"} />
+                  <button type="submit" role="menuitem" onClick={close}>
+                    {locked ? "Unlock to edit" : "Lock for references"}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      {locked ? <path d="M8 11V7a4 4 0 018 0" /> : <path d="M8 11V7a4 4 0 018 0v4" />}
+                      <rect x="5" y="11" width="14" height="9" rx="2" />
+                    </svg>
+                  </button>
+                </form>
+              )}
 
               <hr />
 

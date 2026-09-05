@@ -44,6 +44,21 @@
   page-break-after: auto;
 }
 
+/* --- imported PDF pages --------------------------------------------------- */
+/* An image page fills the sheet edge to edge: the PDF already carries its own
+   margins, so the sheet's 1in padding and text min-height don't apply. Kept
+   position:relative (from .px-page) so reference pins still overlay by x/y. */
+.px-page--image {
+  padding: 0;
+  min-height: 0;
+}
+
+.px-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 /* --- page heading --------------------------------------------------------- */
 
 .px-page-heading {

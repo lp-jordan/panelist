@@ -104,6 +104,7 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
                   editedLabel={formatRelativeTime(script.updatedAt)}
                   projects={projects}
                   locked={script.locked}
+                  imported={script.source === "IMPORTED_PDF"}
                 />
               ))
             )}

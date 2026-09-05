@@ -7,3 +7,4 @@ backup/Dockerfile text eol=lf
 # Dockerfile and worker script LF so line continuations and the runtime behave.
 art-preview-worker/Dockerfile text eol=lf
 art-preview-worker/*.mjs text eol=lf
+public/pdf.worker.min.mjs -text

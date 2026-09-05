@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useTheme } from "@/components/ui/useTheme";
 import { LockToggle } from "@/components/reference/LockToggle";
 import { ScriptSheets, type TitlePageMeta } from "@/components/print/ScriptSheets";
+import { ImportedSheets, type ImportedSheetPage } from "@/components/import/ImportedSheets";
 import { toPageWordNumber } from "@/lib/editor/numberToWords";
 import { createPlacement, deletePlacement } from "@/app/actions/references";
 import type { Theme } from "@/lib/theme";
@@ -71,6 +72,7 @@ export function ScriptReadView({
   placements,
   references,
   canEdit = true,
+  imagePages,
 }: {
   scriptId: string;
   projectId: string | null;
@@ -82,6 +84,10 @@ export function ScriptReadView({
   references: PinReference[];
   // Owners can unlock back to the editor; collaborators are read-only for good.
   canEdit?: boolean;
+  // Set for an imported-PDF script: the pages are images, not editor structure,
+  // so we render image sheets instead of ScriptSheets. Includes front matter
+  // (pageNumber null) in original order.
+  imagePages?: ImportedSheetPage[];
 }) {
   const backHref = projectId ? `/projects/${projectId}` : "/";
   const backLabel = projectName ?? "Library";
@@ -98,9 +104,15 @@ export function ScriptReadView({
   const fitRef = useRef<HTMLDivElement>(null);
   const scalerRef = useRef<HTMLDivElement>(null);
 
-  // Page list for the outline (script pages only; freeform pages are unnumbered).
+  // Page list for the outline (numbered pages only; front matter / freeform
+  // pages are unnumbered). Imported scripts have no panels, so no panel count.
   const pages = useMemo(() => {
-    const out: { n: number; panelCount: number }[] = [];
+    if (imagePages) {
+      return imagePages
+        .filter((p) => p.pageNumber != null)
+        .map((p) => ({ n: p.pageNumber as number, panelCount: undefined as number | undefined }));
+    }
+    const out: { n: number; panelCount: number | undefined }[] = [];
     let n = 0;
     for (const node of doc.content ?? []) {
       if (node.type === "freeformPage") continue;
@@ -108,7 +120,7 @@ export function ScriptReadView({
       out.push({ n, panelCount: (node.content ?? []).filter((c) => c.type === "panel").length });
     }
     return out;
-  }, [doc]);
+  }, [doc, imagePages]);
 
   // Fit the fixed-width sheets to the screen (phones especially). min(1, …)
   // leaves desktop untouched. Measured off the document width so the element's
@@ -317,9 +329,11 @@ export function ScriptReadView({
                   <span className="sx-outline-num">{page.n}</span>
                   <span className="sx-outline-label">
                     {toPageWordNumber(page.n)}
-                    <span className="sx-outline-sub">
-                      {page.panelCount} panel{page.panelCount === 1 ? "" : "s"}
-                    </span>
+                    {page.panelCount !== undefined && (
+                      <span className="sx-outline-sub">
+                        {page.panelCount} panel{page.panelCount === 1 ? "" : "s"}
+                      </span>
+                    )}
                   </span>
                 </button>
               </li>
@@ -330,7 +344,11 @@ export function ScriptReadView({
         <div className="rc-stage" ref={stageRef}>
           <div className="rc-fit" ref={fitRef}>
             <div className="rc-scaler" ref={scalerRef}>
-              <ScriptSheets doc={doc} meta={meta} renderPageOverlay={renderPageOverlay} />
+              {imagePages ? (
+                <ImportedSheets pages={imagePages} renderPageOverlay={renderPageOverlay} />
+              ) : (
+                <ScriptSheets doc={doc} meta={meta} renderPageOverlay={renderPageOverlay} />
+              )}
             </div>
           </div>
         </div>

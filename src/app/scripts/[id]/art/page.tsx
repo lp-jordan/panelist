@@ -20,9 +20,12 @@ export default async function ScriptArtPage({ params }: { params: Promise<{ id: 
       id: true,
       title: true,
       locked: true,
+      source: true,
       projectId: true,
       project: { select: { name: true } },
       pages: { where: { kind: "SCRIPT" }, select: { id: true } },
+      // Imported PDFs number their pages via ImportedPage, not editor pages.
+      importedPages: { where: { pageNumber: { not: null } }, select: { id: true } },
       artPages: {
         select: {
           pageNumber: true,
@@ -62,7 +65,7 @@ export default async function ScriptArtPage({ params }: { params: Promise<{ id: 
   if (!script) notFound();
 
   const role = await getScriptRole(script.id, user.id);
-  const pageCount = script.pages.length;
+  const pageCount = script.source === "IMPORTED_PDF" ? script.importedPages.length : script.pages.length;
   const byNumber = new Map(script.artPages.map((ap) => [ap.pageNumber, ap]));
 
   // Presign inline preview URLs for each CURRENT version that has a web-viewable

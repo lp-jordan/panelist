@@ -114,14 +114,49 @@ model Script {
   // The script's owner (V2 D). Access = ownerId is me OR I'm a member of its
   // project. Nullable only for the backfill window; new scripts always set it.
   ownerId    String?
+  // EDITOR = written in the panel editor (pages/panels/dialogue).
+  // IMPORTED_PDF = brought in as a finished PDF; its pages are images, there is
+  // no editable structure, and it's permanently locked to the read view.
+  source     ScriptSource @default(EDITOR)
 
-  project     Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  owner       User?        @relation(fields: [ownerId], references: [id])
-  pages       Page[]
-  snapshots   Snapshot[]
-  references  Reference[]
-  collections Collection[]
-  artPages    ArtPage[]
+  project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  owner         User?          @relation(fields: [ownerId], references: [id])
+  pages         Page[]
+  snapshots     Snapshot[]
+  references    Reference[]
+  collections   Collection[]
+  artPages      ArtPage[]
+  importedPages ImportedPage[]
+}
+
+enum ScriptSource {
+  EDITOR
+  IMPORTED_PDF
+}
+
+/// A page brought in from an uploaded PDF (V2 — PDF import). The content is the
+/// rasterized page image (an Asset + AssetData blob, served like a reference),
+/// plus the PDF's hidden text layer kept for later search/copy — never shown
+/// editable. Deliberately separate from the editor's Page table: the editor
+/// wipes-and-recreates Page rows on every save, so keeping imported pages here
+/// means a stray save can't destroy them.
+///
+/// `order` preserves the original PDF sequence (front matter included).
+/// `pageNumber` is the comic page number the read view / references / art pin
+/// to; NULL = front matter (title, credits) the writer excluded, kept and shown
+/// but skipped by numbering.
+model ImportedPage {
+  id         String  @id @default(cuid())
+  scriptId   String
+  order      Int
+  pageNumber Int?
+  assetId    String  @unique
+  text       String?
+
+  script Script @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  asset  Asset  @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([scriptId, order])
 }
 
 enum PageKind {
@@ -299,6 +334,7 @@ model ArtComment {
 enum AssetKind {
   REFERENCE
   ART
+  PDF_PAGE
 }
 
 /// Backs both the future art pipeline (`kind = ART`, pinned to a Page) and
@@ -319,10 +355,11 @@ model Asset {
   thumbKey     String?
   createdAt    DateTime  @default(now())
 
-  page      Page?      @relation(fields: [pageId], references: [id], onDelete: Cascade)
-  uploader  User?      @relation(fields: [uploadedBy], references: [id])
-  reference Reference?
-  data      AssetData?
+  page         Page?         @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  uploader     User?         @relation(fields: [uploadedBy], references: [id])
+  reference    Reference?
+  importedPage ImportedPage?
+  data         AssetData?
 }
 
 /// Blob store for small reference images, kept in Postgres so uploads survive

@@ -13,6 +13,10 @@ export async function setScriptLock(formData: FormData) {
   if (typeof id !== "string") return;
   await assertScriptOwner(id, user.id);
 
+  // Imported PDFs have no editor to unlock into — the lock is permanent.
+  const current = await prisma.script.findUnique({ where: { id }, select: { source: true } });
+  if (current?.source === "IMPORTED_PDF") return;
+
   await prisma.script.update({ where: { id }, data: { locked } });
   revalidatePath(`/scripts/${id}`);
   // When toggled from a project hub's row menu, refresh the hub too so the
@@ -65,6 +69,11 @@ export async function duplicateScript(formData: FormData) {
   const id = formData.get("id");
   if (typeof id !== "string") return;
   await assertScriptOwner(id, user.id);
+
+  // Imported PDFs store image pages, not editor structure — a structural copy
+  // would produce an empty script. Skip until image duplication is built.
+  const src = await prisma.script.findUnique({ where: { id }, select: { source: true } });
+  if (src?.source === "IMPORTED_PDF") return;
 
   const original = await prisma.script.findUniqueOrThrow({
     where: { id },

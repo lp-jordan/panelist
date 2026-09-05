@@ -40,6 +40,51 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
     draftDate: script.draftDate.toISOString().slice(0, 10),
   };
 
+  // Imported PDF: pages are images, there is no editor. Always the read view,
+  // rendered from ImportedPage rows rather than the serialized editor doc.
+  if (script.source === "IMPORTED_PDF") {
+    const [imported, placements, references] = await Promise.all([
+      prisma.importedPage.findMany({
+        where: { scriptId: id },
+        orderBy: { order: "asc" },
+        select: { assetId: true, pageNumber: true },
+      }),
+      prisma.referencePlacement.findMany({
+        where: { reference: { scriptId: id } },
+        select: {
+          id: true,
+          pageNumber: true,
+          xPct: true,
+          yPct: true,
+          reference: { select: { id: true, assetId: true, caption: true } },
+        },
+      }),
+      prisma.reference.findMany({
+        where: { scriptId: id },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, assetId: true, caption: true },
+      }),
+    ]);
+
+    const pageCount = imported.filter((p) => p.pageNumber != null).length;
+
+    return (
+      <ScriptReadView
+        scriptId={script.id}
+        projectId={script.projectId}
+        projectName={script.project?.name ?? null}
+        doc={{ type: "doc", content: [] }}
+        meta={meta}
+        pageCount={pageCount}
+        placements={placements}
+        references={references}
+        // No editor to unlock into — hide the unlock control for everyone.
+        canEdit={false}
+        imagePages={imported}
+      />
+    );
+  }
+
   // Locked (or a collaborator) → the read-only reference view instead of the editor.
   if (readOnly) {
     const doc = scriptToDocJSON(script);

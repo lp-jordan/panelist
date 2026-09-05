@@ -2045,3 +2045,104 @@ body:has(.scrim[data-open="true"]) .pullback {
 .art-noteedit { margin-top: 8px; }
 .art-noteedit textarea { width: 100%; border: 1px solid var(--blue); border-radius: var(--radius-sm); background: var(--bg-grouped); color: var(--label); font-family: inherit; font-size: var(--text-sub); padding: 7px 9px; resize: vertical; outline: none; }
 .art-noteedit-act { display: flex; justify-content: flex-end; gap: 12px; margin-top: 6px; }
+
+/* --- PDF import (V2) ------------------------------------------------------ */
+.import-drop { padding: 28px 0 40px; }
+
+.import-dropzone {
+  width: 100%;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 44px 28px;
+  border: 1.5px dashed var(--line-strong, var(--separator));
+  border-radius: 16px;
+  background: var(--fill);
+  color: var(--label-2);
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.18s var(--ease), border-color 0.18s var(--ease);
+}
+.import-dropzone:hover { background: var(--fill-press); border-color: var(--blue); }
+.import-dropzone svg { width: 40px; height: 40px; color: var(--blue); }
+.import-dropzone strong { font-size: var(--text-row); color: var(--label); }
+.import-dropzone span { max-width: 42ch; font-size: var(--text-fine); line-height: 1.5; }
+
+.import-parsing {
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 60px 20px; color: var(--label-2);
+}
+.import-spinner {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 3px solid var(--fill-press);
+  border-top-color: var(--blue);
+  animation: import-spin 0.8s linear infinite;
+}
+@keyframes import-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .import-spinner { animation-duration: 2.4s; } }
+
+.import-review { padding: 22px 0 48px; }
+
+.import-toolbar {
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 18px;
+  flex-wrap: wrap; margin-bottom: 8px;
+}
+.import-title-field { display: flex; flex-direction: column; gap: 5px; flex: 1 1 260px; }
+.import-title-field span {
+  font-size: var(--text-fine); font-weight: 600; letter-spacing: 0.03em;
+  text-transform: uppercase; color: var(--label-3);
+}
+.import-count {
+  font-size: var(--text-fine); color: var(--label-2); white-space: nowrap;
+  padding-bottom: 11px;
+}
+.import-count b { color: var(--blue); font-weight: 600; }
+
+.import-hint { margin: 6px 0 16px; font-size: var(--text-fine); color: var(--label-3); }
+
+.import-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.import-thumb {
+  position: relative; padding: 0; border: 0; background: none; cursor: pointer;
+  border-radius: 8px;
+}
+.import-thumb:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.import-sheet {
+  display: block; width: 100%; border-radius: 8px;
+  border: 1px solid var(--separator);
+  box-shadow: 0 1px 3px rgba(0,0,0,.14);
+  background: #fff;
+  transition: transform 0.16s var(--ease), opacity 0.16s var(--ease), filter 0.16s var(--ease);
+}
+.import-thumb:hover .import-sheet { transform: translateY(-3px); }
+
+.import-toggle {
+  position: absolute; top: 8px; left: 8px; z-index: 2;
+  width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--blue); color: #fff;
+  border: 2px solid var(--bg-elevated);
+  box-shadow: 0 1px 4px rgba(0,0,0,.25);
+}
+.import-toggle svg { width: 13px; height: 13px; display: block; }
+
+.import-chip {
+  position: absolute; bottom: 8px; right: 8px; z-index: 2;
+  font-size: 0.7rem; font-weight: 600; letter-spacing: 0.02em;
+  padding: 2px 7px; border-radius: 20px;
+  background: var(--label); color: var(--bg-elevated);
+}
+
+.import-thumb[data-included="false"] .import-sheet {
+  opacity: 0.45; filter: grayscale(0.5); transform: scale(0.97);
+}
+.import-thumb[data-included="false"] .import-toggle {
+  background: var(--bg-elevated); border-color: var(--red); color: var(--red);
+}
+.import-thumb[data-included="false"] .import-chip {
+  background: var(--fill-press); color: var(--label-2);
+}
+
+.import-actions { margin-top: 26px; display: flex; justify-content: flex-end; }
+.import-error { margin-top: 14px; color: var(--red); font-size: var(--text-fine); }

@@ -9,12 +9,19 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const user = await getCurrentUser();
   const { id } = await params;
 
-  // Gate on access before touching the bytes.
-  const reference = await prisma.reference.findFirst({
-    where: { assetId: id, script: accessibleScriptWhere(user.id) },
-    select: { id: true },
-  });
-  if (!reference) {
+  // Gate on access before touching the bytes. The asset is reachable if it
+  // backs a reference OR an imported PDF page in a script the user can access.
+  const [reference, importedPage] = await Promise.all([
+    prisma.reference.findFirst({
+      where: { assetId: id, script: accessibleScriptWhere(user.id) },
+      select: { id: true },
+    }),
+    prisma.importedPage.findFirst({
+      where: { assetId: id, script: accessibleScriptWhere(user.id) },
+      select: { id: true },
+    }),
+  ]);
+  if (!reference && !importedPage) {
     return new Response("Not found", { status: 404 });
   }
 
