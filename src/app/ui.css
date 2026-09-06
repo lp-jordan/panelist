@@ -2046,6 +2046,78 @@ body:has(.scrim[data-open="true"]) .pullback {
 .art-noteedit textarea { width: 100%; border: 1px solid var(--blue); border-radius: var(--radius-sm); background: var(--bg-grouped); color: var(--label); font-family: inherit; font-size: var(--text-sub); padding: 7px 9px; resize: vertical; outline: none; }
 .art-noteedit-act { display: flex; justify-content: flex-end; gap: 12px; margin-top: 6px; }
 
+.art-headact { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.art-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* --- V3 reader mode ------------------------------------------------------ */
+/* Full-screen, distraction-free read-through of the current art. Always on a
+   dark ground (reading finished pages), independent of the app theme. */
+.reader {
+  position: fixed; inset: 0; z-index: 90;
+  background: #0b0b0d;
+  overflow: hidden;
+  touch-action: pan-y;
+  user-select: none;
+}
+.reader-bar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 4;
+  display: flex; align-items: center; gap: 14px;
+  padding: 0 16px; height: var(--nav-height, 52px);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.55), rgba(0,0,0,0));
+  color: #fff;
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease);
+}
+.reader-bar-hidden { opacity: 0; transform: translateY(-8px); pointer-events: none; }
+.reader-close {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: none; border: 0; color: #fff; font-family: inherit;
+  font-size: var(--text-row); font-weight: 590; cursor: pointer; padding: 6px 8px 6px 0;
+}
+.reader-close svg { width: 20px; height: 20px; }
+.reader-title { flex: 1; min-width: 0; text-align: center; font-size: var(--text-row); font-weight: 600; opacity: 0.9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reader-count { font-size: var(--text-row); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.reader-of { opacity: 0.55; }
+
+.reader-stage {
+  position: absolute; inset: 0; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+}
+.reader-img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 10px 50px rgba(0,0,0,0.5); border-radius: 2px; }
+.reader-blank {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  width: min(520px, 70vw); aspect-ratio: 2 / 3; max-height: 80vh;
+  border: 1px dashed rgba(255,255,255,0.18); border-radius: 8px;
+  color: rgba(255,255,255,0.6);
+}
+.reader-blank-pg { font-size: var(--text-title); font-weight: 600; color: rgba(255,255,255,0.85); }
+.reader-blank-msg { font-size: var(--text-sub); }
+.reader-empty { color: rgba(255,255,255,0.6); font-size: var(--text-row); }
+
+/* Invisible tap zones for page turns. */
+.reader-zone { position: absolute; top: 0; bottom: 0; z-index: 2; background: none; border: 0; cursor: pointer; padding: 0; }
+.reader-zone-prev { left: 0; width: 33%; }
+.reader-zone-next { right: 0; width: 67%; }
+.reader-zone:disabled { cursor: default; }
+
+/* On-screen chevrons (desktop/hover affordance). */
+.reader-nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+  width: 46px; height: 46px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.12); color: #fff; border: 0; cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: opacity 0.3s var(--ease), background 0.18s var(--ease);
+}
+.reader-nav svg { width: 22px; height: 22px; }
+.reader-nav:hover { background: rgba(255,255,255,0.22); }
+.reader-nav:disabled { opacity: 0.25; cursor: default; }
+.reader-nav-prev { left: 14px; }
+.reader-nav-next { right: 14px; }
+
+@media (hover: none) { .reader-nav { display: none; } }
+@media (prefers-reduced-motion: reduce) { .reader-bar, .reader-nav { transition: none; } }
+
 /* --- PDF import (V2) ------------------------------------------------------ */
 .import-drop { padding: 28px 0 40px; }
 

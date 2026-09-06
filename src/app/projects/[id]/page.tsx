@@ -25,7 +25,21 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
         scripts: {
           where: { deletedAt: null },
           orderBy: { updatedAt: "desc" },
-          include: { _count: { select: { pages: true } } },
+          // Page count mirrors the art overview's derivation: editor scripts
+          // count their SCRIPT pages (BLANK pages are skipped by numbering),
+          // while imported PDFs number their pages via ImportedPage (front
+          // matter, pageNumber = NULL, excluded). `_count.pages` alone always
+          // read 0 for an imported script.
+          select: {
+            id: true,
+            title: true,
+            draftLabel: true,
+            updatedAt: true,
+            locked: true,
+            source: true,
+            pages: { where: { kind: "SCRIPT" }, select: { id: true } },
+            importedPages: { where: { pageNumber: { not: null } }, select: { id: true } },
+          },
         },
         members: {
           select: { role: true, user: { select: { id: true, name: true, email: true } } },
@@ -100,7 +114,9 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
                   projectId={project.id}
                   title={script.title}
                   draftLabel={script.draftLabel}
-                  pageCount={script._count.pages}
+                  pageCount={
+                    script.source === "IMPORTED_PDF" ? script.importedPages.length : script.pages.length
+                  }
                   editedLabel={formatRelativeTime(script.updatedAt)}
                   projects={projects}
                   locked={script.locked}

@@ -206,6 +206,7 @@ export function ArtPipelineClient({
             // eslint-disable-next-line @next/next/no-location-assign-relative-destination
             window.location.href = `/scripts/${scriptId}/art/download`;
           }}
+          onRead={() => router.push(`/scripts/${scriptId}/art/read`)}
         />
       ) : (
         <PageView
@@ -307,6 +308,7 @@ function GridView({
   onOpen,
   onDrop,
   onDownloadAll,
+  onRead,
 }: {
   pages: ArtPageData[];
   locked: boolean;
@@ -314,7 +316,9 @@ function GridView({
   onOpen: (n: number) => void;
   onDrop: (pageNumber: number, file: File) => void;
   onDownloadAll: () => void;
+  onRead: () => void;
 }) {
+  const anyArt = pages.some((p) => p.current != null);
   return (
     <>
       {!locked && (
@@ -331,9 +335,18 @@ function GridView({
             </>
           )}
         </p>
-        <button className="art-btn art-btn-plain" onClick={onDownloadAll}>
-          Download all (current)
-        </button>
+        <div className="art-headact">
+          <button className="art-btn art-btn-tint" onClick={onRead} disabled={!anyArt} title={anyArt ? "Read through the current art" : "Upload some art first"}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="16" height="16">
+              <path d="M2 5h8a3 3 0 013 3v11a2.5 2.5 0 00-2.5-2.5H2z" />
+              <path d="M22 5h-8a3 3 0 00-3 3v11a2.5 2.5 0 012.5-2.5H22z" />
+            </svg>
+            Read
+          </button>
+          <button className="art-btn art-btn-plain" onClick={onDownloadAll}>
+            Download all (current)
+          </button>
+        </div>
       </div>
 
       <div className="art-grid">
