@@ -595,6 +595,18 @@
   font-weight: bold;
 }
 
+/* A note is bold + italic to begin with, so inside one the bold/italic marks
+   invert: toggling bold (Mod-B) drops the weight and toggling italic (Mod-I)
+   drops the slant, which is how you emphasize by contrast — and un-emphasize —
+   within an already-emphatic aside. */
+.sx-note strong {
+  font-weight: normal;
+}
+
+.sx-note em {
+  font-style: normal;
+}
+
 /* Dialogue / caption / SFX: label sits at the left margin, the line itself
    starts at the tab stop, and wrapped lines align to that same tab stop. */
 .sx-text-element {

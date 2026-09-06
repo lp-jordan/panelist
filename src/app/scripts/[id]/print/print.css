@@ -108,6 +108,17 @@
   break-inside: avoid;
 }
 
+/* Notes start bold + italic, so the bold/italic marks invert inside one — a
+   run marked bold drops the weight, a run marked italic drops the slant. Mirrors
+   the editor so the export matches what the writer sees. */
+.px-note strong {
+  font-weight: normal;
+}
+
+.px-note em {
+  font-style: normal;
+}
+
 /* --- dialogue / caption / sfx / narration --------------------------------- */
 
 /* Label at the left margin, text at a fixed 2in tab, wrapped lines aligned to
