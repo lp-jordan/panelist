@@ -119,6 +119,9 @@ export function ScriptEditor({
   // checkpoint, and when that checkpoint was taken. Seeded to now so the first
   // checkpoint waits out the interval (or fires on tab-hide, whichever's first).
   const dirtySinceSnapshot = useRef(false);
+  // Deliberate one-time seed of the checkpoint clock at mount; the ref is never
+  // re-read during render, so the impurity the rule guards against can't occur.
+  // eslint-disable-next-line react-hooks/purity
   const lastSnapshotAt = useRef(Date.now());
 
   // The toast shown when a keystroke would land on the page's auto-formatting
@@ -529,6 +532,9 @@ export function ScriptEditor({
         recomputeInset();
       });
     };
+    // Intentional synchronous first measure so the inset is correct on mount,
+    // before any resize/scroll event fires.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     recomputeInset();
     vv.addEventListener("resize", schedule);
     vv.addEventListener("scroll", schedule);
@@ -545,6 +551,9 @@ export function ScriptEditor({
   // the keyboard's open animation so it lands in place on its own. (On blur the
   // single trailing read settles it back to 0.)
   useEffect(() => {
+    // Re-measure across the keyboard's open animation; the immediate first call
+    // is intentional so the bar starts moving without waiting for a viewport event.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     recomputeInset();
     if (!editorFocused) return;
     const timers = [120, 280, 480, 700].map((ms) => window.setTimeout(recomputeInset, ms));
