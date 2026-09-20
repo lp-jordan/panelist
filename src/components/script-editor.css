@@ -1468,6 +1468,17 @@
     margin: 0;
   }
 
+  /* The export is paper: force the light palette regardless of the app's theme.
+     The root carries an inline `color-scheme` (set in layout.tsx), which iOS
+     Safari otherwise honours into the PDF — a dark scheme paints the page's
+     backdrop black, showing as a large black box behind every sheet. An
+     !important author rule outranks the inline style, so this neutralises it. */
+  html,
+  body {
+    color-scheme: light !important;
+    background: #fff !important;
+  }
+
   /* Hide all app chrome. */
   .nav,
   .sx-outline,
