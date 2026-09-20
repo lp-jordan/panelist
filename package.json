@@ -17,6 +17,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1127.0",
     "@prisma/adapter-pg": "^7.10.0",
     "@prisma/client": "7.10.0",
+    "@react-pdf/renderer": "^4.9.0",
     "@tiptap/core": "^3.30.5",
     "@tiptap/pm": "^3.30.5",
     "@tiptap/react": "^3.30.5",
