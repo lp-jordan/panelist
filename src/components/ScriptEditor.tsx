@@ -403,6 +403,33 @@ export function ScriptEditor({
     save();
   }, [save]);
 
+  // Client-side "Download PDF" — an additive alternative to the browser's
+  // print-to-PDF (the Export button below still calls window.print()). Builds a
+  // real PDF in the browser from the live document, so the result is identical
+  // on every device (no iOS print quirks) and costs no server compute. The
+  // heavy renderer is dynamically imported so it never loads until first use.
+  const downloadPdf = useCallback(async () => {
+    if (!editor) return;
+    saveNow();
+    try {
+      const { generateScriptPdfBlob } = await import("@/lib/pdf/scriptPdf");
+      const doc = JSON.parse(JSON.stringify(editor.getJSON()));
+      const blob = await generateScriptPdfBlob(doc, meta);
+      const slug =
+        meta.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "script";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${slug}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF export failed", err);
+    }
+  }, [editor, saveNow, meta]);
+
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
@@ -670,6 +697,21 @@ export function ScriptEditor({
                 <path d="M6 14h12v7H6z" />
               </svg>
             </button>
+            {/* Additive client-side PDF export (see downloadPdf). Kept as its own
+                button next to Export so the print path is untouched and we can
+                compare the two, then consolidate once verified. */}
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={downloadPdf}
+              title="Download PDF"
+              aria-label="Download PDF"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3v12M8 11l4 4 4-4" />
+                <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+              </svg>
+            </button>
             <button type="button" className="icon-btn" onClick={saveNow} title="Save (Ctrl/Cmd+S)" aria-label="Save">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
@@ -740,6 +782,7 @@ export function ScriptEditor({
           saveNow();
           window.print();
         }}
+        onDownloadPdf={downloadPdf}
         onTitlePage={() => setTitlePageOpen(true)}
         onHistory={() => setHistoryOpen(true)}
       />
