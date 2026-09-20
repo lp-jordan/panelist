@@ -424,7 +424,7 @@
 
 /* Below the width where a sidebar fits beside the sheet, the outline becomes a
    drawer that slides in from the left. */
-@media (max-width: 1100px) {
+@media screen and (max-width: 1100px) {
   .nav-pages-btn {
     display: grid;
   }
@@ -1331,7 +1331,7 @@
 /* Below the width where a full 8.5in sheet fits, the inch margins are what
    break first — they leave almost no column. Shrink the padding rather than
    the measure, so line breaks stay close to what the export will do. */
-@media (max-width: 900px) {
+@media screen and (max-width: 900px) {
   .sx-canvas {
     padding: 16px 12px 36px;
   }
@@ -1354,7 +1354,7 @@
    heading and the printed-page-end marker (.sx-page-end) instead of the sheet
    edges. The physical measures (--sx-tab, the 8.5in width) only mattered for
    matching print; on a phone, readability wins. */
-@media (max-width: 700px) {
+@media screen and (max-width: 700px) {
   .sx-canvas {
     padding: 0;
     gap: 0;
@@ -1414,7 +1414,7 @@
    made worse by the 40px touch targets. Below 640px the four secondary actions
    collapse into a single overflow menu, and the back link drops its "Library"
    word to just the chevron, so the whole bar fits down to 320px. */
-@media (max-width: 640px) {
+@media screen and (max-width: 640px) {
   .nav-actions-inline {
     display: none;
   }
