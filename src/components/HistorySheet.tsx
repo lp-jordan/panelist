@@ -39,6 +39,8 @@ export function HistorySheet({
 
   useEffect(() => {
     if (!open) return;
+    // Reset to a loading state each time the sheet opens, before refresh() fills it.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems(null);
     setConfirmRestore(null);
     refresh().catch((err) => console.error("load history failed", err));

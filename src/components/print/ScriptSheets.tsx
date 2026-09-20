@@ -93,7 +93,12 @@ function PageSheet({
   const children = node.content ?? [];
   const panelCount = children.filter((c) => c.type === "panel").length;
   const heading = `${toPageWordNumber(pageNo)} (${panelCount} Panel${panelCount === 1 ? "" : "s"})`;
-  let panelNo = 0;
+  // Precompute each panel's sequential number (1-based, panels only) so the map
+  // below reads a stable value per index instead of mutating a counter mid-render.
+  const panelNumbers = new Map<number, number>();
+  children.forEach((child, i) => {
+    if (child.type === "panel") panelNumbers.set(i, panelNumbers.size + 1);
+  });
   return (
     <section className="px-page">
       {/* An optional overlay for the read view's reference pins. The sheet is
@@ -110,8 +115,7 @@ function PageSheet({
             );
           }
           if (child.type === "panel") {
-            panelNo += 1;
-            return <Panel key={i} node={child} panelNo={panelNo} />;
+            return <Panel key={i} node={child} panelNo={panelNumbers.get(i)!} />;
           }
           return null;
         })}
@@ -176,9 +180,13 @@ export function ScriptSheets({
   renderPageOverlay?: (pageNo: number) => ReactNode;
 }) {
   const pages = doc.content ?? [];
-  // Freeform (blank) pages sit in the flow but are skipped by page numbering,
-  // so a separate counter advances only on script pages.
-  let scriptPageNo = 0;
+  // Freeform (blank) pages sit in the flow but are skipped by page numbering, so
+  // script pages get their own 1-based number. Precompute per index rather than
+  // mutating a counter mid-render.
+  const scriptPageNumbers = new Map<number, number>();
+  pages.forEach((node, i) => {
+    if (node.type !== "freeformPage") scriptPageNumbers.set(i, scriptPageNumbers.size + 1);
+  });
   return (
     <div className="px-doc">
       <Cover {...meta} />
@@ -186,8 +194,7 @@ export function ScriptSheets({
         if (node.type === "freeformPage") {
           return <FreeformSheet key={i} node={node} />;
         }
-        scriptPageNo += 1;
-        return <PageSheet key={i} node={node} pageNo={scriptPageNo} renderPageOverlay={renderPageOverlay} />;
+        return <PageSheet key={i} node={node} pageNo={scriptPageNumbers.get(i)!} renderPageOverlay={renderPageOverlay} />;
       })}
     </div>
   );

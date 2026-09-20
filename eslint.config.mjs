@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored/generated code we don't author — linting a minified worker or the
+    // Prisma client is noise, not signal.
+    "public/**",
+    "src/generated/**",
   ]),
 ]);
 

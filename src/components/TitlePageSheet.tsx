@@ -34,6 +34,7 @@ export function TitlePageSheet({
   // Reseed from the source of truth each time it opens, so a cancelled edit
   // never lingers into the next open.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open) setDraft(values);
   }, [open, values]);
 
