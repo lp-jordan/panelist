@@ -105,9 +105,11 @@ export function ScriptReadView({
   const scalerRef = useRef<HTMLDivElement>(null);
 
   // Export the locked script to PDF, client-side from the same document the
-  // sheets render. Only for editor-source scripts — imported PDFs are already
-  // their own file (image pages, no editor doc to generate from). The heavy
-  // renderer is dynamically imported so it never loads until used.
+  // sheets render. Only for editor-source scripts: an imported script has no
+  // editor document to render (its pages are rasterized images, and the
+  // original uploaded PDF isn't retained), so this generator has nothing to
+  // build from — a separate image-composed export would be a distinct feature.
+  // The heavy renderer is dynamically imported so it never loads until used.
   const canExportPdf = !imagePages;
   const exportPdf = async () => {
     if (!canExportPdf) return;
