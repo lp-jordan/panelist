@@ -44,9 +44,17 @@ export type ScriptPdfMeta = {
 
 // --- geometry (points; 1in = 72pt) ------------------------------------------
 
-const MARGIN = 72; // 1in page padding, matching print.css
+// Geometry mirrors print.css (the app's read-view sheets), converted to PDF
+// points: 1in = 72pt, and CSS px → pt is ×0.75 (96px = 72pt). The app body is
+// 0.9rem = 14.4px = 10.8pt with line-height 1.6; panels/headings tighten to 1.2;
+// margins are 0.9rem (10.8pt) around panels/notes and 0.35rem (4.2pt) around
+// text elements. Matching these fixes the sizing/line-spacing drift vs the app.
+// (Font is the built-in Helvetica family — Verdana is proprietary and can't be
+// embedded; letterforms differ slightly, so horizontal wrapping won't be
+// identical, but vertical rhythm and scale now match.)
+const MARGIN = 72; // 1in page padding
 const TAB = 144; // 2in dialogue tab / hanging indent
-const BASE = 11; // body text size
+const BASE = 10.8; // 0.9rem body
 
 const styles = StyleSheet.create({
   page: {
@@ -55,25 +63,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: MARGIN,
     fontFamily: "Helvetica",
     fontSize: BASE,
-    lineHeight: 1.5,
+    lineHeight: 1.6,
     color: "#000",
     backgroundColor: "#fff",
   },
   heading: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 17,
+    fontSize: 17.3, // 1.6em of 0.9rem
+    lineHeight: 1.2,
     textDecoration: "underline",
-    marginBottom: 12,
+    marginBottom: 12, // 1rem
   },
-  panel: { marginVertical: 8 },
-  panelLine: { lineHeight: 1.25 },
+  panel: { marginVertical: 10.8 }, // 0.9rem
+  panelLine: { lineHeight: 1.2 },
   bold: { fontFamily: "Helvetica-Bold" },
-  noCopy: { marginTop: 3, lineHeight: 1.25 },
-  note: { marginVertical: 8, fontFamily: "Helvetica-BoldOblique", lineHeight: 1.25 },
-  textRow: { flexDirection: "row", marginVertical: 4 },
+  noCopy: { marginTop: 2.4, lineHeight: 1.2 }, // 0.2rem
+  note: { marginVertical: 10.8, fontFamily: "Helvetica-BoldOblique", lineHeight: 1.6 },
+  textRow: { flexDirection: "row", marginVertical: 4.2, lineHeight: 1.6 }, // 0.35rem
   textLabel: { width: TAB, textTransform: "uppercase" },
   textContent: { flex: 1 },
-  para: { marginBottom: 8 },
+  para: { marginBottom: 7.6 }, // 0.7em
   // cover
   coverPage: {
     paddingTop: MARGIN,
@@ -81,6 +90,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: MARGIN,
     fontFamily: "Helvetica",
     fontSize: BASE,
+    lineHeight: 1.6,
     color: "#000",
     backgroundColor: "#fff",
     justifyContent: "center",
@@ -88,12 +98,13 @@ const styles = StyleSheet.create({
   },
   coverTitle: {
     fontFamily: "Helvetica-Bold",
-    fontSize: 20,
+    fontSize: 19.2, // 1.6rem
+    lineHeight: 1.2,
     textDecoration: "underline",
     textTransform: "uppercase",
     textAlign: "center",
   },
-  coverWrittenBy: { marginTop: 10, textAlign: "center" },
+  coverWrittenBy: { marginTop: 7.5, textAlign: "center" }, // 10px
   coverDraft: {
     position: "absolute",
     left: MARGIN,

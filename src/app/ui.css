@@ -1348,6 +1348,26 @@ body:has(.scrim[data-open="true"]) .pullback {
   margin-bottom: 20px;
 }
 
+/* iOS text auto-sizing boosts wide text blocks to stay readable on the scaled
+   sheet, but skips the narrow inline-block dialogue/SFX label — so the label
+   renders smaller than its own line. Lay the element out as a flex row here:
+   label and content become equal-font-size flex children, so iOS boosts them
+   by the same factor and they stay the same size. Scoped to the read view; the
+   print/PDF path keeps print.css's padding-based hanging indent untouched. */
+.rc-stage .px-text-element {
+  display: flex;
+  padding-left: 0;
+  text-indent: 0;
+}
+
+.rc-stage .px-text-element-label {
+  flex: none;
+}
+
+.rc-stage .px-text-element-content {
+  flex: 1;
+}
+
 .rc-hint {
   color: var(--label-2);
   font-size: var(--text-sub);
