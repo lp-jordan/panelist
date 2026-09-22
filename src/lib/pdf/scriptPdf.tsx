@@ -1,8 +1,8 @@
-// Client-side PDF export — an additive, self-contained alternative to the
-// browser's print-to-PDF (window.print()). It builds the exported script as a
-// real PDF in the writer's browser via @react-pdf/renderer, so the output is
-// identical on every device (no dependence on iOS Safari's print rasterizer,
-// device theme, or viewport width) and costs no server compute.
+// Client-side PDF export (the app's "Export PDF", replacing the old
+// window.print() path). It builds the exported script as a real PDF in the
+// writer's browser via @react-pdf/renderer, so the output is identical on every
+// device (no dependence on iOS Safari's print rasterizer, device theme, or
+// viewport width) and costs no server compute.
 //
 // The layout mirrors src/components/print/ScriptSheets.tsx (the CSS/print
 // version) as closely as react-pdf's box model allows: one physical page per

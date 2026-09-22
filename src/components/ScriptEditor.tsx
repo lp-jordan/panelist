@@ -403,11 +403,10 @@ export function ScriptEditor({
     save();
   }, [save]);
 
-  // Client-side "Download PDF" — an additive alternative to the browser's
-  // print-to-PDF (the Export button below still calls window.print()). Builds a
-  // real PDF in the browser from the live document, so the result is identical
-  // on every device (no iOS print quirks) and costs no server compute. The
-  // heavy renderer is dynamically imported so it never loads until first use.
+  // "Export PDF" — builds a real PDF in the browser from the live document, so
+  // the result is identical on every device (no iOS print quirks) and costs no
+  // server compute. This replaced the old window.print() export. The heavy
+  // renderer is dynamically imported so it never loads until first use.
   const downloadPdf = useCallback(async () => {
     if (!editor) return;
     saveNow();
@@ -679,33 +678,14 @@ export function ScriptEditor({
                 <path d="M9 8h6M10 12h4" />
               </svg>
             </button>
-            {/* Export to PDF is the browser's print-to-PDF against a print
-                stylesheet, so the exported sheets match the editor exactly.
-                Save first so the print reflects the latest edits. */}
-            <button
-              type="button"
-              className="icon-btn"
-              onClick={() => {
-                saveNow();
-                window.print();
-              }}
-              title="Export PDF"
-              aria-label="Export PDF"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-3a2 2 0 012-2h16a2 2 0 012 2v3a2 2 0 01-2 2h-2" />
-                <path d="M6 14h12v7H6z" />
-              </svg>
-            </button>
-            {/* Additive client-side PDF export (see downloadPdf). Kept as its own
-                button next to Export so the print path is untouched and we can
-                compare the two, then consolidate once verified. */}
+            {/* Export to PDF: builds the PDF client-side from the live document
+                (see downloadPdf), so the result is identical on every device. */}
             <button
               type="button"
               className="icon-btn"
               onClick={downloadPdf}
-              title="Download PDF"
-              aria-label="Download PDF"
+              title="Export PDF"
+              aria-label="Export PDF"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 3v12M8 11l4 4 4-4" />
@@ -778,10 +758,6 @@ export function ScriptEditor({
         open={formatOpen}
         onClose={() => setFormatOpen(false)}
         onSave={saveNow}
-        onExport={() => {
-          saveNow();
-          window.print();
-        }}
         onDownloadPdf={downloadPdf}
         onTitlePage={() => setTitlePageOpen(true)}
         onHistory={() => setHistoryOpen(true)}
