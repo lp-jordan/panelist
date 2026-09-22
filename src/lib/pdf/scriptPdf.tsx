@@ -20,9 +20,28 @@ import {
   Text,
   View,
   StyleSheet,
+  Font,
   pdf,
 } from "@react-pdf/renderer";
 import { toPageWordNumber } from "@/lib/editor/numberToWords";
+
+// The app renders scripts in Verdana, which is proprietary and can't be embedded
+// in a distributed PDF. DejaVu Sans is a free, metric-similar humanist sans (wide
+// like Verdana, unlike the narrow built-in Helvetica), so it's the closest legal
+// match. Served from /public/fonts and fetched by react-pdf at render time.
+const FONT = "DejaVu Sans";
+Font.register({
+  family: FONT,
+  fonts: [
+    { src: "/fonts/DejaVuSans.ttf", fontWeight: "normal", fontStyle: "normal" },
+    { src: "/fonts/DejaVuSans-Bold.ttf", fontWeight: "bold", fontStyle: "normal" },
+    { src: "/fonts/DejaVuSans-Oblique.ttf", fontWeight: "normal", fontStyle: "italic" },
+    { src: "/fonts/DejaVuSans-BoldOblique.ttf", fontWeight: "bold", fontStyle: "italic" },
+  ],
+});
+// DejaVu Sans has no hyphenation dictionary here and we don't want mid-word
+// breaks in a script anyway — split only on existing spaces.
+Font.registerHyphenationCallback((word) => [word]);
 
 // --- document shape (a subset of the Tiptap/ProseMirror JSON) ---------------
 
@@ -61,14 +80,15 @@ const styles = StyleSheet.create({
     paddingTop: MARGIN,
     paddingBottom: MARGIN,
     paddingHorizontal: MARGIN,
-    fontFamily: "Helvetica",
+    fontFamily: FONT,
     fontSize: BASE,
     lineHeight: 1.6,
     color: "#000",
     backgroundColor: "#fff",
   },
   heading: {
-    fontFamily: "Helvetica-Bold",
+    fontFamily: FONT,
+    fontWeight: "bold",
     fontSize: 17.3, // 1.6em of 0.9rem
     lineHeight: 1.2,
     textDecoration: "underline",
@@ -82,9 +102,9 @@ const styles = StyleSheet.create({
   // spacing.
   panel: { marginBottom: 10.8 }, // 0.9rem between blocks
   panelLine: { fontSize: BASE, lineHeight: 1.2 },
-  bold: { fontFamily: "Helvetica-Bold" },
+  bold: { fontFamily: FONT, fontWeight: "bold" },
   noCopy: { fontSize: BASE, marginTop: 2.4, lineHeight: 1.2 }, // 0.2rem
-  note: { marginBottom: 10.8, fontSize: BASE, fontFamily: "Helvetica-BoldOblique", lineHeight: 1.6 },
+  note: { marginBottom: 10.8, fontSize: BASE, fontFamily: FONT, fontWeight: "bold", fontStyle: "italic", lineHeight: 1.6 },
   textRow: { flexDirection: "row", marginTop: 4.2 }, // 0.35rem
   textLabel: { width: TAB, fontSize: BASE, textTransform: "uppercase" },
   textContent: { flex: 1, fontSize: BASE, lineHeight: 1.6 },
@@ -94,7 +114,7 @@ const styles = StyleSheet.create({
     paddingTop: MARGIN,
     paddingBottom: MARGIN,
     paddingHorizontal: MARGIN,
-    fontFamily: "Helvetica",
+    fontFamily: FONT,
     fontSize: BASE,
     lineHeight: 1.6,
     color: "#000",
@@ -103,7 +123,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   coverTitle: {
-    fontFamily: "Helvetica-Bold",
+    fontFamily: FONT,
+    fontWeight: "bold",
     fontSize: 19.2, // 1.6rem
     lineHeight: 1.2,
     textDecoration: "underline",
@@ -116,7 +137,8 @@ const styles = StyleSheet.create({
     left: MARGIN,
     bottom: MARGIN,
     flexDirection: "row",
-    fontFamily: "Helvetica-Bold",
+    fontFamily: FONT,
+    fontWeight: "bold",
   },
 });
 
@@ -152,16 +174,11 @@ function inlineSpans(content: Node[] | undefined, keyPrefix: string, invert = fa
       const italic = n.marks?.some((m) => m.type === "italic") ?? false;
       const effBold = invert ? !bold : bold;
       const effItalic = invert ? !italic : italic;
-      const family =
-        effBold && effItalic
-          ? "Helvetica-BoldOblique"
-          : effBold
-            ? "Helvetica-Bold"
-            : effItalic
-              ? "Helvetica-Oblique"
-              : "Helvetica";
       return (
-        <Text key={`${keyPrefix}${i}`} style={{ fontFamily: family }}>
+        <Text
+          key={`${keyPrefix}${i}`}
+          style={{ fontFamily: FONT, fontWeight: effBold ? "bold" : "normal", fontStyle: effItalic ? "italic" : "normal" }}
+        >
           {n.text}
         </Text>
       );
