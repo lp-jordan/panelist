@@ -276,23 +276,38 @@ export function ScriptReadView({
         <span className="nav-title">{meta.title}</span>
         <span className="nav-spacer" />
 
-        {/* Desktop: inline. Below 640px these collapse into the actions sheet. */}
+        {/* Desktop: inline simple icon buttons, matching the editor's toolbar.
+            Below 640px these collapse into the actions sheet. */}
         <span className="nav-actions-inline">
-          <button type="button" className="ref-add ref-add--bar" onClick={() => setPickerOpen(true)}>
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={() => setPickerOpen(true)}
+            title="Pin a reference"
+            aria-label="Pin a reference"
+          >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M12 5v14M5 12h14" />
             </svg>
-            Pin
           </button>
           <button
             type="button"
-            className={`ref-switch${showRefs ? " ref-switch--on" : ""}`}
+            className="icon-btn"
             onClick={() => setShowRefs((v) => !v)}
             aria-pressed={showRefs}
             title={showRefs ? "Hide reference markers" : "Show reference markers"}
+            aria-label={showRefs ? "Hide reference markers" : "Show reference markers"}
           >
-            <span className="ref-switch-track"><span className="ref-switch-knob" /></span>
-            References
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              {showRefs ? (
+                <>
+                  <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                  <circle cx="12" cy="12" r="3" />
+                </>
+              ) : (
+                <path d="M3 3l18 18M10.6 10.6a2 2 0 002.8 2.8M9.4 5.2A9.7 9.7 0 0112 5c6.5 0 10 7 10 7a17 17 0 01-3 3.8M6.1 6.1A17 17 0 002 12s3.5 7 10 7a9.7 9.7 0 003-.5" />
+              )}
+            </svg>
           </button>
           {orphans.length > 0 && (
             <button type="button" className="orphan-chip" onClick={() => setActiveId("__orphans__")}>
@@ -300,12 +315,17 @@ export function ScriptReadView({
             </button>
           )}
           {canExportPdf && (
-            <button type="button" className="ref-add ref-add--bar" onClick={exportPdf} title="Export PDF">
+            <button
+              type="button"
+              className="icon-btn"
+              onClick={exportPdf}
+              title="Export PDF"
+              aria-label="Export PDF"
+            >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 3v12M8 11l4 4 4-4" />
                 <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
               </svg>
-              Export PDF
             </button>
           )}
         </span>
