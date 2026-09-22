@@ -104,6 +104,31 @@ export function ScriptReadView({
   const fitRef = useRef<HTMLDivElement>(null);
   const scalerRef = useRef<HTMLDivElement>(null);
 
+  // Export the locked script to PDF, client-side from the same document the
+  // sheets render. Only for editor-source scripts — imported PDFs are already
+  // their own file (image pages, no editor doc to generate from). The heavy
+  // renderer is dynamically imported so it never loads until used.
+  const canExportPdf = !imagePages;
+  const exportPdf = async () => {
+    if (!canExportPdf) return;
+    try {
+      const { generateScriptPdfBlob } = await import("@/lib/pdf/scriptPdf");
+      const blob = await generateScriptPdfBlob(doc, meta);
+      const slug =
+        meta.title.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase() || "script";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${slug}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF export failed", err);
+    }
+  };
+
   // Page list for the outline (numbered pages only; front matter / freeform
   // pages are unnumbered). Imported scripts have no panels, so no panel count.
   const pages = useMemo(() => {
@@ -272,6 +297,15 @@ export function ScriptReadView({
               {orphans.length} unplaced
             </button>
           )}
+          {canExportPdf && (
+            <button type="button" className="ref-add ref-add--bar" onClick={exportPdf} title="Export PDF">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3v12M8 11l4 4 4-4" />
+                <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+              </svg>
+              Export PDF
+            </button>
+          )}
         </span>
         <span className="nav-theme">
           <ThemeToggle />
@@ -397,6 +431,7 @@ export function ScriptReadView({
         onPin={() => setPickerOpen(true)}
         orphanCount={orphans.length}
         onShowOrphans={() => setActiveId("__orphans__")}
+        onExport={canExportPdf ? exportPdf : undefined}
       />
 
       {pickerOpen && (
@@ -464,6 +499,7 @@ function ReadSettingsSheet({
   onPin,
   orphanCount,
   onShowOrphans,
+  onExport,
 }: {
   open: boolean;
   onClose: () => void;
@@ -472,6 +508,8 @@ function ReadSettingsSheet({
   onPin: () => void;
   orphanCount: number;
   onShowOrphans: () => void;
+  // Editor-source scripts only; undefined for imported PDFs.
+  onExport?: () => void;
 }) {
   const { theme, setTheme } = useTheme();
 
@@ -523,6 +561,21 @@ function ReadSettingsSheet({
                 </button>
               )}
             </div>
+
+            {onExport && (
+              <>
+                <p className="sx-format-label">Document</p>
+                <div className="sx-format-grid">
+                  <button type="button" className="sx-format-btn" onClick={() => { onExport(); onClose(); }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M12 3v12M8 11l4 4 4-4" />
+                      <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+                    </svg>
+                    Export PDF
+                  </button>
+                </div>
+              </>
+            )}
 
             <p className="sx-format-label">Appearance</p>
             <div className="sx-format-seg" role="radiogroup" aria-label="Appearance">

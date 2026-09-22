@@ -52,7 +52,6 @@ export function FormatSheet({
   open,
   onClose,
   onSave,
-  onExport,
   onDownloadPdf,
   onTitlePage,
   onHistory,
@@ -61,7 +60,6 @@ export function FormatSheet({
   open: boolean;
   onClose: () => void;
   onSave: () => void;
-  onExport: () => void;
   onDownloadPdf: () => void;
   onTitlePage: () => void;
   onHistory: () => void;
@@ -103,19 +101,12 @@ export function FormatSheet({
                 </svg>
                 Save
               </button>
-              <button type="button" className="sx-format-btn" onClick={() => act(onExport)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M6 9V3h12v6M6 18H4a2 2 0 01-2-2v-3a2 2 0 012-2h16a2 2 0 012 2v3a2 2 0 01-2 2h-2" />
-                  <path d="M6 14h12v7H6z" />
-                </svg>
-                Export PDF
-              </button>
               <button type="button" className="sx-format-btn" onClick={() => act(onDownloadPdf)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M12 3v12M8 11l4 4 4-4" />
                   <path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
                 </svg>
-                Download PDF
+                Export PDF
               </button>
               <button type="button" className="sx-format-btn" onClick={() => act(onTitlePage)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
