@@ -276,6 +276,14 @@ export function ScriptReadView({
         <span className="nav-title">{meta.title}</span>
         <span className="nav-spacer" />
 
+        {/* Appearance + lock sit before the actions group, in the same order as
+            the editor's bar, so the lock control stays in one spot across the
+            lock/unlock state change instead of jumping sides. */}
+        <span className="nav-theme">
+          <ThemeToggle />
+        </span>
+        {canEdit && <LockToggle id={scriptId} locked />}
+
         {/* Desktop: inline simple icon buttons, matching the editor's toolbar.
             Below 640px these collapse into the actions sheet. */}
         <span className="nav-actions-inline">
@@ -329,12 +337,6 @@ export function ScriptReadView({
             </button>
           )}
         </span>
-        <span className="nav-theme">
-          <ThemeToggle />
-        </span>
-
-        {/* Unlock stays a standalone control in the bar, outside the menu. */}
-        {canEdit && <LockToggle id={scriptId} locked />}
 
         {/* Phones: the same sliders icon the editor uses for its actions sheet. */}
         <button
