@@ -74,15 +74,21 @@ const styles = StyleSheet.create({
     textDecoration: "underline",
     marginBottom: 12, // 1rem
   },
-  panel: { marginVertical: 10.8 }, // 0.9rem
-  panelLine: { lineHeight: 1.2 },
+  // NB: react-pdf resolves lineHeight against the default 18pt (not the
+  // inherited page fontSize) for a Text inside a View, so every text style that
+  // sets lineHeight must also set fontSize or the leading comes out ~2x. Margins
+  // don't collapse either, so block gaps use one side only (marginBottom for
+  // block separation, marginTop within a panel) to match the app's collapsed
+  // spacing.
+  panel: { marginBottom: 10.8 }, // 0.9rem between blocks
+  panelLine: { fontSize: BASE, lineHeight: 1.2 },
   bold: { fontFamily: "Helvetica-Bold" },
-  noCopy: { marginTop: 2.4, lineHeight: 1.2 }, // 0.2rem
-  note: { marginVertical: 10.8, fontFamily: "Helvetica-BoldOblique", lineHeight: 1.6 },
-  textRow: { flexDirection: "row", marginVertical: 4.2, lineHeight: 1.6 }, // 0.35rem
-  textLabel: { width: TAB, textTransform: "uppercase" },
-  textContent: { flex: 1 },
-  para: { marginBottom: 7.6 }, // 0.7em
+  noCopy: { fontSize: BASE, marginTop: 2.4, lineHeight: 1.2 }, // 0.2rem
+  note: { marginBottom: 10.8, fontSize: BASE, fontFamily: "Helvetica-BoldOblique", lineHeight: 1.6 },
+  textRow: { flexDirection: "row", marginTop: 4.2 }, // 0.35rem
+  textLabel: { width: TAB, fontSize: BASE, textTransform: "uppercase" },
+  textContent: { flex: 1, fontSize: BASE, lineHeight: 1.6 },
+  para: { marginBottom: 7.6, fontSize: BASE, lineHeight: 1.6 }, // 0.7em
   // cover
   coverPage: {
     paddingTop: MARGIN,
