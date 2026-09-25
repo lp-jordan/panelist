@@ -336,6 +336,18 @@ export function ScriptReadView({
               </svg>
             </button>
           )}
+          {canExportPdf && (
+            <Link
+              href={`/scripts/${scriptId}/report`}
+              className="icon-btn"
+              title="Script report"
+              aria-label="Script report"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
+              </svg>
+            </Link>
+          )}
         </span>
 
         {/* Phones: the same sliders icon the editor uses for its actions sheet. */}
@@ -456,6 +468,7 @@ export function ScriptReadView({
         orphanCount={orphans.length}
         onShowOrphans={() => setActiveId("__orphans__")}
         onExport={canExportPdf ? exportPdf : undefined}
+        reportHref={canExportPdf ? `/scripts/${scriptId}/report` : undefined}
       />
 
       {pickerOpen && (
@@ -524,6 +537,7 @@ function ReadSettingsSheet({
   orphanCount,
   onShowOrphans,
   onExport,
+  reportHref,
 }: {
   open: boolean;
   onClose: () => void;
@@ -534,6 +548,7 @@ function ReadSettingsSheet({
   onShowOrphans: () => void;
   // Editor-source scripts only; undefined for imported PDFs.
   onExport?: () => void;
+  reportHref?: string;
 }) {
   const { theme, setTheme } = useTheme();
 
@@ -597,6 +612,14 @@ function ReadSettingsSheet({
                     </svg>
                     Export PDF
                   </button>
+                  {reportHref && (
+                    <Link href={reportHref} className="sx-format-btn" onClick={onClose}>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
+                      </svg>
+                      Report
+                    </Link>
+                  )}
                 </div>
               </>
             )}
