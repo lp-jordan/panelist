@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import type { Editor } from "@tiptap/core";
 import { insertPage, insertPanelAfterCurrent } from "@/lib/editor/commands";
 import { Portal } from "@/components/ui/Portal";
@@ -55,6 +56,7 @@ export function FormatSheet({
   onDownloadPdf,
   onTitlePage,
   onHistory,
+  reportHref,
 }: {
   editor: Editor;
   open: boolean;
@@ -63,6 +65,7 @@ export function FormatSheet({
   onDownloadPdf: () => void;
   onTitlePage: () => void;
   onHistory: () => void;
+  reportHref: string;
 }) {
   const { theme, setTheme } = useTheme();
 
@@ -123,6 +126,12 @@ export function FormatSheet({
                 </svg>
                 History
               </button>
+              <Link href={reportHref} className="sx-format-btn" onClick={onClose}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
+                </svg>
+                Report
+              </Link>
             </div>
 
             <p className="sx-format-label">Insert</p>

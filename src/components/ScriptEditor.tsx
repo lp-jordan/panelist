@@ -653,6 +653,16 @@ export function ScriptEditor({
               the bar and get clipped off-screen, so there they collapse into the
               single actions sheet (see .nav-actions in the CSS). */}
           <span className="nav-actions-inline">
+            <Link
+              href={`/scripts/${scriptId}/report`}
+              className="icon-btn"
+              title="Script report"
+              aria-label="Script report"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
+              </svg>
+            </Link>
             <button
               type="button"
               className="icon-btn"
@@ -759,6 +769,7 @@ export function ScriptEditor({
         onClose={() => setFormatOpen(false)}
         onSave={saveNow}
         onDownloadPdf={downloadPdf}
+        reportHref={`/scripts/${scriptId}/report`}
         onTitlePage={() => setTitlePageOpen(true)}
         onHistory={() => setHistoryOpen(true)}
       />
