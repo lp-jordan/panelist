@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { AllSelection } from "@tiptap/pm/state";
@@ -69,6 +70,7 @@ export function ScriptEditor({
   const backLabel = projectName ?? "Library";
 
   const [castNames, setCastNames] = useState(initialCastNames);
+  const router = useRouter();
   // Title-page fields live here so an edit updates the nav title immediately,
   // without waiting on a server round trip / revalidation.
   const [meta, setMeta] = useState<TitlePageValues>({ title, author, draftLabel, draftDate });
@@ -403,6 +405,15 @@ export function ScriptEditor({
     save();
   }, [save]);
 
+  // The report reads the persisted page rows, so flush the live document (and
+  // cancel any pending debounce) before navigating — otherwise a click right
+  // after typing would report the previous revision.
+  const openReport = useCallback(async () => {
+    window.clearTimeout(autosaveTimer.current);
+    await save();
+    router.push(`/scripts/${scriptId}/report`);
+  }, [save, router, scriptId]);
+
   // "Export PDF" — builds a real PDF in the browser from the live document, so
   // the result is identical on every device (no iOS print quirks) and costs no
   // server compute. This replaced the old window.print() export. The heavy
@@ -653,16 +664,17 @@ export function ScriptEditor({
               the bar and get clipped off-screen, so there they collapse into the
               single actions sheet (see .nav-actions in the CSS). */}
           <span className="nav-actions-inline">
-            <Link
-              href={`/scripts/${scriptId}/report`}
+            <button
+              type="button"
               className="icon-btn"
+              onClick={openReport}
               title="Script report"
               aria-label="Script report"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
               </svg>
-            </Link>
+            </button>
             <button
               type="button"
               className="icon-btn"
@@ -769,7 +781,7 @@ export function ScriptEditor({
         onClose={() => setFormatOpen(false)}
         onSave={saveNow}
         onDownloadPdf={downloadPdf}
-        reportHref={`/scripts/${scriptId}/report`}
+        onReport={openReport}
         onTitlePage={() => setTitlePageOpen(true)}
         onHistory={() => setHistoryOpen(true)}
       />
