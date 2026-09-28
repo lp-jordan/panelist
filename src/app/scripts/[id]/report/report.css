@@ -1,0 +1,212 @@
+/* Per-script read-only report. Uses the app's design tokens so it reads as part
+   of the app; the shared .nav styles come from ui.css. */
+
+.rp-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-grouped);
+}
+
+.rp-body {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 20px 16px 64px;
+  font-family: var(--font-ui);
+}
+
+.rp-empty {
+  color: var(--label-2);
+  padding: 24px 4px;
+}
+
+/* --- summary tiles -------------------------------------------------------- */
+
+.rp-tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.rp-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 0.5px var(--separator);
+}
+
+.rp-tile-v {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--label);
+}
+
+.rp-tile-l {
+  font-size: var(--text-sub);
+  color: var(--label-2);
+}
+
+/* --- sections ------------------------------------------------------------- */
+
+.rp-section {
+  margin-bottom: 32px;
+}
+
+.rp-h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--label);
+  margin-bottom: 12px;
+}
+
+.rp-count {
+  font-size: var(--text-sub);
+  font-weight: 600;
+  color: var(--label-2);
+  background: var(--fill);
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.rp-sub {
+  font-size: var(--text-sub);
+  font-weight: 500;
+  color: var(--label-3);
+}
+
+/* --- cast table ----------------------------------------------------------- */
+
+.rp-table {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-elevated);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 0.5px var(--separator);
+  overflow: hidden;
+}
+
+.rp-tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px 64px 60px 56px 72px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 0.5px solid var(--separator);
+  font-size: var(--text-row);
+  color: var(--label);
+}
+
+.rp-tr:last-child { border-bottom: 0; }
+
+.rp-thead {
+  font-size: var(--text-sub);
+  font-weight: 600;
+  color: var(--label-2);
+  background: var(--fill);
+}
+
+.rp-num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Character cell carries a subtle bar behind the name showing relative line
+   volume across the cast. */
+.rp-char {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 4px 6px;
+  margin: -4px -6px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.rp-bar {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--blue) 16%, transparent);
+  border-radius: 6px;
+}
+
+.rp-char-name {
+  position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+}
+
+/* --- element chips -------------------------------------------------------- */
+
+.rp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.rp-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 0 0 0.5px var(--separator);
+}
+
+.rp-chip-k { font-size: var(--text-sub); color: var(--label-2); text-transform: uppercase; letter-spacing: 0.03em; }
+.rp-chip-v { font-weight: 700; color: var(--label); font-variant-numeric: tabular-nums; }
+
+/* --- per-page pacing ------------------------------------------------------ */
+
+.rp-pages { display: flex; flex-direction: column; gap: 6px; }
+
+.rp-page-row {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.rp-page-no {
+  font-size: var(--text-sub);
+  color: var(--label-2);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rp-page-track {
+  height: 18px;
+  background: var(--fill);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.rp-page-fill {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  background: var(--blue);
+  border-radius: 5px;
+}
+
+.rp-page-meta {
+  font-size: var(--text-sub);
+  color: var(--label-2);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- narrow screens ------------------------------------------------------- */
+
+@media (max-width: 620px) {
+  .rp-tiles { grid-template-columns: repeat(2, 1fr); }
+  .rp-tr { grid-template-columns: minmax(0, 1fr) 44px 52px 48px; }
+  /* Drop the two least-critical numeric columns on phones. */
+  .rp-tr > :nth-child(5),
+  .rp-tr > :nth-child(6) { display: none; }
+}

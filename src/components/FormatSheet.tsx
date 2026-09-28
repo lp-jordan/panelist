@@ -55,6 +55,7 @@ export function FormatSheet({
   onDownloadPdf,
   onTitlePage,
   onHistory,
+  onReport,
 }: {
   editor: Editor;
   open: boolean;
@@ -63,6 +64,7 @@ export function FormatSheet({
   onDownloadPdf: () => void;
   onTitlePage: () => void;
   onHistory: () => void;
+  onReport: () => void;
 }) {
   const { theme, setTheme } = useTheme();
 
@@ -122,6 +124,12 @@ export function FormatSheet({
                   <path d="M12 7v5l4 2" />
                 </svg>
                 History
+              </button>
+              <button type="button" className="sx-format-btn" onClick={() => act(onReport)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
+                </svg>
+                Report
               </button>
             </div>
 
