@@ -1,5 +1,6 @@
 "use client";
 
+import { ScratchPad } from "@/components/ScratchPad";
 import { useEffect, useMemo, useRef, useState, useTransition, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
 import { Portal } from "@/components/ui/Portal";
@@ -73,8 +74,10 @@ export function ScriptReadView({
   references,
   canEdit = true,
   imagePages,
+  scratchpad,
 }: {
   scriptId: string;
+  scratchpad: string;
   projectId: string | null;
   projectName: string | null;
   doc: JSONNode;
@@ -448,6 +451,9 @@ export function ScriptReadView({
           ) : null}
         </aside>
       )}
+
+      {/* Notes stay editable while locked — they're not part of the script. */}
+      <ScratchPad scriptId={scriptId} initialText={scratchpad} />
 
       <div className={`rc-scrim${panelOpen ? " open" : ""}`} onClick={() => setActiveId(null)} />
       <div className={`rc-sheet${panelOpen ? " open" : ""}`} role="dialog" aria-hidden={!panelOpen}>

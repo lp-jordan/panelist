@@ -1,0 +1,1 @@
+ALTER TABLE "Script" ADD COLUMN "scratchpad" TEXT NOT NULL DEFAULT '';

@@ -21,6 +21,7 @@ import { ShortcutsSheet } from "./ShortcutsSheet";
 import { TitlePageSheet, type TitlePageValues } from "./TitlePageSheet";
 import { TitlePagePrint } from "./TitlePagePrint";
 import { PageOutline } from "./PageOutline";
+import { ScratchPad } from "./ScratchPad";
 import { LockToggle } from "@/components/reference/LockToggle";
 import { EditorContextMenu } from "./EditorContextMenu";
 import { FormatSheet } from "./FormatSheet";
@@ -53,6 +54,7 @@ export function ScriptEditor({
   draftDate,
   initialDoc,
   initialCastNames,
+  scratchpad,
 }: {
   scriptId: string;
   projectId: string | null;
@@ -63,6 +65,7 @@ export function ScriptEditor({
   draftDate: string;
   initialDoc: JSONNode;
   initialCastNames: string[];
+  scratchpad: string;
 }) {
   // Backing out lands on the script's project hub, not the Library, so you
   // return to where the script lives. Unassigned scripts still fall back home.
@@ -749,6 +752,8 @@ export function ScriptEditor({
             collapsed={outlineCollapsed}
             onToggleCollapse={toggleOutlineCollapsed}
           />
+
+          <ScratchPad scriptId={scriptId} initialText={scratchpad} />
 
           <div className="sx-canvas">
             {/* Print-only: the cover sheet that leads the exported PDF. Hidden
