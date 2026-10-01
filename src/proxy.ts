@@ -3,11 +3,11 @@ import type { NextRequest } from "next/server";
 import { decrypt } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-// Reachable signed out: the login page, the magic-link landing page, and invite
+// Reachable signed out: the log-in and sign-up pages, the magic-link landing page, and invite
 // links (the invite page itself sends signed-out visitors to /login with the
 // invited email prefilled).
 function isPublic(path: string) {
-  return path === "/login" || path === "/login/verify" || path.startsWith("/invite/");
+  return path === "/login" || path === "/signup" || path === "/login/verify" || path.startsWith("/invite/");
 }
 
 export async function proxy(request: NextRequest) {
@@ -33,9 +33,9 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  // Signed-in visitors skip the login form; verify and invite pages handle a
-  // signed-in visitor themselves.
-  if (path === "/login" && isValidUser) {
+  // Signed-in visitors skip the log-in and sign-up forms; verify and invite
+  // pages handle a signed-in visitor themselves.
+  if ((path === "/login" || path === "/signup") && isValidUser) {
     return NextResponse.redirect(new URL("/", request.nextUrl));
   }
 

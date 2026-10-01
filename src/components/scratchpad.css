@@ -1,0 +1,211 @@
+/* The scratch pad (see ScratchPad.tsx). Desktop: a floating card on the right,
+   the mirror of the page outline on the left. Narrower: a right-hand drawer
+   pulled out by a faint edge bar. */
+
+.sx-pad {
+  position: fixed;
+  top: calc(var(--nav-height) + 20px);
+  right: max(20px, calc(50vw - 408px - 20px - 224px));
+  z-index: 30;
+  width: 224px;
+  height: min(520px, calc(100vh - var(--nav-height) - 40px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-menu);
+  font-family: var(--font-ui);
+  transition: width 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    padding 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* Folded: just the scribble chip, anchored at the same top-right corner. */
+.sx-pad[data-open="false"] {
+  width: 48px;
+  height: 48px;
+  padding: 8px;
+}
+
+.sx-pad[data-open="false"] .sx-pad-title,
+.sx-pad[data-open="false"] .sx-pad-status,
+.sx-pad[data-open="false"] .sx-pad-text {
+  display: none;
+}
+
+.sx-pad-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.sx-pad-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--radius-sm);
+  color: var(--label-2);
+  transition: background 0.15s var(--ease);
+}
+
+.sx-pad-toggle:hover {
+  background: var(--fill);
+}
+
+.sx-pad-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+
+.sx-pad-title {
+  flex: 1;
+  font-size: var(--text-fine);
+  font-weight: 600;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  color: var(--label-2);
+  white-space: nowrap;
+}
+
+.sx-pad-status {
+  font-size: var(--text-fine);
+  color: var(--label-3, var(--label-2));
+  white-space: nowrap;
+}
+
+.sx-pad-status[data-state="error"] {
+  color: var(--red);
+}
+
+.sx-pad-text {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 8px 6px;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--label);
+  font-family: var(--font-ui);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* Mobile-only pieces stay out of the desktop layout. */
+.sx-pad-handle,
+.sx-pad-grip,
+.sx-pad-scrim {
+  display: none;
+}
+
+/* The faint bar both handles draw. */
+.sx-pad-line {
+  display: block;
+  width: 4px;
+  height: 44px;
+  border-radius: 2px;
+  background: var(--label);
+  opacity: 0.18;
+}
+
+@media screen and (max-width: 1100px) {
+  .sx-pad,
+  .sx-pad[data-open="false"] {
+    top: 0;
+    right: 0;
+    z-index: 100;
+    width: 320px;
+    max-width: 86vw;
+    height: 100dvh;
+    padding: 16px 12px 12px 22px;
+    border-radius: 0;
+    border-left: 1px solid var(--separator);
+    box-shadow: -2px 0 24px rgba(0, 0, 0, 0.18);
+    transform: translateX(100%);
+    transition: transform 0.34s var(--spring);
+  }
+
+  .sx-pad[data-open="true"] {
+    transform: translateX(0);
+  }
+
+  .sx-pad[data-dragging="true"] {
+    transition: none;
+  }
+
+  /* On phones the drawer's own toggle would only close it; the grip, scrim and
+     Escape cover that, so the title row keeps the icon as a label. */
+  .sx-pad[data-open="false"] .sx-pad-title,
+  .sx-pad[data-open="false"] .sx-pad-status,
+  .sx-pad[data-open="false"] .sx-pad-text {
+    display: revert;
+  }
+
+  .sx-pad[data-open="false"] .sx-pad-text {
+    display: block;
+  }
+
+  /* The edge bar: a thin, faint line with a wider invisible hit area. */
+  .sx-pad-handle {
+    display: grid;
+    place-items: center end;
+    position: fixed;
+    top: 50%;
+    right: 0;
+    z-index: 80;
+    width: 28px;
+    height: 96px;
+    padding-right: 4px;
+    transform: translateY(-50%);
+    touch-action: none;
+    cursor: grab;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .sx-pad-handle[data-hidden="true"] {
+    visibility: hidden;
+  }
+
+  .sx-pad-grip {
+    display: grid;
+    place-items: center;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 22px;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .sx-pad-scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: rgba(0, 0, 0, 0.36);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s var(--ease);
+  }
+
+  .sx-pad-scrim[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media print {
+  .sx-pad,
+  .sx-pad-handle,
+  .sx-pad-scrim {
+    display: none !important;
+  }
+}

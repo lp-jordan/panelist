@@ -1,0 +1,1 @@
+ALTER TABLE "LoginToken" ADD COLUMN "name" TEXT;

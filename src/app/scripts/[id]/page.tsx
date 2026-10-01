@@ -71,6 +71,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
     return (
       <ScriptReadView
         scriptId={script.id}
+        scratchpad={script.scratchpad}
         projectId={script.projectId}
         projectName={script.project?.name ?? null}
         doc={{ type: "doc", content: [] }}
@@ -111,6 +112,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
     return (
       <ScriptReadView
         scriptId={script.id}
+        scratchpad={script.scratchpad}
         projectId={script.projectId}
         projectName={script.project?.name ?? null}
         doc={doc}
@@ -143,6 +145,7 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
       draftDate={script.draftDate.toISOString().slice(0, 10)}
       initialDoc={doc}
       initialCastNames={castMembers.map((c) => c.name)}
+      scratchpad={script.scratchpad}
     />
   );
 }

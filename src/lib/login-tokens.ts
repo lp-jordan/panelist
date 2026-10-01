@@ -34,8 +34,11 @@ export type IssueResult =
   | { ok: true; code: string; linkToken: string }
   | { ok: false; error: string };
 
-/** Mint a fresh code + link for `email`, retiring any earlier unused ones. */
-export async function issueLoginToken(email: string): Promise<IssueResult> {
+/**
+ * Mint a fresh code + link for `email`, retiring any earlier unused ones.
+ * `name` marks a sign-up for a new email (see LoginToken.name).
+ */
+export async function issueLoginToken(email: string, name: string | null = null): Promise<IssueResult> {
   const now = Date.now();
   const recent = await prisma.loginToken.findMany({
     where: { email, createdAt: { gt: new Date(now - 60 * 60 * 1000) } },
@@ -64,6 +67,7 @@ export async function issueLoginToken(email: string): Promise<IssueResult> {
         codeHash: hmac(`code:${email}:${code}`),
         linkHash: hmac(`link:${linkToken}`),
         expiresAt: new Date(now + CODE_TTL_MINUTES * 60 * 1000),
+        name,
       },
     }),
   ]);
@@ -71,17 +75,20 @@ export async function issueLoginToken(email: string): Promise<IssueResult> {
   return { ok: true, code, linkToken };
 }
 
-/** Consume a typed code. Returns true when it matched the live token. */
-export async function consumeCode(email: string, code: string): Promise<boolean> {
+/** What a consumed token proves: control of `email`, plus the sign-up name if any. */
+export type Verified = { email: string; name: string | null };
+
+/** Consume a typed code. Returns the verified sign-in when it matched the live token. */
+export async function consumeCode(email: string, code: string): Promise<Verified | null> {
   const token = await prisma.loginToken.findFirst({
     where: { email, consumedAt: null, expiresAt: { gt: new Date() }, attempts: { lt: MAX_ATTEMPTS } },
     orderBy: { createdAt: "desc" },
   });
-  if (!token) return false;
+  if (!token) return null;
 
   if (!safeEqualHex(token.codeHash, hmac(`code:${email}:${code}`))) {
     await prisma.loginToken.update({ where: { id: token.id }, data: { attempts: { increment: 1 } } });
-    return false;
+    return null;
   }
 
   // Conditional update so two simultaneous submissions can't both succeed.
@@ -89,7 +96,7 @@ export async function consumeCode(email: string, code: string): Promise<boolean>
     where: { id: token.id, consumedAt: null },
     data: { consumedAt: new Date() },
   });
-  return count === 1;
+  return count === 1 ? { email, name: token.name } : null;
 }
 
 /** Look up a link token without consuming it (for the confirm page). */
@@ -103,12 +110,12 @@ export async function peekLinkToken(linkToken: string): Promise<string | null> {
   return token.email;
 }
 
-/** Consume a magic-link token. Returns the email it was issued to, or null. */
-export async function consumeLinkToken(linkToken: string): Promise<string | null> {
+/** Consume a magic-link token. Returns the verified sign-in, or null. */
+export async function consumeLinkToken(linkToken: string): Promise<Verified | null> {
   if (!linkToken) return null;
   const token = await prisma.loginToken.findUnique({
     where: { linkHash: hmac(`link:${linkToken}`) },
-    select: { id: true, email: true },
+    select: { id: true, email: true, name: true },
   });
   if (!token) return null;
 
@@ -116,5 +123,5 @@ export async function consumeLinkToken(linkToken: string): Promise<string | null
     where: { id: token.id, consumedAt: null, expiresAt: { gt: new Date() } },
     data: { consumedAt: new Date() },
   });
-  return count === 1 ? token.email : null;
+  return count === 1 ? { email: token.email, name: token.name } : null;
 }
