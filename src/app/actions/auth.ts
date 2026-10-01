@@ -1,61 +1,98 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { createSession, deleteSession } from "@/lib/session";
 import { claimInvitesForUser } from "@/lib/invites";
+import { appUrl, renderEmail, sendEmail } from "@/lib/email";
+import { CODE_TTL_MINUTES, consumeCode, consumeLinkToken, issueLoginToken, normalizeEmail } from "@/lib/login-tokens";
 
-export type LoginState = { error?: string } | undefined;
+// Passwordless sign-in. One flow covers log-in and sign-up:
+//   1. requestCode — enter an email, get a 6-digit code + magic link by email.
+//   2. verifyCode (typed code) or verifyLink (clicked link) — proves the person
+//      controls that inbox, then signs them in, creating the account on first
+//      use. Because the email is now verified, claiming pending invites for it
+//      is trustworthy (it used to be a bare email match).
 
-function normalizeEmail(value: FormDataEntryValue | null): string {
-  return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
+// `sent` survives a failed resend, so a rate-limit error on "Resend code" keeps
+// the person on the code step instead of bouncing them back to the email step.
+export type RequestCodeState =
+  | { error?: string; sent?: { email: string; isNew: boolean }; resent?: boolean }
+  | undefined;
 
-export async function login(_prevState: LoginState, formData: FormData): Promise<LoginState> {
+export async function requestCode(_prev: RequestCodeState, formData: FormData): Promise<RequestCodeState> {
   const email = normalizeEmail(formData.get("email"));
-  const password = formData.get("password");
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Enter a valid email." };
 
-  if (!email || typeof password !== "string" || password.length === 0) {
-    return { error: "Enter your email and password." };
-  }
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  // Same message whether the email is unknown or the password is wrong, so the
-  // form doesn't reveal which accounts exist.
-  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-    return { error: "Incorrect email or password." };
-  }
-
-  // Pick up any invitations sent to this address since the account was made.
-  await claimInvitesForUser(user.id, user.email);
-
-  await createSession(user.id);
-  redirect("/");
-}
-
-export async function register(_prevState: LoginState, formData: FormData): Promise<LoginState> {
-  const name = typeof formData.get("name") === "string" ? (formData.get("name") as string).trim() : "";
-  const email = normalizeEmail(formData.get("email"));
-  const password = formData.get("password");
-
-  if (!name) return { error: "Enter your name." };
-  if (!email || !email.includes("@")) return { error: "Enter a valid email." };
-  if (typeof password !== "string" || password.length < 8) {
-    return { error: "Password must be at least 8 characters." };
-  }
-
+  const isResend = formData.get("resend") === "1";
   const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } });
-  if (existing) return { error: "An account with that email already exists. Log in instead." };
+  const sent = { email, isNew: !existing };
+  const fail = (error: string): RequestCodeState => (isResend ? { error, sent } : { error });
 
-  const passwordHash = await bcrypt.hash(password, 10);
-  const user = await prisma.user.create({
-    data: { name, email, passwordHash, role: "COLLABORATOR" },
+  const issued = await issueLoginToken(email);
+  if (!issued.ok) return fail(issued.error);
+
+  const origin = await appUrl();
+  const link = origin ? `${origin}/login/verify?token=${encodeURIComponent(issued.linkToken)}` : null;
+
+  const { html, text } = renderEmail({
+    heading: existing ? "Your sign-in code" : "Welcome to Panelist",
+    paragraphs: [
+      link
+        ? `Enter this code to ${existing ? "sign in" : "finish creating your account"}, or use the button below.`
+        : `Enter this code to ${existing ? "sign in" : "finish creating your account"}.`,
+    ],
+    code: issued.code,
+    button: link ? { label: existing ? "Sign in to Panelist" : "Continue to Panelist", url: link } : undefined,
+    footer: `This code expires in ${CODE_TTL_MINUTES} minutes and can only be used once. If you didn't ask for it, you can ignore this email.`,
   });
 
-  // Apply any pending email-keyed invitations for this address on sign-up.
-  await claimInvitesForUser(user.id, user.email);
+  try {
+    await sendEmail({ to: email, subject: `${issued.code} is your Panelist code`, html, text });
+  } catch (err) {
+    console.error("[auth] sending sign-in email failed", err);
+    return fail("We couldn't send the email. Try again in a moment.");
+  }
 
+  return { sent, resent: isResend };
+}
+
+export type VerifyState = { error: string } | undefined;
+
+export async function verifyCode(_prev: VerifyState, formData: FormData): Promise<VerifyState> {
+  const email = normalizeEmail(formData.get("email"));
+  const code = String(formData.get("code") ?? "").replace(/\D/g, "");
+  if (!email) return { error: "Start again with your email." };
+  if (code.length !== 6) return { error: "Enter the 6-digit code from the email." };
+
+  if (!(await consumeCode(email, code))) {
+    return { error: "That code is wrong or has expired." };
+  }
+
+  await signIn(email, formData.get("name"));
+  return undefined; // unreachable: signIn redirects
+}
+
+/** The magic link lands on a confirm page whose button posts here. */
+export async function verifyLink(formData: FormData) {
+  const token = String(formData.get("token") ?? "");
+  const email = await consumeLinkToken(token);
+  if (!email) redirect("/login?expired=1");
+  await signIn(email, formData.get("name"));
+}
+
+/** Find or create the account for a verified email, claim invites, start a session. */
+async function signIn(email: string, nameField: FormDataEntryValue | null) {
+  let user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (!user) {
+    const typed = typeof nameField === "string" ? nameField.trim() : "";
+    // Fall back to the address's local part ("jordan.m" → "jordan.m") so a
+    // magic-link sign-up never stalls on a missing name.
+    const name = typed || email.split("@")[0];
+    user = await prisma.user.create({ data: { name, email, role: "COLLABORATOR" }, select: { id: true } });
+  }
+
+  await claimInvitesForUser(user.id, email);
   await createSession(user.id);
   redirect("/");
 }

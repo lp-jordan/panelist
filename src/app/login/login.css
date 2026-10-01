@@ -91,3 +91,33 @@
   color: var(--blue);
   background: var(--fill);
 }
+
+/* Passwordless flow: helper copy under the form, the code field, and the
+   resend / different-email actions on the code step. */
+.login-note {
+  max-width: 290px;
+  margin-top: 4px;
+  font-size: var(--text-sub);
+  color: var(--label-2);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.login-code {
+  text-align: center;
+  font-size: 1.35rem;
+  letter-spacing: 0.3em;
+  font-variant-numeric: tabular-nums;
+}
+
+.login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.login-actions .login-switch {
+  margin-top: 0;
+}

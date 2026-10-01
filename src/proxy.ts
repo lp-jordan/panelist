@@ -3,11 +3,16 @@ import type { NextRequest } from "next/server";
 import { decrypt } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 
-const publicPaths = ["/login"];
+// Reachable signed out: the login page, the magic-link landing page, and invite
+// links (the invite page itself sends signed-out visitors to /login with the
+// invited email prefilled).
+function isPublic(path: string) {
+  return path === "/login" || path === "/login/verify" || path.startsWith("/invite/");
+}
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const isPublicPath = publicPaths.includes(path);
+  const isPublicPath = isPublic(path);
 
   const cookie = request.cookies.get("session")?.value;
   const session = await decrypt(cookie);
@@ -28,7 +33,9 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  if (isPublicPath && isValidUser) {
+  // Signed-in visitors skip the login form; verify and invite pages handle a
+  // signed-in visitor themselves.
+  if (path === "/login" && isValidUser) {
     return NextResponse.redirect(new URL("/", request.nextUrl));
   }
 

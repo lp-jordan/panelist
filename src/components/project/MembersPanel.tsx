@@ -93,7 +93,7 @@ export function MembersPanel({
           {state?.error && <p className="form-error">{state.error}</p>}
           {state?.token && (
             <p className="invite-hint">
-              Invite ready — share this link:{" "}
+              {state.emailed ? `Invite emailed to ${state.email}. You can also share this link:` : "Invite ready — share this link:"}{" "}
               <code className="invite-code">{inviteLink(state.token)}</code>
             </p>
           )}

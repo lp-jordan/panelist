@@ -18,7 +18,9 @@ model User {
   id           String   @id @default(cuid())
   name         String
   email        String   @unique
-  passwordHash String
+  // Legacy: accounts sign in passwordless (emailed code / magic link). Kept
+  // nullable so existing rows migrate untouched; nothing reads it anymore.
+  passwordHash String?
   role         Role     @default(OWNER)
   createdAt    DateTime @default(now())
 
@@ -28,6 +30,23 @@ model User {
   ownedScripts       Script[]
   artVersions        ArtVersion[]
   artComments        ArtComment[]
+}
+
+/// Passwordless sign-in: one row per emailed code/link. Both secrets are stored
+/// only as HMACs (keyed by SESSION_SECRET). Single-use, short-lived, and capped
+/// on wrong-code attempts. `email` is not a FK so a first-time sign-up (no User
+/// row yet) works the same as a returning one.
+model LoginToken {
+  id         String    @id @default(cuid())
+  email      String
+  codeHash   String
+  linkHash   String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
 }
 
 enum Role {

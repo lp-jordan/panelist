@@ -3,12 +3,12 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * Apply any pending invitations addressed to `email` for the given user (V2 D3).
- * Called on both sign-up and login, so an invite sent to someone who already has
- * an account is picked up the next time they log in.
+ * Called whenever someone signs in, so an invite sent to someone who already has
+ * an account is picked up the next time they sign in.
  *
- * Until an email provider (Resend) lands, the email match IS the proof — a
- * PENDING invite whose `email` equals the authenticated user's email is trusted.
- * When email verification arrives, the token becomes the real proof instead.
+ * Sign-in is passwordless — the person just proved they control `email` by
+ * entering the code (or clicking the link) sent to it — so matching a PENDING
+ * invite on that verified email is sound.
  *
  * Idempotent: skips projects the user already belongs to, and flips each claimed
  * invite to ACCEPTED so it can't be replayed.

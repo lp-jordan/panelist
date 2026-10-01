@@ -10,7 +10,8 @@ import "../../login/login.css";
 // the owner can share a link without exposing it. Behaviour:
 //  • signed in with the matching email → claim + go to the book
 //  • signed in as someone else → explain, offer to switch accounts
-//  • signed out → bounce to sign-up with the email prefilled
+//  • signed out → the login page with the invited email prefilled; verifying
+//    the emailed code proves ownership, and sign-in claims the invite
 export default async function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
 
@@ -56,6 +57,7 @@ export default async function InvitePage({ params }: { params: Promise<{ token: 
     );
   }
 
-  // Signed out — the login page prefills the email and defaults to sign-up.
-  redirect(`/login?mode=signup&email=${encodeURIComponent(invite.email)}`);
+  // Signed out — the login page prefills the email; the code sent there signs
+  // them in (creating the account if needed) and claims the invite.
+  redirect(`/login?email=${encodeURIComponent(invite.email)}`);
 }
