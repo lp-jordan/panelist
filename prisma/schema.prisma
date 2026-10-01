@@ -44,6 +44,9 @@ model LoginToken {
   expiresAt  DateTime
   consumedAt DateTime?
   attempts   Int       @default(0)
+  // Set only by the sign-up form for an email with no account yet. Verifying a
+  // token with a name may create the account; one without may only sign in.
+  name       String?
   createdAt  DateTime  @default(now())
 
   @@index([email, createdAt])

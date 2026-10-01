@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { prisma } from "@/lib/prisma";
 import { peekLinkToken } from "@/lib/login-tokens";
 import { verifyLink } from "@/app/actions/auth";
 import "../login.css";
@@ -25,30 +24,16 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
     );
   }
 
-  const isNew = !(await prisma.user.findUnique({ where: { email }, select: { id: true } }));
-
   return (
     <main className="login">
       <h1>Panelist</h1>
       <p className="login-tagline">
-        {isNew ? "Create your account as" : "Sign in as"} <strong>{email}</strong>
+        Continue as <strong>{email}</strong>
       </p>
       <form action={verifyLink} className="login-form">
         <input type="hidden" name="token" value={token} />
-        {isNew && (
-          <input
-            name="name"
-            type="text"
-            className="field"
-            placeholder="Your name"
-            aria-label="Your name"
-            autoComplete="name"
-            autoFocus
-            required
-          />
-        )}
         <button type="submit" className="btn-primary">
-          {isNew ? "Create account" : "Continue to Panelist"}
+          Continue to Panelist
         </button>
       </form>
     </main>
