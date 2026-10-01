@@ -5,7 +5,10 @@
 .sx-pad {
   position: fixed;
   top: calc(var(--nav-height) + 20px);
-  right: max(20px, calc(50vw - 408px - 20px - 224px));
+  /* Anchored to the page's right edge, so the folded chip sits beside the page
+     and the card opens outward (rightward). If there isn't room for the open
+     card, it slides left just enough to stay on screen. */
+  left: min(calc(50vw + 408px + 12px), calc(100vw - 224px - 20px));
   z-index: 30;
   width: 224px;
   height: min(520px, calc(100vh - var(--nav-height) - 40px));
@@ -19,15 +22,17 @@
   box-shadow: var(--shadow-menu);
   font-family: var(--font-ui);
   transition: width 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    left 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
     height 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
     padding 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-/* Folded: just the scribble chip, anchored at the same top-right corner. */
+/* Folded: just the scribble chip, always flush beside the page. */
 .sx-pad[data-open="false"] {
+  left: calc(50vw + 408px + 12px);
   width: 48px;
-  height: 48px;
-  padding: 8px;
+  height: 40px;
+  padding: 4px 8px;
 }
 
 .sx-pad[data-open="false"] .sx-pad-title,
@@ -119,6 +124,7 @@
   .sx-pad,
   .sx-pad[data-open="false"] {
     top: 0;
+    left: auto;
     right: 0;
     z-index: 100;
     width: 320px;

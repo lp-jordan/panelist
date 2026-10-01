@@ -42,7 +42,10 @@
 .sx-outline {
   position: fixed;
   top: calc(var(--nav-height) + 20px);
-  left: max(20px, calc(50vw - 408px - 20px - 224px));
+  /* Anchored to the page's left edge, so the collapsed chip sits beside the
+     page and the card opens outward (leftward). If there isn't room for the
+     open card, it slides right just enough to stay on screen. */
+  right: min(calc(50vw + 408px + 12px), calc(100vw - 224px - 20px));
   width: 224px;
   max-height: calc(100vh - var(--nav-height) - 40px);
   display: flex;
@@ -60,13 +63,15 @@
   /* A smooth ease-out, not a spring — the spring overshot the target width
      and snapped back, which read as the "jumpy" collapse/expand. */
   transition: width 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    right 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
     padding 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 /* Collapsed: the list folds away and the card shrinks to just the hamburger,
-   anchored at the same corner — `left` above doesn't depend on width, so it
-   folds up in place rather than sliding off. */
+   flush beside the page; the card's left edge moves, so it folds toward the
+   page rather than away from it. */
 .sx-outline[data-collapsed="true"] {
+  right: calc(50vw + 408px + 12px);
   width: 48px;
   padding: 4px;
   overflow: hidden;
@@ -97,7 +102,10 @@
 
 /* The hamburger is the collapse/expand toggle and, when collapsed, is the whole
    panel. */
+/* Last in the row, so the button sits on the page side and stays put as the
+   card opens away from the page. */
 .sx-outline-collapse {
+  order: 1;
   display: grid;
   place-items: center;
   width: 32px;
@@ -452,6 +460,7 @@
     position: fixed;
     top: 0;
     left: 0;
+    right: auto;
     z-index: 100;
     width: 264px;
     --sx-outline-w: 264px;
