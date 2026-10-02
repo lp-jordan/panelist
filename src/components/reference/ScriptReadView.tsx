@@ -11,8 +11,9 @@ import { LockToggle } from "@/components/reference/LockToggle";
 import { ScriptSheets, type TitlePageMeta } from "@/components/print/ScriptSheets";
 import { ImportedSheets, type ImportedSheetPage } from "@/components/import/ImportedSheets";
 import { toPageWordNumber } from "@/lib/editor/numberToWords";
-import { createPlacement, deletePlacement } from "@/app/actions/references";
-import type { Theme } from "@/lib/theme";
+import { createPlacement, deletePlacement, movePlacement } from "@/app/actions/references";
+import { usePinDrag } from "@/lib/usePinDrag";
+import type { Appearance } from "@/lib/theme";
 import type { JSONNode } from "@/lib/editor/serialize";
 
 export type PinReference = { id: string; assetId: string | null; url: string | null; caption: string | null };
@@ -26,7 +27,7 @@ export type Placement = {
 
 const SHEET_PX = 816; // 8.5in at 96dpi — the fixed sheet width to fit on mobile.
 
-const THEME_OPTIONS: { value: Theme; label: string; icon: ReactNode }[] = [
+const THEME_OPTIONS: { value: Appearance; label: string; icon: ReactNode }[] = [
   {
     value: "light",
     label: "Light",
@@ -43,16 +44,6 @@ const THEME_OPTIONS: { value: Theme; label: string; icon: ReactNode }[] = [
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" />
-      </svg>
-    ),
-  },
-  {
-    value: "system",
-    label: "Auto",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="3" y="4" width="18" height="12" rx="2" />
-        <path d="M8 20h8M12 16v4" />
       </svg>
     ),
   },
@@ -226,6 +217,11 @@ export function ScriptReadView({
     });
   }
 
+  // Drag a placed pin to a new spot on its page.
+  const pinDrag = usePinDrag((id, pos) => {
+    startTransition(() => movePlacement({ id, scriptId, xPct: pos.x, yPct: pos.y }));
+  });
+
   function removePin(id: string) {
     setActiveId(null);
     startTransition(() => deletePlacement({ id, scriptId }));
@@ -237,12 +233,15 @@ export function ScriptReadView({
       onClick={placingRef ? (e) => placeOnPage(pageNo, e) : undefined}
     >
       {showRefs &&
-        (byPage.get(pageNo) ?? []).map((p) => (
+        (byPage.get(pageNo) ?? []).map((p) => {
+          const pos = pinDrag.posFor(p.id, p.xPct, p.yPct);
+          return (
           <button
             key={p.id}
             type="button"
             className={`pin-dot${activeId === p.id ? " pin-dot--active" : ""}`}
-            style={{ left: `${p.xPct * 100}%`, top: `${p.yPct * 100}%` }}
+            style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%` }}
+            {...(placingRef ? {} : pinDrag.handlers(p.id))}
             onClick={(e) => {
               e.stopPropagation();
               if (!placingRef) setActiveId(p.id);
@@ -251,7 +250,8 @@ export function ScriptReadView({
           >
             {numberOf.get(p.id)}
           </button>
-        ))}
+          );
+        })}
     </div>
   );
 
@@ -562,7 +562,7 @@ function ReadSettingsSheet({
   onExport?: () => void;
   reportHref?: string;
 }) {
-  const { theme, setTheme } = useTheme();
+  const { appearance, setAppearance } = useTheme();
 
   useEffect(() => {
     if (!open) return;
@@ -643,10 +643,10 @@ function ReadSettingsSheet({
                   key={opt.value}
                   type="button"
                   role="radio"
-                  aria-checked={theme === opt.value}
+                  aria-checked={appearance === opt.value}
                   className="sx-format-seg-btn"
-                  data-active={theme === opt.value}
-                  onClick={() => setTheme(opt.value)}
+                  data-active={appearance === opt.value}
+                  onClick={() => setAppearance(opt.value)}
                 >
                   {opt.icon}
                   {opt.label}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import { THEME_COOKIE, THEME_ORDER, isTheme, type Theme } from "@/lib/theme";
+import { THEME_COOKIE, isTheme, type Appearance, type Theme } from "@/lib/theme";
 
 // Shared theme state for every control that reads or sets the appearance (the
 // nav toggle and the format sheet's segmented control). The choice lives in a
@@ -26,19 +26,34 @@ function writeTheme(theme: Theme) {
       : `${THEME_COOKIE}=${theme}; path=/; max-age=31536000; samesite=lax`;
 }
 
+const DARK_QUERY = "(prefers-color-scheme: dark)";
+
+/** What's actually on screen: the saved choice, or the OS appearance if none. */
+function readAppearance(): Appearance {
+  const saved = readTheme();
+  if (saved !== "system") return saved;
+  return window.matchMedia(DARK_QUERY).matches ? "dark" : "light";
+}
+
 const listeners = new Set<() => void>();
 const subscribe = (listener: () => void) => {
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  // An OS appearance change matters until a choice is saved.
+  const media = window.matchMedia(DARK_QUERY);
+  media.addEventListener("change", listener);
+  return () => {
+    listeners.delete(listener);
+    media.removeEventListener("change", listener);
+  };
 };
 const notify = () => listeners.forEach((listener) => listener());
 
 export function useTheme() {
-  // The server can't read document.cookie; it already stamped <html>, so the
-  // first client read only corrects controls, never what's painted.
-  const theme = useSyncExternalStore<Theme>(subscribe, readTheme, () => "system");
+  // The server can't know the OS appearance; it already stamped <html>, so the
+  // first client read only corrects the controls, never what's painted.
+  const appearance = useSyncExternalStore<Appearance>(subscribe, readAppearance, () => "light");
 
-  const setTheme = useCallback((next: Theme) => {
+  const setAppearance = useCallback((next: Appearance) => {
     const apply = () => {
       writeTheme(next);
       notify();
@@ -46,7 +61,7 @@ export function useTheme() {
     // Cross-fade the whole page from the old appearance to the new one (the
     // ::view-transition rules in globals.css set the timing). Where the browser
     // lacks view transitions, or the user prefers reduced motion, it switches
-    // instantly as before.
+    // instantly.
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!document.startViewTransition || reduceMotion) {
       apply();
@@ -55,9 +70,9 @@ export function useTheme() {
     document.startViewTransition(apply);
   }, []);
 
-  const cycle = useCallback(() => {
-    setTheme(THEME_ORDER[(THEME_ORDER.indexOf(readTheme()) + 1) % THEME_ORDER.length]);
-  }, [setTheme]);
+  const toggle = useCallback(() => {
+    setAppearance(readAppearance() === "dark" ? "light" : "dark");
+  }, [setAppearance]);
 
-  return { theme, setTheme, cycle };
+  return { appearance, setAppearance, toggle };
 }

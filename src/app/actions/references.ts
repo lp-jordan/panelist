@@ -208,6 +208,20 @@ export async function createPlacement(input: {
   revalidatePath(`/scripts/${scriptId}`);
 }
 
+/** Moves a pin to a new spot on the same page (x/y are 0–1 page fractions). */
+export async function movePlacement(input: { id: string; scriptId: string; xPct: number; yPct: number }) {
+  const user = await getCurrentUser();
+  const { id, scriptId, xPct, yPct } = input;
+  if (!id || !Number.isFinite(xPct) || !Number.isFinite(yPct)) return;
+  await assertScriptAccess(scriptId, user.id);
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+  await prisma.referencePlacement.updateMany({
+    where: { id, reference: { scriptId } },
+    data: { xPct: clamp(xPct), yPct: clamp(yPct) },
+  });
+  revalidatePath(`/scripts/${scriptId}`);
+}
+
 export async function deletePlacement(input: { id: string; scriptId: string }) {
   const user = await getCurrentUser();
   if (!input.id) return;

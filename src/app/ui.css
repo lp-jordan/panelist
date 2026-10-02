@@ -1727,6 +1727,25 @@ span.ref-linktile {
   cursor: crosshair;
 }
 
+/* Pins drag to a new spot (usePinDrag); touch-action stops the page from
+   scrolling under a finger that's moving a pin. */
+.pin-dot,
+.art-pin {
+  touch-action: none;
+  cursor: grab;
+}
+
+.art-pin[data-movable="false"] {
+  cursor: pointer;
+}
+
+.pin-dot[data-dragging="true"],
+.art-pin[data-dragging="true"] {
+  cursor: grabbing;
+  transition: none;
+  z-index: 5;
+}
+
 .pin-dot {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -2228,9 +2247,8 @@ span.ref-linktile {
 .art-side .art-dtitle { font-size: 27px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
 .art-dsub { color: var(--label-2); font-size: var(--text-row); margin: 2px 0 0; }
 .art-curcard { margin: 18px 0; background: var(--bg-elevated); border: 0.5px solid var(--separator); border-radius: var(--radius-lg); padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
-.art-curtop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.art-curtop { display: flex; align-items: baseline; gap: 8px; }
 .art-vt { font-size: var(--text-body); font-weight: 700; }
-.art-curr-pill { background: var(--green); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: var(--radius-pill); text-transform: uppercase; letter-spacing: 0.03em; }
 .art-dl { margin-top: 12px; width: 100%; justify-content: center; }
 .art-drop { border: 1.5px dashed var(--label-3); border-radius: var(--radius); padding: 18px; text-align: center; color: var(--label-2); font-size: var(--text-row); margin: 18px 0 26px; transition: 0.15s; cursor: pointer; }
 .art-drop.art-hot { border-color: var(--blue); color: var(--blue); background: color-mix(in srgb, var(--blue) 7%, transparent); }
@@ -2245,13 +2263,18 @@ span.ref-linktile {
 .art-ver::before { content: ""; position: absolute; left: -24px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg-elevated); border: 2px solid var(--label-3); }
 .art-ver.art-is-cur::before { background: var(--green); border-color: var(--green); box-shadow: 0 0 0 4px color-mix(in srgb, var(--green) 22%, transparent); }
 .art-vcard { background: var(--bg-elevated); border-radius: var(--radius); padding: 12px 14px; border: 0.5px solid var(--separator); }
-.art-vtop { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.art-vtop { display: flex; align-items: baseline; gap: 8px; }
+.art-vtop .art-when { margin-left: auto; }
 .art-vn { font-size: var(--text-row); font-weight: 700; }
 .art-when { font-size: var(--text-fine); color: var(--label-2); }
 .art-vrow2 { display: flex; align-items: center; gap: 8px; margin-top: 5px; color: var(--label-2); font-size: var(--text-sub); flex-wrap: wrap; }
-.art-sz { font-variant-numeric: tabular-nums; }
-.art-cur-tag { color: var(--green); font-weight: 600; }
-.art-vactions { display: flex; gap: 14px; margin-top: 10px; }
+/* File size beside the version number. */
+.art-sz { font-size: var(--text-sub); color: var(--label-2); font-variant-numeric: tabular-nums; }
+.art-vactions { display: flex; gap: 2px; margin: 8px 0 -4px -6px; }
+.art-ico { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--radius-sm); color: var(--label-2); transition: background 0.15s var(--ease), color 0.15s var(--ease); }
+.art-ico:hover { background: var(--fill); color: var(--blue); }
+.art-ico svg { width: 17px; height: 17px; }
+.art-ico-danger:hover { color: var(--red); }
 
 .art-modal-scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(3px); z-index: 70; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .art-modal { background: var(--bg-elevated); border-radius: var(--radius-lg); padding: 22px 22px 18px; width: min(360px, 100%); box-shadow: var(--shadow-menu); border: 0.5px solid var(--separator); text-align: center; }
