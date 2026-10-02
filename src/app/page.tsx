@@ -29,6 +29,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
       id: true,
       name: true,
       scripts: { where: { deletedAt: null }, select: { id: true } },
+      // Only owners get the rename / trash menu.
+      members: { where: { userId: user.id }, select: { role: true } },
     },
   });
 
@@ -84,7 +86,9 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                       {project.scripts.length} issue{project.scripts.length === 1 ? "" : "s"}
                     </span>
                   </span>
-                  <ProjectMenu id={project.id} name={project.name} scriptCount={project.scripts.length} contextSelector=".row" />
+                  {project.members[0]?.role === "OWNER" && (
+                    <ProjectMenu id={project.id} name={project.name} scriptCount={project.scripts.length} contextSelector=".row" />
+                  )}
                   <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M9 5l7 7-7 7" />
                   </svg>

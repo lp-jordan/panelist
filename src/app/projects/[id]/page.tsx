@@ -38,6 +38,7 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
             updatedAt: true,
             locked: true,
             source: true,
+            ownerId: true,
             pages: { where: { kind: "SCRIPT" }, select: { id: true } },
             importedPages: { where: { pageNumber: { not: null } }, select: { id: true } },
           },
@@ -123,6 +124,7 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
                   projects={projects}
                   locked={script.locked}
                   imported={script.source === "IMPORTED_PDF"}
+                  canManage={isOwner || script.ownerId === user.id}
                 />
               ))
             )}

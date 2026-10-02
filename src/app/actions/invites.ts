@@ -1,5 +1,6 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getCurrentUser, assertProjectOwner } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
@@ -40,7 +41,9 @@ export async function createInvite(_prev: InviteResult, formData: FormData): Pro
   const invite = await prisma.invite.upsert({
     where: { projectId_email: { projectId, email } },
     update: { role, status: "PENDING", invitedBy: user.id, acceptedAt: null },
-    create: { projectId, email, role, invitedBy: user.id },
+    // The token is the shareable link, so it's 32 random bytes rather than the
+    // schema's cuid() default (which is partly time-based and guessable).
+    create: { projectId, email, role, invitedBy: user.id, token: randomBytes(32).toString("base64url") },
     select: { token: true },
   });
 
