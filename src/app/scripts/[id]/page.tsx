@@ -56,13 +56,13 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
           pageNumber: true,
           xPct: true,
           yPct: true,
-          reference: { select: { id: true, assetId: true, caption: true } },
+          reference: { select: { id: true, assetId: true, url: true, caption: true } },
         },
       }),
       prisma.reference.findMany({
         where: { scriptId: id },
         orderBy: { createdAt: "desc" },
-        select: { id: true, assetId: true, caption: true },
+        select: { id: true, assetId: true, url: true, caption: true },
       }),
     ]);
 
@@ -99,13 +99,13 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
           pageNumber: true,
           xPct: true,
           yPct: true,
-          reference: { select: { id: true, assetId: true, caption: true } },
+          reference: { select: { id: true, assetId: true, url: true, caption: true } },
         },
       }),
       prisma.reference.findMany({
         where: { scriptId: id },
         orderBy: { createdAt: "desc" },
-        select: { id: true, assetId: true, caption: true },
+        select: { id: true, assetId: true, url: true, caption: true },
       }),
     ]);
 

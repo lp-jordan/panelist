@@ -1,5 +1,6 @@
 "use client";
 
+import { RefOpenLink, RefVisual } from "./RefVisual";
 import { ScratchPad } from "@/components/ScratchPad";
 import { useEffect, useMemo, useRef, useState, useTransition, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
@@ -14,7 +15,7 @@ import { createPlacement, deletePlacement } from "@/app/actions/references";
 import type { Theme } from "@/lib/theme";
 import type { JSONNode } from "@/lib/editor/serialize";
 
-export type PinReference = { id: string; assetId: string; caption: string | null };
+export type PinReference = { id: string; assetId: string | null; url: string | null; caption: string | null };
 export type Placement = {
   id: string;
   pageNumber: number;
@@ -433,7 +434,7 @@ export function ScriptReadView({
 
       {placingRef && (
         <div className="place-float">
-          <span className="place-thumb" style={{ backgroundImage: `url(/api/assets/${placingRef.assetId})` }} />
+          <RefVisual source={placingRef} alt="" className="place-thumb" />
           <span className="place-text">
             Click a spot on a page to place{placingRef.caption ? ` “${placingRef.caption}”` : " this reference"}.
           </span>
@@ -501,7 +502,8 @@ function PinDetail({ placement, number, onRemove }: { placement: Placement; numb
   return (
     <div className="pin-detail">
       {/* The whole image, uncropped — an artist needs to see all of it. */}
-      <img className="pin-detail-img" src={`/api/assets/${placement.reference.assetId}`} alt={placement.reference.caption ?? "Reference"} />
+      <RefVisual source={placement.reference} alt={placement.reference.caption ?? "Reference"} className="pin-detail-img" />
+      <RefOpenLink source={placement.reference} className="pin-detail-link" />
       {placement.reference.caption && <p className="pin-detail-cap">{placement.reference.caption}</p>}
       <div className="pin-detail-foot">
         <span className="pin-detail-where">
@@ -522,7 +524,7 @@ function OrphanList({ orphans, onRemove }: { orphans: Placement[]; onRemove: (id
       <p className="rc-hint">Their page was removed. Remove the pin or place it again.</p>
       {orphans.map((p) => (
         <div className="orphan-row" key={p.id}>
-          <span className="orphan-thumb" style={{ backgroundImage: `url(/api/assets/${p.reference.assetId})` }} />
+          <RefVisual source={p.reference} alt="" className="orphan-thumb" />
           <span className="orphan-cap">{p.reference.caption ?? "Reference"}</span>
           <button type="button" className="orphan-remove" onClick={() => onRemove(p.id)} aria-label="Remove pin">
             ✕
@@ -681,14 +683,14 @@ function ReferencePicker({
           <div className="empty">
             <h4>No references yet</h4>
             <p>
-              Add images in this issue’s <Link href={`/scripts/${scriptId}/reference`}>reference library</Link> first.
+              Add images or links in this issue’s <Link href={`/scripts/${scriptId}/reference`}>reference library</Link> first.
             </p>
           </div>
         ) : (
           <div className="picker-grid">
             {references.map((ref) => (
               <button key={ref.id} type="button" className="picker-card" onClick={() => onPick(ref)}>
-                <span className="picker-img" style={{ backgroundImage: `url(/api/assets/${ref.assetId})` }} />
+                <RefVisual source={ref} alt="" className="picker-img" lazy />
                 {ref.caption && <span className="picker-cap">{ref.caption}</span>}
               </button>
             ))}
