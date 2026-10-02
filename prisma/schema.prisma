@@ -93,14 +93,14 @@ enum InviteStatus {
 /// is the proof; afterward the token becomes the real proof. One open invite per
 /// (project, email); accepting creates the ProjectMember and flips status.
 model Invite {
-  id        String       @id @default(cuid())
-  projectId String
-  email     String
-  role      Role         @default(COLLABORATOR)
-  token     String       @unique @default(cuid())
-  status    InviteStatus @default(PENDING)
-  invitedBy String
-  createdAt DateTime     @default(now())
+  id         String       @id @default(cuid())
+  projectId  String
+  email      String
+  role       Role         @default(COLLABORATOR)
+  token      String       @unique @default(cuid())
+  status     InviteStatus @default(PENDING)
+  invitedBy  String
+  createdAt  DateTime     @default(now())
   acceptedAt DateTime?
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -121,18 +121,18 @@ model CastMember {
 }
 
 model Script {
-  id         String    @id @default(cuid())
+  id         String       @id @default(cuid())
   projectId  String?
   title      String
   author     String
   draftLabel String
   draftDate  DateTime
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
   deletedAt  DateTime?
   // Locked = the read view (references shown/placed, no text editing).
   // Unlocked = the editor. The mode switch for the whole reference layer (V2 C).
-  locked     Boolean   @default(false)
+  locked     Boolean      @default(false)
   // The script's owner (V2 D). Access = ownerId is me OR I'm a member of its
   // project. Nullable only for the backfill window; new scripts always set it.
   ownerId    String?
@@ -144,14 +144,14 @@ model Script {
   // script, plain text, never exported.
   scratchpad String       @default("")
 
-  project       Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  owner         User?          @relation(fields: [ownerId], references: [id])
-  pages         Page[]
-  snapshots     Snapshot[]
-  references    Reference[]
-  collections   Collection[]
-  artPages      ArtPage[]
-  importedPages ImportedPage[]
+  project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  owner            User?             @relation(fields: [ownerId], references: [id])
+  pages            Page[]
+  snapshots        Snapshot[]
+  references       Reference[]
+  referenceFolders ReferenceFolder[]
+  artPages         ArtPage[]
+  importedPages    ImportedPage[]
 }
 
 enum ScriptSource {
@@ -190,19 +190,19 @@ enum PageKind {
 }
 
 model Page {
-  id       String   @id @default(cuid())
-  scriptId String
-  order    Int
+  id          String   @id @default(cuid())
+  scriptId    String
+  order       Int
   // SCRIPT: the numbered comic page (panels/notes). BLANK: a freeform document
   // page (plain paragraphs) that's skipped by page numbering. A blank page
   // stores its paragraphs as ordered NOTE items — same run-serialized text
   // columns, no extra table.
-  kind     PageKind @default(SCRIPT)
+  kind        PageKind @default(SCRIPT)
   // True when the writer explicitly started this page (New page / Ctrl+Enter)
   // rather than it being created by overflow. Auto-pagination never pulls
   // content back up across a manual break, so a deliberate page stays put even
   // when the previous page has room. Overflow-created pages default to false.
-  manualBreak Boolean @default(false)
+  manualBreak Boolean  @default(false)
 
   script Script     @relation(fields: [scriptId], references: [id], onDelete: Cascade)
   items  PageItem[]
@@ -280,14 +280,14 @@ model Snapshot {
 /// unstable pageId. Art bytes live in a dedicated R2 bucket (ART_R2_*), never in
 /// Postgres — unlike reference images, which are AssetData blobs.
 model ArtPage {
-  id         String   @id @default(cuid())
-  scriptId   String
-  pageNumber Int
-  createdAt  DateTime @default(now())
+  id               String   @id @default(cuid())
+  scriptId         String
+  pageNumber       Int
+  createdAt        DateTime @default(now())
   // The version shown/downloaded as "current". Nullable while a page row exists
   // with no live version. SetNull so deleting the pointed-at version never
   // cascades the ArtPage away.
-  currentVersionId String? @unique
+  currentVersionId String?  @unique
 
   script         Script       @relation(fields: [scriptId], references: [id], onDelete: Cascade)
   currentVersion ArtVersion?  @relation("CurrentVersion", fields: [currentVersionId], references: [id], onDelete: SetNull)
@@ -304,23 +304,23 @@ model ArtPage {
 /// delete of a NON-current version removes this row + its R2 objects (an Event
 /// records the deletion so history survives even though the file doesn't).
 model ArtVersion {
-  id           String   @id @default(cuid())
-  artPageId    String
-  version      Int
-  storageKey   String
-  previewKey   String?
+  id            String        @id @default(cuid())
+  artPageId     String
+  version       Int
+  storageKey    String
+  previewKey    String?
   // Web-preview lifecycle. Browser-renderable uploads (PNG/JPG/WEBP) are READY
   // at once (previewKey = storageKey). PSD/TIFF/PDF land PENDING and the
   // art-preview-worker (a separate Railway service) rasterizes a preview.webp,
   // then flips this to READY (or FAILED). SKIP LOCKED on PENDING is the queue.
   previewStatus PreviewStatus @default(READY)
   // Optional "what changed" note for this version, editable from the timeline.
-  note         String?
-  bytes        Int?
-  mime         String?
-  originalName String?
-  uploadedBy   String?
-  createdAt    DateTime @default(now())
+  note          String?
+  bytes         Int?
+  mime          String?
+  originalName  String?
+  uploadedBy    String?
+  createdAt     DateTime      @default(now())
 
   artPage    ArtPage  @relation("PageVersions", fields: [artPageId], references: [id], onDelete: Cascade)
   currentFor ArtPage? @relation("CurrentVersion")
@@ -409,36 +409,30 @@ model Reference {
   assetId   String?  @unique
   url       String?
   caption   String?
+  // The folder it's filed in; null = the reference root. One level only.
+  folderId  String?
   createdAt DateTime @default(now())
 
-  script      Script                  @relation(fields: [scriptId], references: [id], onDelete: Cascade)
-  asset       Asset?                  @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  collections ReferenceInCollection[]
-  placements  ReferencePlacement[]
+  script     Script               @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  asset      Asset?               @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  folder     ReferenceFolder?     @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  placements ReferencePlacement[]
 }
 
-/// A free-form tag/group ("Bone", "The Cathedral", "1890s streetwear") within a
-/// single issue's reference set. Read "Collection" as "tag": many-to-many,
-/// user-defined per issue (§5).
-model Collection {
-  id       String @id @default(cuid())
-  scriptId String
-  name     String
+/// A folder in an issue's reference library. One level deep: folders live at
+/// the root and hold references, never other folders. Deleting a folder either
+/// moves its references back to the root (onDelete: SetNull on
+/// Reference.folderId) or deletes them first, as the user chooses.
+model ReferenceFolder {
+  id        String   @id @default(cuid())
+  scriptId  String
+  name      String
+  createdAt DateTime @default(now())
 
-  script     Script                  @relation(fields: [scriptId], references: [id], onDelete: Cascade)
-  references ReferenceInCollection[]
+  script     Script      @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+  references Reference[]
 
   @@unique([scriptId, name])
-}
-
-model ReferenceInCollection {
-  referenceId  String
-  collectionId String
-
-  reference  Reference  @relation(fields: [referenceId], references: [id], onDelete: Cascade)
-  collection Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-
-  @@id([referenceId, collectionId])
 }
 
 /// Pins a reference to a spot on a script page in the read view (V2 C).
