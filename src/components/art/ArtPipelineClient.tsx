@@ -807,7 +807,7 @@ function VersionCard({
           <span className="art-when">{v.createdLabel}</span>
         </div>
         <div className="art-vrow2">
-          <span>{v.uploaderName}</span>
+          <span>Added by {v.uploaderName}</span>
         </div>
 
         {editing ? (
