@@ -24,6 +24,8 @@ export type ArtVersionRow = {
   version: number;
   bytes: number | null;
   note: string | null;
+  mime: string | null;
+  previewUrl: string | null;
   previewStatus: PreviewStatus;
   isCurrent: boolean;
   uploaderName: string;
@@ -35,6 +37,8 @@ export type ArtCommentRow = {
   xPct: number;
   yPct: number;
   resolved: boolean;
+  // The version the note was left on (null only for legacy rows).
+  versionId: string | null;
   authorId: string | null;
   authorName: string;
   createdLabel: string;
@@ -213,7 +217,7 @@ export function ArtPipelineClient({
         />
       ) : (
         <PageView
-          key={openPageData.pageNumber}
+          key={`${openPageData.pageNumber}:${openPageData.current?.versionId ?? ""}`}
           data={openPageData}
           scriptId={scriptId}
           isOwner={isOwner}
@@ -231,7 +235,7 @@ export function ArtPipelineClient({
           onAskDelete={(v) =>
             setConfirm({
               title: `Delete version ${v.version}?`,
-              body: `Version ${v.version} of Page ${openPageData.pageNumber} (${fmtBytes(v.bytes)}) will be permanently removed from storage. This can’t be undone.`,
+              body: "Its notes are deleted too. This can’t be undone.",
               onYes: () =>
                 startTransition(async () => {
                   await deleteArtVersion({ scriptId, versionId: v.id });
@@ -240,9 +244,9 @@ export function ArtPipelineClient({
                 }),
             })
           }
-          onAddComment={(body, xPct, yPct) =>
+          onAddComment={(versionId, body, xPct, yPct) =>
             startTransition(async () => {
-              await createArtComment({ scriptId, pageNumber: openPageData.pageNumber, body, xPct, yPct });
+              await createArtComment({ scriptId, pageNumber: openPageData.pageNumber, versionId, body, xPct, yPct });
               showToast("Note added");
               router.refresh();
             })
@@ -459,7 +463,7 @@ function PageView({
   onDownload: (versionId: string) => void;
   onMakeCurrent: (versionId: string) => void;
   onAskDelete: (v: ArtVersionRow) => void;
-  onAddComment: (body: string, xPct: number, yPct: number) => void;
+  onAddComment: (versionId: string, body: string, xPct: number, yPct: number) => void;
   onToggleResolve: (commentId: string) => void;
   onMoveComment: (commentId: string, xPct: number, yPct: number) => void;
   onDeleteComment: (commentId: string) => void;
@@ -483,17 +487,28 @@ function PageView({
   const shown = data.versions.slice(0, VER_SHOWN);
   const older = data.versions.slice(VER_SHOWN);
 
+  // The version on the stage: the current one, unless a card in the history
+  // was picked. Notes belong to a version, so only its notes show.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const viewedRow = data.versions.find((v) => v.id === (selectedId ?? cur?.versionId)) ?? null;
+  const view = viewedRow
+    ? { versionId: viewedRow.id, version: viewedRow.version, mime: viewedRow.mime, previewUrl: viewedRow.previewUrl, previewStatus: viewedRow.previewStatus }
+    : null;
+  const hasView = view !== null;
+  const viewingOld = view !== null && cur !== null && view.versionId !== cur.versionId;
+  const viewNotes = data.comments.filter((c) => (c.versionId ?? cur?.versionId) === view?.versionId);
+
   // open notes first (insertion order), resolved sink to the bottom
-  const orderedComments = [...data.comments].sort((a, b) => Number(a.resolved) - Number(b.resolved));
+  const orderedComments = [...viewNotes].sort((a, b) => Number(a.resolved) - Number(b.resolved));
 
   function pickFile() {
     fileRef.current?.click();
   }
 
   function onStageClick(e: React.MouseEvent) {
-    if (!cur) return;
+    if (!view) return;
     if (!noteMode) {
-      if (cur.previewUrl) setViewerOpen(true);
+      if (view.previewUrl) setViewerOpen(true);
       return;
     }
     const r = (stageRef.current as HTMLElement).getBoundingClientRect();
@@ -510,12 +525,12 @@ function PageView({
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.isContentEditable || t.closest("input, textarea, select"))) return;
-      if (!cur) return;
+      if (!hasView) return;
       setNoteMode((m) => !m);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [cur]);
+  }, [hasView]);
 
   return (
     <>
@@ -523,12 +538,20 @@ function PageView({
         ‹ Pages
       </button>
 
-      {viewerOpen && cur?.previewUrl && (
-        <ArtViewer src={cur.previewUrl} alt={`Page ${data.pageNumber} art`} onClose={() => setViewerOpen(false)} />
+      {viewerOpen && view?.previewUrl && (
+        <ArtViewer src={view.previewUrl} alt={`Page ${data.pageNumber}, version ${view.version}`} onClose={() => setViewerOpen(false)} />
       )}
 
       <div className="art-detail">
         <div className="art-leftcol">
+          {viewingOld && view && (
+            <div className="art-oldbar">
+              <span>Viewing version {view.version}</span>
+              <button type="button" className="art-lnk" onClick={() => setSelectedId(null)}>
+                Back to current
+              </button>
+            </div>
+          )}
           <div
             ref={stageRef}
             className={`art-stage${hotStage ? " art-drop-hot" : ""}${noteMode ? " art-stage-noting" : ""}`}
@@ -548,20 +571,20 @@ function PageView({
               if (file) onUpload(data.pageNumber, file);
             }}
           >
-            <div className="art-canvas" title={cur ? (noteMode ? "Click to place the note" : "Click to view full size") : undefined}>
-              {cur && (cur.previewStatus === "PENDING" || cur.previewStatus === "PROCESSING") ? (
+            <div className="art-canvas" title={view ? (noteMode ? "Click to place the note" : "Click to view full size") : undefined}>
+              {view && (view.previewStatus === "PENDING" || view.previewStatus === "PROCESSING") ? (
                 <span className="art-canvas-empty">
                   <span className="art-spin art-spin-dark" aria-hidden="true" /> Processing preview…
                 </span>
-              ) : cur?.previewUrl ? (
+              ) : view?.previewUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={cur.previewUrl} alt={`Page ${data.pageNumber} art`} />
-              ) : cur ? (
-                <span className="art-canvas-empty">{fmtType(cur.mime)}: no web preview</span>
+                <img src={view.previewUrl} alt={`Page ${data.pageNumber}, version ${view.version}`} />
+              ) : view ? (
+                <span className="art-canvas-empty">{fmtType(view.mime)}: no web preview</span>
               ) : (
                 <span className="art-canvas-empty">No art yet</span>
               )}
-              {cur &&
+              {view &&
                 orderedComments.map((c, i) => {
                   const pos = pinDrag.posFor(c.id, c.xPct, c.yPct);
                   const movable = c.authorId === currentUserId || isOwner;
@@ -591,8 +614,8 @@ function PageView({
 
           <div className="art-comments">
             <div className="art-clabel">
-              <span>Notes on the art</span>
-              {cur && (
+              <span>{viewingOld && view ? `Notes on version ${view.version}` : "Notes on the art"}</span>
+              {view && (
                 <button
                   type="button"
                   className="art-addnote"
@@ -638,7 +661,7 @@ function PageView({
                     onClick={() => {
                       const t = composer.text.trim();
                       if (!t) return;
-                      onAddComment(t, composer.x, composer.y);
+                      if (view) onAddComment(view.versionId, t, composer.x, composer.y);
                       setComposer(null);
                     }}
                   >
@@ -759,7 +782,7 @@ function PageView({
             ) : (
               <>
                 {shown.map((v) => (
-                  <VersionCard key={v.id} v={v} pageNumber={data.pageNumber} isOwner={isOwner} onDownload={onDownload} onMakeCurrent={onMakeCurrent} onAskDelete={onAskDelete} onSetNote={onSetVersionNote} />
+                  <VersionCard key={v.id} v={v} pageNumber={data.pageNumber} isOwner={isOwner} viewing={v.id === view?.versionId} onView={() => setSelectedId(v.isCurrent ? null : v.id)} onDownload={onDownload} onMakeCurrent={onMakeCurrent} onAskDelete={onAskDelete} onSetNote={onSetVersionNote} />
                 ))}
                 {older.length > 0 && !showOlder && (
                   <button className="art-lnk" onClick={() => setShowOlder(true)}>
@@ -768,7 +791,7 @@ function PageView({
                 )}
                 {showOlder &&
                   older.map((v) => (
-                    <VersionCard key={v.id} v={v} pageNumber={data.pageNumber} isOwner={isOwner} onDownload={onDownload} onMakeCurrent={onMakeCurrent} onAskDelete={onAskDelete} onSetNote={onSetVersionNote} />
+                    <VersionCard key={v.id} v={v} pageNumber={data.pageNumber} isOwner={isOwner} viewing={v.id === view?.versionId} onView={() => setSelectedId(v.isCurrent ? null : v.id)} onDownload={onDownload} onMakeCurrent={onMakeCurrent} onAskDelete={onAskDelete} onSetNote={onSetVersionNote} />
                   ))}
               </>
             )}
@@ -782,6 +805,8 @@ function PageView({
 function VersionCard({
   v,
   isOwner,
+  viewing,
+  onView,
   onDownload,
   onMakeCurrent,
   onAskDelete,
@@ -790,6 +815,8 @@ function VersionCard({
   v: ArtVersionRow;
   pageNumber: number;
   isOwner: boolean;
+  viewing: boolean;
+  onView: () => void;
   onDownload: (versionId: string) => void;
   onMakeCurrent: (versionId: string) => void;
   onAskDelete: (v: ArtVersionRow) => void;
@@ -800,7 +827,8 @@ function VersionCard({
 
   return (
     <div className={`art-ver${v.isCurrent ? " art-is-cur" : ""}`}>
-      <div className="art-vcard">
+      {/* Click a card to view that version and its notes on the stage. */}
+      <div className="art-vcard" data-viewing={viewing} onClick={onView} title={viewing ? undefined : `View version ${v.version}`}>
         <div className="art-vtop">
           <span className="art-vn">Version {v.version}</span>
           {v.bytes ? <span className="art-sz">{fmtBytes(v.bytes)}</span> : null}
@@ -811,7 +839,7 @@ function VersionCard({
         </div>
 
         {editing ? (
-          <div className="art-noteedit">
+          <div className="art-noteedit" onClick={(e) => e.stopPropagation()}>
             <textarea
               autoFocus
               rows={2}
@@ -841,13 +869,20 @@ function VersionCard({
             </div>
           </div>
         ) : v.note ? (
-          <div className="art-vnote" onClick={() => setEditing(true)} title="Edit note">
+          <div
+            className="art-vnote"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditing(true);
+            }}
+            title="Edit note"
+          >
             {v.note}
           </div>
         ) : null}
 
         {/* Icon actions; the title is the tooltip and the accessible name. */}
-        <div className="art-vactions">
+        <div className="art-vactions" onClick={(e) => e.stopPropagation()}>
           <button className="art-ico" onClick={() => onDownload(v.id)} title="Download" aria-label="Download">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14" />

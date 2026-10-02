@@ -171,15 +171,20 @@ export async function deleteFolder(formData: FormData) {
   revalidatePath(`/scripts/${scriptId}`);
 }
 
-/** Files a reference in a folder, or back at the root (empty folderId). */
+/** Every "id" in the form: one reference, or a multi-selection. */
+function idsFrom(formData: FormData): string[] {
+  return formData.getAll("id").filter((v): v is string => typeof v === "string" && v.length > 0);
+}
+
+/** Files references in a folder, or back at the root (empty folderId). */
 export async function moveReference(formData: FormData) {
   const user = await getCurrentUser();
-  const id = formData.get("id");
+  const ids = idsFrom(formData);
   const scriptId = formData.get("scriptId");
-  if (typeof id !== "string" || typeof scriptId !== "string") return;
+  if (ids.length === 0 || typeof scriptId !== "string") return;
   await assertScriptAccess(scriptId, user.id);
   const folderId = await folderInScript(scriptId, formData.get("folderId"));
-  await prisma.reference.updateMany({ where: { id, scriptId }, data: { folderId } });
+  await prisma.reference.updateMany({ where: { id: { in: ids }, scriptId }, data: { folderId } });
   revalidatePath(`/scripts/${scriptId}/reference`);
 }
 
@@ -232,19 +237,20 @@ export async function deletePlacement(input: { id: string; scriptId: string }) {
 
 export async function deleteReference(formData: FormData) {
   const user = await getCurrentUser();
-
-  const id = formData.get("id");
+  const ids = idsFrom(formData);
   const scriptId = formData.get("scriptId");
-  if (typeof id !== "string" || typeof scriptId !== "string") return;
+  if (ids.length === 0 || typeof scriptId !== "string") return;
   await assertScriptAccess(scriptId, user.id);
 
-  const reference = await prisma.reference.findFirst({ where: { id, scriptId }, select: { assetId: true } });
-  if (!reference) return;
+  const refs = await prisma.reference.findMany({ where: { id: { in: ids }, scriptId }, select: { assetId: true } });
+  const assetIds = refs.map((r) => r.assetId).filter((a): a is string => a !== null);
 
-  // An image: deleting the Asset cascades to AssetData and, via
-  // Reference.assetId's onDelete: Cascade, to the Reference and its
-  // placements. A link has no asset, so delete the Reference directly.
-  if (reference.assetId) await prisma.asset.delete({ where: { id: reference.assetId } });
-  else await prisma.reference.delete({ where: { id } });
+  // Images go with their Asset (cascading to AssetData, the Reference and its
+  // placements); links have no asset, so delete those References directly.
+  await prisma.$transaction([
+    prisma.asset.deleteMany({ where: { id: { in: assetIds } } }),
+    prisma.reference.deleteMany({ where: { id: { in: ids }, scriptId } }),
+  ]);
   revalidatePath(`/scripts/${scriptId}/reference`);
+  revalidatePath(`/scripts/${scriptId}`);
 }
