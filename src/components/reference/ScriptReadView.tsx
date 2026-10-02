@@ -246,7 +246,7 @@ export function ScriptReadView({
               e.stopPropagation();
               if (!placingRef) setActiveId(p.id);
             }}
-            aria-label={`Reference ${numberOf.get(p.id)}${p.reference.caption ? ` — ${p.reference.caption}` : ""}`}
+            aria-label={`Reference ${numberOf.get(p.id)}${p.reference.caption ? `: ${p.reference.caption}` : ""}`}
           >
             {numberOf.get(p.id)}
           </button>
@@ -519,7 +519,7 @@ function OrphanList({ orphans, onRemove }: { orphans: Placement[]; onRemove: (id
   return (
     <div className="orphan-list">
       <h4>Unplaced references</h4>
-      <p className="rc-hint">Their page was removed. The reference is kept — remove the pin or re-pin it.</p>
+      <p className="rc-hint">Their page was removed. Remove the pin or place it again.</p>
       {orphans.map((p) => (
         <div className="orphan-row" key={p.id}>
           <span className="orphan-thumb" style={{ backgroundImage: `url(/api/assets/${p.reference.assetId})` }} />

@@ -893,15 +893,24 @@
   font-family: var(--font-ui);
 }
 
+/* Matches .field: no native border, a soft ring on focus. */
 .sx-history-save input {
   flex: 1;
   min-width: 0;
+  border: 0;
+  outline: 0;
   padding: 8px 11px;
   border-radius: var(--radius-sm);
   background: var(--fill);
   color: var(--label);
   font-family: inherit;
   font-size: var(--text-sub);
+}
+
+.sx-history-save input:focus {
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--blue) 26%, transparent),
+    0 0 0 1px var(--blue);
 }
 
 .sx-history-save input::placeholder {
@@ -1177,6 +1186,11 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+}
+
+/* An odd last button spans the row rather than sitting alone in half of it. */
+.sx-format-grid > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .sx-format-btn {
@@ -1657,7 +1671,6 @@
   z-index: 90;
   display: flex;
   flex-direction: column;
-  gap: 10px;
   transform: translate(-50%, -50%) scale(0.96);
   opacity: 0;
   pointer-events: none;
@@ -1679,8 +1692,9 @@
      attached above the sheet, rather than loose controls floating on the scrim. */
   padding: 7px 10px 7px 14px;
   background: var(--bg-elevated);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-menu);
+  /* Joined to the top of the sheet, so bar + paper read as one dialog. */
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom: 0.5px solid var(--separator);
   color: var(--label);
 }
 
@@ -1720,7 +1734,7 @@
   align-items: center;
   background: #fff;
   color: #111;
-  border-radius: 4px;
+  border-radius: 0 0 4px 4px;
   box-shadow: var(--shadow-paper);
   font-family: var(--font-script);
 }
@@ -1794,16 +1808,33 @@
   bottom: 9%;
   display: flex;
   align-items: baseline;
-  gap: 3px;
   font-weight: bold;
   font-size: clamp(0.7rem, 1.6vh, 0.9rem);
 }
 
+/* Sized to its text so "Draft 1" sits right against the colon. */
 .tp-draft-label {
   width: 6ch;
+  field-sizing: content;
+  min-width: 3ch;
   font-weight: bold;
 }
 
 .tp-draft-date {
   font-weight: normal;
+}
+
+.tp-draft-colon {
+  margin-right: 4px;
+}
+
+/* The native calendar icon shows only while hovering or editing the date. */
+.tp-draft-date::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  transition: opacity 0.15s var(--ease);
+}
+
+.tp-draft-date:hover::-webkit-calendar-picker-indicator,
+.tp-draft-date:focus::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
 }

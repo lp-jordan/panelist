@@ -487,10 +487,22 @@ select.field {
   z-index: 1;
 }
 
+/* One line, always: on narrow screens it truncates rather than wrapping. */
 .row-sub {
   font-size: var(--text-fine);
   color: var(--label-2);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Phones: the whole row is the tap target, so the chevron is just noise
+   beside three controls. */
+@media (max-width: 500px) {
+  .row .chev {
+    display: none;
+  }
 }
 
 .row-sub .dot {
@@ -515,7 +527,8 @@ select.field {
   font-weight: 600;
 }
 
-/* Hidden until the row is approached, so four controls per row become none. */
+/* Always present but quiet, so the row's controls don't leave an empty gap
+   on desktop; full strength when the row is approached. */
 .more-btn {
   display: grid;
   place-items: center;
@@ -524,7 +537,7 @@ select.field {
   height: 28px;
   border-radius: var(--radius-sm);
   color: var(--label-2);
-  opacity: 0;
+  opacity: 0.55;
   transition: opacity 0.18s var(--ease), background 0.18s var(--ease),
     transform 0.12s var(--ease);
 }
@@ -1869,19 +1882,22 @@ body:has(.scrim[data-open="true"]) .pullback {
   flex: none;
 }
 
+/* Email gets its own full-width row; role + Invite sit beneath it, so the
+   address is never cut off in the narrow sheet. */
 .invite-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   padding: 4px 4px 0;
 }
 
 .invite-form .field {
-  flex: 1 1 auto;
+  flex: 1 1 100%;
 }
 
 .invite-form select.field {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   width: auto;
 }
 
@@ -1950,7 +1966,7 @@ body:has(.scrim[data-open="true"]) .pullback {
    --------------------------------------------------------------------------- */
 .art-headrow { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 4px 0 18px; }
 .art-meta { color: var(--label-2); font-size: var(--text-row); margin: 0; }
-.art-meta b { color: var(--label); font-weight: 600; font-variant-numeric: tabular-nums; }
+.art-meta b { color: inherit; font-weight: inherit; font-variant-numeric: tabular-nums; }
 .art-dot { margin: 0 8px; color: var(--label-3); }
 
 .art-btn { font-family: inherit; font-size: var(--text-row); font-weight: 590; border: 0; border-radius: var(--radius-pill); padding: 7px 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -1958,6 +1974,7 @@ body:has(.scrim[data-open="true"]) .pullback {
 .art-btn-plain { background: var(--fill); color: var(--blue); }
 .art-btn-danger { background: var(--red); color: #fff; }
 .art-btn:active { opacity: 0.7; }
+.art-btn:disabled { opacity: 0.4; cursor: default; }
 
 .art-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
 .art-tile { background: var(--bg-elevated); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; border: 0.5px solid var(--separator); text-align: left; padding: 0; color: inherit; position: relative; transition: transform 0.12s var(--ease); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }

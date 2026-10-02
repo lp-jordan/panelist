@@ -64,9 +64,11 @@ export function ReferenceLibraryClient({
   return (
     <>
       <div className="ref-toolbar">
-        <span className="ref-count">
-          {references.length} reference{references.length === 1 ? "" : "s"}
-        </span>
+        {references.length > 0 && (
+          <span className="ref-count">
+            {references.length} reference{references.length === 1 ? "" : "s"}
+          </span>
+        )}
         <button type="button" className="ref-add" onClick={() => setAdding(true)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
@@ -110,7 +112,7 @@ export function ReferenceLibraryClient({
             <path d="M21 15l-5-5L5 21" />
           </svg>
           <h4>No reference yet</h4>
-          <p>Add an image — a character, a location, a costume grab — and give it a note.</p>
+          <p>Add a reference image.</p>
         </div>
       ) : shown.length === 0 ? (
         <div className="empty">

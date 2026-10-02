@@ -6,6 +6,7 @@ import { restoreProject, deleteProjectForever } from "@/app/actions/projects";
 import { restoreScript, deleteScriptForever } from "@/app/actions/scripts";
 import { TrashRow } from "@/components/library/TrashRow";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AccountMenu } from "@/components/library/AccountMenu";
 
 export default async function TrashPage() {
   const user = await getCurrentUser();
@@ -35,6 +36,7 @@ export default async function TrashPage() {
         </Link>
         <span className="nav-spacer" />
         <ThemeToggle />
+        <AccountMenu />
       </nav>
 
       <main className="shell-inner pullback">
@@ -48,7 +50,7 @@ export default async function TrashPage() {
                   <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
                 </svg>
                 <h4>Trash is empty</h4>
-                <p>Anything you move here can be restored until you delete it for good.</p>
+                <p>Restore anything from here, or delete it for good.</p>
               </div>
             </div>
           </section>
@@ -69,7 +71,7 @@ export default async function TrashPage() {
                   sublabel={project.deletedAt ? `Moved to Trash ${formatRelativeTime(project.deletedAt)}` : ""}
                   restoreAction={restoreProject}
                   deleteAction={deleteProjectForever}
-                  deleteDescription="Its scripts move to Unassigned. This cannot be undone."
+                  deleteDescription="Its scripts move to Unassigned. This can’t be undone."
                 />
               ))}
             </div>
@@ -93,7 +95,7 @@ export default async function TrashPage() {
                   }`}
                   restoreAction={restoreScript}
                   deleteAction={deleteScriptForever}
-                  deleteDescription="The script and all its pages go with it. This cannot be undone."
+                  deleteDescription="This can’t be undone."
                 />
               ))}
             </div>

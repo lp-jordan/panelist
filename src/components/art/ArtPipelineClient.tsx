@@ -323,7 +323,7 @@ function GridView({
     <>
       {!locked && (
         <p className="art-lockhint">
-          This script isn’t locked. Page numbers can still shift as it’s edited, which moves art out from under its page. Lock it once the page count is final.
+          Lock the script before uploading art. Page numbers can still change.
         </p>
       )}
       <div className="art-headrow">
@@ -336,15 +336,15 @@ function GridView({
           )}
         </p>
         <div className="art-headact">
-          <button className="art-btn art-btn-tint" onClick={onRead} disabled={!anyArt} title={anyArt ? "Read through the current art" : "Upload some art first"}>
+          <button className="art-btn art-btn-plain" onClick={onRead} disabled={!anyArt} title={anyArt ? "Read through the current art" : "Upload art first"}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="16" height="16">
               <path d="M2 5h8a3 3 0 013 3v11a2.5 2.5 0 00-2.5-2.5H2z" />
               <path d="M22 5h-8a3 3 0 00-3 3v11a2.5 2.5 0 012.5-2.5H22z" />
             </svg>
             Read
           </button>
-          <button className="art-btn art-btn-plain" onClick={onDownloadAll}>
-            Download all (current)
+          <button className="art-btn art-btn-plain" onClick={onDownloadAll} disabled={!anyArt} title={anyArt ? "Download the current version of every page" : "Upload art first"}>
+            Download all
           </button>
         </div>
       </div>
@@ -517,7 +517,7 @@ function PageView({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={cur.previewUrl} alt={`Page ${data.pageNumber} art`} />
               ) : cur ? (
-                <span className="art-canvas-empty">{fmtType(cur.mime)} — no web preview</span>
+                <span className="art-canvas-empty">{fmtType(cur.mime)}: no web preview</span>
               ) : (
                 <span className="art-canvas-empty">No art yet</span>
               )}
@@ -580,7 +580,7 @@ function PageView({
 
             <div className="art-commentlist">
               {orderedComments.length === 0 ? (
-                <div className="art-cempty">No notes yet — click anywhere on the art to leave one.</div>
+                <div className="art-cempty">No notes yet. Click the art to add one.</div>
               ) : (
                 orderedComments.map((c, i) => {
                   const mine = c.authorId === currentUserId;

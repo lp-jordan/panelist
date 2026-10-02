@@ -374,7 +374,7 @@ export function PageOutline({
           className="sx-outline-add sx-outline-add-blank"
           onClick={addBlank}
           aria-label="Blank page"
-          title="Blank page — freeform, skipped by numbering (Ctrl/Cmd+Shift+B)"
+          title="Blank page, not numbered (Ctrl/Cmd+Shift+B)"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M7 3h7l4 4v14a1 1 0 01-1 1H7a1 1 0 01-1-1V4a1 1 0 011-1z" />

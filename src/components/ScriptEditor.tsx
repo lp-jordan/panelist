@@ -860,7 +860,7 @@ function SavePill({ status }: { status: SaveStatus }) {
           Saved
         </>
       )}
-      {status === "error" && "Couldn’t save — ⌘S to retry"}
+      {status === "error" && "Couldn’t save. Press Save to retry"}
     </span>
   );
 }

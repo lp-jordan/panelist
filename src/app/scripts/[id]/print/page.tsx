@@ -9,7 +9,7 @@ import "./print.css";
 export const metadata: Metadata = {
   // A predictable tab/print-header title; the browser's own print header is
   // suppressed by @page in the PDF path, but this keeps the on-screen tab tidy.
-  title: "Script — Print",
+  title: "Print · Panelist",
 };
 
 // The static print/export view of a script: server-rendered sheets, no editor.

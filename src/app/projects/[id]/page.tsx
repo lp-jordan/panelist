@@ -4,6 +4,7 @@ import { getCurrentUser, memberProjectWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/format";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AccountMenu } from "@/components/library/AccountMenu";
 import { NewMenu } from "@/components/library/NewMenu";
 import { ScriptRow } from "@/components/library/ScriptRow";
 import { ScriptDropZone } from "@/components/library/ScriptDropZone";
@@ -86,6 +87,7 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
           invites={project.invites}
         />
         <NewMenu mode="script" projectId={project.id} />
+        <AccountMenu />
       </nav>
 
       <main className="shell-inner pullback">
@@ -104,7 +106,7 @@ export default async function ProjectHubPage({ params }: { params: Promise<{ id:
                   <path d="M8 13h8M8 17h5" />
                 </svg>
                 <h4>No issues yet</h4>
-                <p>Add one from the + in the bar above, or drag one here.</p>
+                <p>Add one with the + above, or drag a file here.</p>
               </div>
             ) : (
               project.scripts.map((script) => (

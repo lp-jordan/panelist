@@ -39,7 +39,7 @@ export async function createImportedScript(formData: FormData): Promise<ImportRe
     return { error: "Something went wrong reading the PDF." };
   }
   if (!Array.isArray(meta) || meta.length !== images.length) {
-    return { error: "Page data didn't line up — try the import again." };
+    return { error: "Page data didn't line up. Try the import again." };
   }
   if (images.length === 0) return { error: "That PDF had no pages." };
   if (images.length > MAX_PAGES) return { error: `Too many pages (max ${MAX_PAGES}).` };

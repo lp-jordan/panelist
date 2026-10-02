@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getCurrentUser, memberProjectWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AccountMenu } from "@/components/library/AccountMenu";
 import { PdfImporter } from "@/components/import/PdfImporter";
 
 // Import a finished script as a PDF (V2 — PDF import). Scoped to a project the
@@ -28,11 +29,12 @@ export default async function ImportPage({ params }: { params: Promise<{ id: str
         </Link>
         <span className="nav-spacer" />
         <ThemeToggle />
+        <AccountMenu />
       </nav>
 
       <main className="shell-inner pullback">
         <h1 className="large-title">Import a PDF script</h1>
-        <p className="ref-subtitle">Bring a finished script into {project.name} as image-backed pages.</p>
+        <p className="ref-subtitle">Pages come in as images and can’t be edited.</p>
 
         <PdfImporter projectId={project.id} />
       </main>

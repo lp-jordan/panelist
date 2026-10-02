@@ -18,7 +18,6 @@
   border-radius: 15px;
   background: var(--blue);
   color: #fff;
-  box-shadow: 0 10px 26px -10px var(--blue);
 }
 
 .login-mark svg {
@@ -78,18 +77,30 @@
 }
 
 /* Toggle between log-in and sign-up. */
+/* Text links: blue so they read as tappable, sized to sit inline with the
+   helper copy around them. */
 .login-switch {
   margin-top: 18px;
-  color: var(--label-2);
-  font-size: 0.9375rem;
+  color: var(--blue);
+  font-size: var(--text-sub);
   padding: 6px 10px;
   border-radius: 8px;
   transition: color 0.15s ease, background 0.15s ease;
 }
 
 .login-switch:hover {
-  color: var(--blue);
   background: var(--fill);
+}
+
+/* Inline in a sentence ("New here? Create an account"): no padding offset. */
+.login-note .login-switch {
+  margin: 0;
+  padding: 0;
+}
+
+.login-note .login-switch:hover {
+  background: none;
+  text-decoration: underline;
 }
 
 /* Passwordless flow: helper copy under the form, the code field, and the
