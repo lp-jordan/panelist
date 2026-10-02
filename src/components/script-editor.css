@@ -64,6 +64,7 @@
      and snapped back, which read as the "jumpy" collapse/expand. */
   transition: width 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
     right 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    gap 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
     padding 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
@@ -73,26 +74,49 @@
 .sx-outline[data-collapsed="true"] {
   right: calc(50vw + 408px + 12px);
   width: 48px;
+  gap: 0;
   padding: 4px;
   overflow: hidden;
 }
 
-.sx-outline[data-collapsed="true"] .sx-outline-list,
-.sx-outline[data-collapsed="true"] .sx-outline-adds,
-.sx-outline[data-collapsed="true"] .sx-outline-title,
-.sx-outline[data-collapsed="true"] .sx-outline-count {
-  display: none;
+/* The list folds its height (grid row 1fr → 0fr) in step with the card's
+   width, rather than vanishing and snapping the height first. */
+.sx-outline-body {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.2s var(--ease);
 }
 
+.sx-outline-body-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sx-outline[data-collapsed="true"] .sx-outline-body {
+  grid-template-rows: 0fr;
+  opacity: 0;
+}
+
+/* The title and count fade rather than disappear; the header packs to the
+   page side, so the button stays put while the card narrows around it. */
+.sx-outline[data-collapsed="true"] .sx-outline-title,
+.sx-outline[data-collapsed="true"] .sx-outline-count {
+  opacity: 0;
+}
+
+/* 4px right padding centers the 32px button in the 40px-wide chip. */
 .sx-outline[data-collapsed="true"] .sx-outline-head {
-  padding: 0;
+  padding: 0 4px 0 0;
 }
 
 .sx-outline-head {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 6px;
   padding: 2px 6px 8px;
+  transition: padding 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
   font-size: var(--text-fine);
   font-weight: 600;
   letter-spacing: 0.045em;
@@ -127,13 +151,15 @@
 
 .sx-outline-title {
   flex: 1;
-}
-
-.sx-outline[data-collapsed="true"] .sx-outline-title {
-  display: none;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity 0.2s var(--ease);
 }
 
 .sx-outline-count {
+  flex: none;
+  transition: opacity 0.2s var(--ease);
   padding: 1px 7px;
   border-radius: var(--radius-pill);
   background: var(--fill);

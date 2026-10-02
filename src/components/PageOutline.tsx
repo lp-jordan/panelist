@@ -221,6 +221,10 @@ export function PageOutline({
         <span className="sx-outline-title">Pages</span>
         <span className="sx-outline-count">{pages.length}</span>
       </div>
+      {/* Folds by animating its grid row, so the card's height eases along
+          with its width instead of snapping. */}
+      <div className="sx-outline-body">
+      <div className="sx-outline-body-inner">
       <ol className="sx-outline-list" ref={listRef}>
         {pages.map((page, i) => (
           <li
@@ -377,6 +381,8 @@ export function PageOutline({
             <path d="M13 3v5h5" />
           </svg>
         </button>
+      </div>
+      </div>
       </div>
     </aside>
   );

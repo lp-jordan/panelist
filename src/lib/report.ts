@@ -116,7 +116,9 @@ export function computeScriptReport(doc: JSONNode): ScriptReport {
         if (kind === "dialogue") {
           pageDialogueLines += 1;
           dialogueWords += words;
-          const name = String(el.attrs?.character ?? "").trim() || "(unnamed)";
+          // Cues are case- and spacing-insensitive ("fIELDS" and "FIELDS" are the
+          // same character); shown in caps, as cues read in the script.
+          const name = String(el.attrs?.character ?? "").trim().replace(/\s+/g, " ").toUpperCase() || "(unnamed)";
           let stat = charMap.get(name);
           if (!stat) {
             stat = { name, lines: 0, words: 0, panels: 0, pages: 0, firstPage: scriptPageNo, lastPage: scriptPageNo, _pages: new Set(), _panels: new Set() };
