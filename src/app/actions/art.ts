@@ -220,26 +220,34 @@ export async function setArtVersionNote(input: { scriptId: string; versionId: st
 export async function createArtComment(input: {
   scriptId: string;
   pageNumber: number;
+  versionId: string;
   body: string;
   xPct: number;
   yPct: number;
 }) {
   const user = await getCurrentUser();
-  const { scriptId, pageNumber, body, xPct, yPct } = input;
+  const { scriptId, pageNumber, versionId, body, xPct, yPct } = input;
   const text = body.trim();
   if (!text) throw new Error("empty note");
   await assertScriptAccess(scriptId, user.id);
 
   const clamp = (n: number) => Math.min(1, Math.max(0, n));
-  const artPage = await prisma.artPage.upsert({
-    where: { scriptId_pageNumber: { scriptId, pageNumber } },
-    create: { scriptId, pageNumber },
-    update: {},
-    select: { id: true },
+  // Notes sit on a specific version, which must be on this script's page.
+  const version = await prisma.artVersion.findFirst({
+    where: { id: versionId, artPage: { scriptId, pageNumber } },
+    select: { artPageId: true },
   });
+  if (!version) throw new Error("not found");
 
   await prisma.artComment.create({
-    data: { artPageId: artPage.id, authorId: user.id, body: text, xPct: clamp(xPct), yPct: clamp(yPct) },
+    data: {
+      artPageId: version.artPageId,
+      versionId,
+      authorId: user.id,
+      body: text,
+      xPct: clamp(xPct),
+      yPct: clamp(yPct),
+    },
   });
   revalidatePath(`/scripts/${scriptId}/art`);
 }

@@ -55,6 +55,7 @@ export default async function ScriptArtPage({ params }: { params: Promise<{ id: 
               yPct: true,
               resolved: true,
               createdAt: true,
+              versionId: true,
               author: { select: { id: true, name: true } },
             },
           },
@@ -96,22 +97,26 @@ export default async function ScriptArtPage({ params }: { params: Promise<{ id: 
               previewStatus: currentRow.previewStatus,
             }
           : null,
-        versions: ap.versions.map((v) => ({
+        versions: await Promise.all(ap.versions.map(async (v) => ({
           id: v.id,
           version: v.version,
           bytes: v.bytes,
           note: v.note,
+          mime: v.mime,
+          // Every version is viewable, so each gets its own preview URL.
+          previewUrl: v.id === currentRow?.id ? previewUrl : v.previewKey && artStorageConfigured() ? await presignDownload(v.previewKey) : null,
           previewStatus: v.previewStatus,
           isCurrent: v.id === ap.currentVersionId,
           uploaderName: v.uploader?.name ?? "Someone",
           createdLabel: formatRelativeTime(v.createdAt),
-        })),
+        }))),
         comments: ap.comments.map((c) => ({
           id: c.id,
           body: c.body,
           xPct: c.xPct,
           yPct: c.yPct,
           resolved: c.resolved,
+          versionId: c.versionId,
           authorId: c.author?.id ?? null,
           authorName: c.author?.name ?? "Someone",
           createdLabel: formatRelativeTime(c.createdAt),

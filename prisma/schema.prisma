@@ -322,9 +322,10 @@ model ArtVersion {
   uploadedBy    String?
   createdAt     DateTime      @default(now())
 
-  artPage    ArtPage  @relation("PageVersions", fields: [artPageId], references: [id], onDelete: Cascade)
-  currentFor ArtPage? @relation("CurrentVersion")
-  uploader   User?    @relation(fields: [uploadedBy], references: [id])
+  artPage    ArtPage      @relation("PageVersions", fields: [artPageId], references: [id], onDelete: Cascade)
+  currentFor ArtPage?     @relation("CurrentVersion")
+  comments   ArtComment[]
+  uploader   User?        @relation(fields: [uploadedBy], references: [id])
 
   @@unique([artPageId, version])
   @@index([previewStatus])
@@ -344,6 +345,9 @@ enum PreviewStatus {
 model ArtComment {
   id         String    @id @default(cuid())
   artPageId  String
+  // The version the note was left on. Notes don't carry forward to newer
+  // versions, and deleting a version deletes its notes.
+  versionId  String?
   authorId   String?
   body       String
   xPct       Float
@@ -352,8 +356,9 @@ model ArtComment {
   createdAt  DateTime  @default(now())
   resolvedAt DateTime?
 
-  artPage ArtPage @relation(fields: [artPageId], references: [id], onDelete: Cascade)
-  author  User?   @relation(fields: [authorId], references: [id])
+  artPage ArtPage     @relation(fields: [artPageId], references: [id], onDelete: Cascade)
+  version ArtVersion? @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  author  User?       @relation(fields: [authorId], references: [id])
 }
 
 enum AssetKind {

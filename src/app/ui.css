@@ -2270,6 +2270,11 @@ span.ref-linktile {
 .art-vrow2 { display: flex; align-items: center; gap: 8px; margin-top: 5px; color: var(--label-2); font-size: var(--text-sub); flex-wrap: wrap; }
 /* File size beside the version number. */
 .art-sz { font-size: var(--text-sub); color: var(--label-2); font-variant-numeric: tabular-nums; }
+/* Version cards select the version shown on the stage. */
+.art-ver .art-vcard { cursor: pointer; transition: box-shadow 0.15s var(--ease), border-color 0.15s var(--ease); }
+.art-ver .art-vcard:hover { border-color: var(--label-3); }
+.art-ver .art-vcard[data-viewing="true"] { border-color: var(--blue); box-shadow: 0 0 0 1px var(--blue); cursor: default; }
+.art-oldbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; padding: 8px 12px; border-radius: var(--radius); background: color-mix(in srgb, var(--blue) 10%, var(--bg-elevated)); color: var(--label); font-size: var(--text-sub); font-weight: 600; }
 .art-vactions { display: flex; gap: 2px; margin: 8px 0 -4px -6px; }
 .art-ico { display: grid; place-items: center; width: 30px; height: 30px; border-radius: var(--radius-sm); color: var(--label-2); transition: background 0.15s var(--ease), color 0.15s var(--ease); }
 .art-ico:hover { background: var(--fill); color: var(--blue); }
