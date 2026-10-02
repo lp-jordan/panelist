@@ -388,6 +388,8 @@ export function ScriptReadView({
             <span className="sx-outline-title">Pages</span>
             <span className="sx-outline-count">{pages.length}</span>
           </div>
+          <div className="sx-outline-body">
+          <div className="sx-outline-body-inner">
           <ol className="sx-outline-list">
             {pages.map((page) => (
               <li key={page.n}>
@@ -412,6 +414,8 @@ export function ScriptReadView({
               </li>
             ))}
           </ol>
+          </div>
+          </div>
         </aside>
 
         <div className="rc-stage" ref={stageRef}>
