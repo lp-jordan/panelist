@@ -651,7 +651,7 @@ function AddSource() {
         ref={fileRef}
         type="file"
         name="file"
-        accept="image/*"
+        accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
         hidden
         onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
       />

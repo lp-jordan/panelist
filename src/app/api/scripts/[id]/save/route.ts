@@ -9,10 +9,16 @@ import type { JSONNode } from "@/lib/editor/serialize";
 // autosave server action) would be cancelled. Without this, an edit made in the
 // last second before a reload — most visibly a character name you just typed —
 // never reached the pages the loader reads, and looked "dropped on load".
+const MAX_BODY_BYTES = 10 * 1024 * 1024;
+
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   const { id } = await params;
   await assertScriptOwner(id, user.id);
+  // A whole script is well under this; anything bigger isn't a real save.
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) {
+    return NextResponse.json({ ok: false }, { status: 413 });
+  }
   let doc: JSONNode;
   try {
     doc = (await request.json()) as JSONNode;

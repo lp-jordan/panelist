@@ -86,9 +86,19 @@ export async function finalizeArtVersion(input: {
 
   const artPage = await prisma.artPage.findFirst({
     where: { id: artPageId, scriptId },
-    select: { id: true },
+    select: { id: true, pageNumber: true },
   });
   if (!artPage) throw new Error("not found");
+
+  // The key comes back from the browser, so it must be the one step 1 minted
+  // for this script, page and version. Otherwise a caller could record another
+  // script's file as their own version and then download or delete it.
+  if (!Number.isInteger(version) || version < 1) throw new Error("bad request");
+  const expectedPrefix = originalKey(scriptId, artPage.pageNumber, version, "x").replace(/x$/, "");
+  if (typeof key !== "string" || !key.startsWith(expectedPrefix) || !/^[a-z0-9]+$/.test(key.slice(expectedPrefix.length))) {
+    throw new Error("bad request");
+  }
+  if (!Number.isFinite(bytes) || bytes <= 0 || bytes > MAX_BYTES) throw new Error("bad request");
 
   // Browser-renderable uploads are their own preview and READY at once. Everything
   // else (PSD/TIFF/PDF) lands PENDING for the art-preview-worker to rasterize.

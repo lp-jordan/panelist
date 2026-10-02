@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser, assertScriptAccess } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
+import { RASTER_TYPES } from "@/lib/image-types";
 
 // Reference images are small screen/photo grabs, not the layered art the future
 // R2 pipeline handles. Cap generously so an unoptimised phone photo still fits,
@@ -47,7 +48,7 @@ export async function addReference(formData: FormData): Promise<AddReferenceResu
   const folderId = await folderInScript(scriptId, formData.get("folderId"));
 
   if (file instanceof File && file.size > 0) {
-    if (!file.type.startsWith("image/")) return { error: "That file isn't an image." };
+    if (!RASTER_TYPES.has(file.type)) return { error: "Use a PNG, JPEG, WebP, GIF or AVIF image." };
     if (file.size > MAX_BYTES) return { error: "That image is too large (20 MB max)." };
     const bytes = Buffer.from(await file.arrayBuffer());
 

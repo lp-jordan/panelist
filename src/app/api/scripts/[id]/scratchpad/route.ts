@@ -14,6 +14,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params;
   if (!(await getScriptRole(id, user.id))) return NextResponse.json({ ok: false }, { status: 403 });
 
+  // Checked before reading, so an oversized body is never buffered.
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_LENGTH * 4) {
+    return NextResponse.json({ ok: false, error: "too long" }, { status: 413 });
+  }
   const text = await request.text();
   if (text.length > MAX_LENGTH) return NextResponse.json({ ok: false, error: "too long" }, { status: 413 });
 

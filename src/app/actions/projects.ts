@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser, assertProjectAccess } from "@/lib/dal";
+import { getCurrentUser, assertProjectOwner } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 
 export async function createProject(formData: FormData) {
@@ -19,12 +19,15 @@ export async function createProject(formData: FormData) {
   revalidatePath("/");
 }
 
+// Renaming, trashing, restoring and deleting a project are owner-only: a
+// collaborator must not be able to remove a book (and every script in it).
+
 export async function renameProject(formData: FormData) {
   const user = await getCurrentUser();
   const id = formData.get("id");
   const name = formData.get("name");
   if (typeof id !== "string" || typeof name !== "string" || name.trim().length === 0) return;
-  await assertProjectAccess(id, user.id);
+  await assertProjectOwner(id, user.id);
 
   await prisma.project.update({ where: { id }, data: { name: name.trim() } });
   revalidatePath("/");
@@ -34,7 +37,7 @@ export async function archiveProject(formData: FormData) {
   const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
-  await assertProjectAccess(id, user.id);
+  await assertProjectOwner(id, user.id);
 
   const deletedAt = new Date();
   await prisma.$transaction([
@@ -52,7 +55,7 @@ export async function restoreProject(formData: FormData) {
   const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
-  await assertProjectAccess(id, user.id);
+  await assertProjectOwner(id, user.id);
 
   await prisma.project.update({ where: { id }, data: { deletedAt: null } });
   revalidatePath("/");
@@ -63,7 +66,7 @@ export async function deleteProjectForever(formData: FormData) {
   const user = await getCurrentUser();
   const id = formData.get("id");
   if (typeof id !== "string") return;
-  await assertProjectAccess(id, user.id);
+  await assertProjectOwner(id, user.id);
 
   const project = await prisma.project.findUnique({ where: { id } });
   if (!project?.deletedAt) {

@@ -1,5 +1,6 @@
 import { getCurrentUser, accessibleScriptWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
+import { RASTER_TYPES } from "@/lib/image-types";
 
 // Streams a reference image's bytes out of Postgres (AssetData). Scoped to the
 // requester: the asset must belong to a reference in a script they can access,
@@ -35,11 +36,20 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   const body = new Uint8Array(blob.data);
+  // These bytes are served from our own origin, so they must never be treated
+  // as a document. Only known raster types go out as themselves; anything else
+  // (e.g. an SVG stored before uploads were restricted) is a download. nosniff
+  // stops the browser guessing, and the CSP sandboxes the response even if it
+  // is opened directly.
+  const safe = asset.mime !== null && RASTER_TYPES.has(asset.mime);
   return new Response(body, {
     headers: {
-      "Content-Type": asset.mime ?? "application/octet-stream",
+      "Content-Type": safe ? asset.mime! : "application/octet-stream",
       "Content-Length": String(body.byteLength),
       "Cache-Control": "private, max-age=31536000, immutable",
+      "X-Content-Type-Options": "nosniff",
+      "Content-Security-Policy": "default-src 'none'; sandbox",
+      ...(safe ? {} : { "Content-Disposition": "attachment" }),
     },
   });
 }

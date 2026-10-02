@@ -18,6 +18,7 @@ export function ScriptRow({
   projects,
   locked = false,
   imported = false,
+  canManage = true,
 }: {
   id: string;
   /* The group this row currently lives in; null for Unassigned. Lets a drop
@@ -34,6 +35,9 @@ export function ScriptRow({
   locked?: boolean;
   /* Imported PDF: no editor, so no Duplicate or lock toggle. */
   imported?: boolean;
+  /* Owner-level on the script. Collaborators get no "…" menu: every action in
+     it (rename, duplicate, move, lock, trash) is owner-only on the server. */
+  canManage?: boolean;
 }) {
   const [renaming, setRenaming] = useState(false);
   const [archiving, setArchiving] = useState(false);
@@ -98,6 +102,7 @@ export function ScriptRow({
           </svg>
         </Link>
 
+        {canManage && (
         <Menu label={`Actions for ${title}`} contextSelector=".row">
           {(close) => (
             <>
@@ -176,6 +181,7 @@ export function ScriptRow({
             </>
           )}
         </Menu>
+        )}
 
         <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M9 5l7 7-7 7" />

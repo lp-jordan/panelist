@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUser, memberProjectWhere, accessibleScriptWhere } from "@/lib/dal";
+import { getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/format";
 import { restoreProject, deleteProjectForever } from "@/app/actions/projects";
@@ -12,12 +12,17 @@ export default async function TrashPage() {
   const user = await getCurrentUser();
 
   const [projects, scripts] = await Promise.all([
+    // Only what the user may restore or delete: projects they own, and scripts
+    // they're owner-level on (their own, or in a project they own).
     prisma.project.findMany({
-      where: { deletedAt: { not: null }, ...memberProjectWhere(user.id) },
+      where: { deletedAt: { not: null }, members: { some: { userId: user.id, role: "OWNER" } } },
       orderBy: { deletedAt: "desc" },
     }),
     prisma.script.findMany({
-      where: { deletedAt: { not: null }, ...accessibleScriptWhere(user.id) },
+      where: {
+        deletedAt: { not: null },
+        OR: [{ ownerId: user.id }, { project: { members: { some: { userId: user.id, role: "OWNER" } } } }],
+      },
       orderBy: { deletedAt: "desc" },
       include: { project: true },
     }),
