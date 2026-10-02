@@ -244,7 +244,10 @@
   color: var(--label);
   font-size: 0.96875rem;
   outline: 0;
-  transition: background 0.22s var(--ease), box-shadow 0.22s var(--ease);
+  /* background-color, not the shorthand: select.field draws its arrow with
+     background-image, and animating the shorthand slid the arrow in from the
+     left edge every time the field lost focus. */
+  transition: background-color 0.22s var(--ease), box-shadow 0.22s var(--ease);
 }
 
 .field::placeholder {
@@ -252,7 +255,7 @@
 }
 
 .field:focus {
-  background: var(--bg-elevated);
+  background-color: var(--bg-elevated);
   box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--blue) 26%, transparent),
     0 0 0 1px var(--blue);
 }

@@ -47,7 +47,8 @@
      open card, it slides right just enough to stay on screen. */
   right: min(calc(50vw + 408px + 12px), calc(100vw - 224px - 20px));
   width: 224px;
-  max-height: calc(100vh - var(--nav-height) - 40px);
+  /* Same height as the scratch pad (a short list leaves room below). */
+  height: var(--side-card-h);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -63,6 +64,7 @@
   /* A smooth ease-out, not a spring — the spring overshot the target width
      and snapped back, which read as the "jumpy" collapse/expand. */
   transition: width 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
+    height 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
     right 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
     gap 0.26s cubic-bezier(0.22, 0.61, 0.36, 1),
     padding 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -74,6 +76,7 @@
 .sx-outline[data-collapsed="true"] {
   right: calc(50vw + 408px + 12px);
   width: 48px;
+  height: 40px;
   gap: 0;
   padding: 4px;
   overflow: hidden;
@@ -503,6 +506,31 @@
 
   .sx-outline[data-open="true"] {
     transform: translateX(0);
+  }
+
+  /* Collapse is a desktop-only state; a drawer opened on a narrow screen is
+     always full, even if it was collapsed on a wider one. */
+  .sx-outline[data-collapsed="true"] {
+    right: auto;
+    width: 264px;
+    height: 100dvh;
+    gap: 4px;
+    padding: 16px 12px 12px;
+    overflow-y: auto;
+  }
+
+  .sx-outline[data-collapsed="true"] .sx-outline-body {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .sx-outline[data-collapsed="true"] .sx-outline-title,
+  .sx-outline[data-collapsed="true"] .sx-outline-count {
+    opacity: 1;
+  }
+
+  .sx-outline[data-collapsed="true"] .sx-outline-head {
+    padding: 2px 6px 8px;
   }
 
   .sx-outline-collapse {
