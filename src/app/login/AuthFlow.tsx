@@ -155,11 +155,7 @@ function Flow({ mode, onRestart }: { mode: AuthMode; onRestart: () => void }) {
               {verifyState?.error ?? requestError ?? (resent ? "New code sent." : "")}
             </p>
           </form>
-          <p className="login-note">
-            {signup
-              ? "Or tap the button in the email. The code expires in 15 minutes."
-              : "Didn't get it? Check the address, or create an account instead."}
-          </p>
+          {signup && <p className="login-note">Or tap the button in the email. The code expires in 15 minutes.</p>}
 
           <div className="login-actions">
             <form action={requestAction}>

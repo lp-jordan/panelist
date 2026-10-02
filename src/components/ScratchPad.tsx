@@ -220,7 +220,7 @@ export function ScratchPad({ scriptId, initialText }: { scriptId: string; initia
           className="sx-pad-text"
           value={text}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Ideas, trial dialogue, anything. Shared with everyone on this script; never exported."
+          placeholder="A place for notes, thoughts, and other whatever-ings."
           aria-label="Scratch pad notes"
           spellCheck
         />

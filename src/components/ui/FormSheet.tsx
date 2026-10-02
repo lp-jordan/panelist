@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Portal } from "./Portal";
 
@@ -25,19 +25,29 @@ export function FormSheet({
   onClose: () => void;
   title: string;
   submitLabel?: string;
-  action: (formData: FormData) => void | Promise<void>;
+  /* Return { error } to keep the sheet open and show the message. */
+  action: (formData: FormData) => void | Promise<void | { error?: string } | undefined>;
   /* Optional last-mile step on the form data before it's sent — e.g. shrinking
      an image client-side so the big original never leaves the browser. */
   transform?: (formData: FormData) => FormData | Promise<FormData>;
   children: React.ReactNode;
 }) {
   const bodyRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  // Any way of dismissing the sheet clears a leftover error for next time.
+  const close = () => {
+    setError(null);
+    onClose();
+  };
 
   useEffect(() => {
     if (!open) return;
 
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        setError(null);
+        onClose();
+      }
     }
     window.addEventListener("keydown", onKeyDown);
 
@@ -56,18 +66,22 @@ export function FormSheet({
 
   return (
     <Portal>
-      <div className="scrim" data-open={open} onClick={onClose} />
+      <div className="scrim" data-open={open} onClick={close} />
       <div className="form-sheet" data-open={open} role="dialog" aria-label={title} inert={!open}>
         <form
           className="form-sheet-card"
           action={async (formData) => {
             const data = transform ? await transform(formData) : formData;
-            await action(data);
-            onClose();
+            const result = await action(data);
+            if (result && result.error) {
+              setError(result.error);
+              return;
+            }
+            close();
           }}
         >
           <div className="form-sheet-head">
-            <button type="button" onClick={onClose}>
+            <button type="button" onClick={close}>
               Cancel
             </button>
             <strong>{title}</strong>
@@ -75,6 +89,7 @@ export function FormSheet({
           </div>
           <div className="form-sheet-body" ref={bodyRef}>
             {children}
+            {error && <p className="form-error">{error}</p>}
           </div>
         </form>
       </div>

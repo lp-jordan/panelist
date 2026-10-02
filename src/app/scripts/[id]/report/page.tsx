@@ -6,9 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { scriptToDocJSON, type JSONNode } from "@/lib/editor/serialize";
 import { computeScriptReport } from "@/lib/report";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AccountMenu } from "@/components/library/AccountMenu";
 import "@/app/scripts/[id]/report/report.css";
 
-export const metadata: Metadata = { title: "Script — Report" };
+export const metadata: Metadata = { title: "Report · Panelist" };
 
 export default async function ScriptReportPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
@@ -38,29 +39,30 @@ export default async function ScriptReportPage({ params }: { params: Promise<{ i
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M15 5l-7 7 7 7" />
           </svg>
-          <span className="nav-back-label">Script</span>
+          <span className="nav-back-label">{script.title}</span>
         </Link>
         <span className="nav-spacer" />
-        <span className="nav-title">{script.title} — Report</span>
+        <span className="nav-title">Report</span>
         <span className="nav-spacer" />
         <span className="nav-theme"><ThemeToggle /></span>
+        <AccountMenu />
       </nav>
 
       <main className="rp-body">
         {isImported || !report ? (
-          <p className="rp-empty">This is an imported PDF — there’s no script structure to report on.</p>
+          <p className="rp-empty">Imported PDFs don’t have script structure to report on.</p>
         ) : (
           <>
-            {/* Summary tiles */}
-            <section className="rp-tiles">
-              <Tile label="Pages" value={report.totals.pages} />
-              <Tile label="Panels" value={report.totals.panels} />
-              <Tile label="Characters" value={report.totals.characters} />
-              <Tile label="Total words" value={report.totals.totalWords.toLocaleString()} />
-              <Tile label="Dialogue words" value={report.totals.dialogueWords.toLocaleString()} />
-              <Tile label="Panels / page" value={report.averages.panelsPerPage} />
-              <Tile label="Dialogue / panel" value={report.averages.dialogueLinesPerPanel} />
-              <Tile label="Silent panels" value={`${report.averages.silentPanelPct}%`} />
+            {/* Summary: a compact label/value list, two columns where there's room. */}
+            <section className="rp-stats">
+              <Stat label="Pages" value={report.totals.pages} />
+              <Stat label="Panels" value={report.totals.panels} />
+              <Stat label="Characters" value={report.totals.characters} />
+              <Stat label="Total words" value={report.totals.totalWords.toLocaleString()} />
+              <Stat label="Dialogue words" value={report.totals.dialogueWords.toLocaleString()} />
+              <Stat label="Panels per page" value={report.averages.panelsPerPage} />
+              <Stat label="Dialogue lines per panel" value={report.averages.dialogueLinesPerPanel} />
+              <Stat label="Silent panels" value={`${report.averages.silentPanelPct}%`} />
             </section>
 
             {/* Cast */}
@@ -120,7 +122,7 @@ export default async function ScriptReportPage({ params }: { params: Promise<{ i
                     <span className="rp-page-track">
                       <span className="rp-page-fill" style={{ width: `${(p.panels / maxPanels) * 100}%` }} />
                     </span>
-                    <span className="rp-page-meta">{p.panels} pnl · {p.dialogueLines} line{p.dialogueLines === 1 ? "" : "s"} · {p.words}w</span>
+                    <span className="rp-page-meta">{p.panels} panel{p.panels === 1 ? "" : "s"} · {p.dialogueLines} line{p.dialogueLines === 1 ? "" : "s"} · {p.words} word{p.words === 1 ? "" : "s"}</span>
                   </div>
                 ))}
               </div>
@@ -132,11 +134,11 @@ export default async function ScriptReportPage({ params }: { params: Promise<{ i
   );
 }
 
-function Tile({ label, value }: { label: string; value: string | number }) {
+function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rp-tile">
-      <span className="rp-tile-v">{value}</span>
-      <span className="rp-tile-l">{label}</span>
+    <div className="rp-stat">
+      <span className="rp-stat-l">{label}</span>
+      <span className="rp-stat-v">{value}</span>
     </div>
   );
 }

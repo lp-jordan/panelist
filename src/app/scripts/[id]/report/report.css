@@ -8,48 +8,58 @@
   background: var(--bg-grouped);
 }
 
+/* Same column as the rest of the app (.shell-inner). */
 .rp-body {
   width: 100%;
-  max-width: 920px;
+  max-width: 860px;
   margin: 0 auto;
-  padding: 20px 16px 64px;
+  padding: 20px var(--gutter) 64px;
   font-family: var(--font-ui);
 }
 
 .rp-empty {
+  font-size: var(--text-sub);
   color: var(--label-2);
-  padding: 24px 4px;
 }
 
-/* --- summary tiles -------------------------------------------------------- */
+/* --- summary --------------------------------------------------------------- */
 
-.rp-tiles {
+/* Label left, number right, in one grouped card: two columns on wide screens,
+   one on phones. */
+.rp-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 28px;
+  padding: 4px 16px;
   margin-bottom: 28px;
-}
-
-.rp-tile {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 16px;
   background: var(--bg-elevated);
   border-radius: var(--radius);
   box-shadow: 0 0 0 0.5px var(--separator);
 }
 
-.rp-tile-v {
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--label);
+.rp-stat {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 0.5px solid var(--separator);
+  font-size: var(--text-row);
 }
 
-.rp-tile-l {
-  font-size: var(--text-sub);
+/* No rule under the last row of each column. */
+.rp-stat:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.rp-stat-l {
   color: var(--label-2);
+}
+
+.rp-stat-v {
+  font-weight: 600;
+  color: var(--label);
+  font-variant-numeric: tabular-nums;
 }
 
 /* --- sections ------------------------------------------------------------- */
@@ -204,7 +214,8 @@
 /* --- narrow screens ------------------------------------------------------- */
 
 @media (max-width: 620px) {
-  .rp-tiles { grid-template-columns: repeat(2, 1fr); }
+  .rp-stats { grid-template-columns: 1fr; }
+  .rp-stat:nth-last-child(2) { border-bottom: 0.5px solid var(--separator); }
   .rp-tr { grid-template-columns: minmax(0, 1fr) 44px 52px 48px; }
   /* Drop the two least-critical numeric columns on phones. */
   .rp-tr > :nth-child(5),

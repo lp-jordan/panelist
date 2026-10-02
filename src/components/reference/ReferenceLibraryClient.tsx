@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Menu } from "@/components/ui/Menu";
 import { Portal } from "@/components/ui/Portal";
 import { FormSheet } from "@/components/ui/FormSheet";
 import { ActionSheet } from "@/components/ui/ActionSheet";
-import { uploadReference, updateReferenceCaption, deleteReference, updateReferenceTags } from "@/app/actions/references";
+import { addReference, updateReferenceCaption, deleteReference, updateReferenceTags } from "@/app/actions/references";
+import { RefOpenLink, RefVisual } from "./RefVisual";
 import { downscaleImage } from "@/lib/downscaleImage";
 
 const UNSORTED = "__unsorted__";
@@ -22,7 +23,8 @@ async function downscaleUpload(formData: FormData): Promise<FormData> {
 
 export type ReferenceCard = {
   id: string;
-  assetId: string;
+  assetId: string | null;
+  url: string | null;
   caption: string | null;
   placementCount: number;
   collectionIds: string[];
@@ -54,6 +56,66 @@ export function ReferenceLibraryClient({
 
   const nameOf = useMemo(() => new Map(collections.map((c) => [c.id, c.name])), [collections]);
 
+  // Paste or drop an image or a link anywhere on the page to add it straight
+  // away; no sheet, no mode. The add sheet does the same for a typed link or
+  // a picked file.
+  const [quickStatus, setQuickStatus] = useState<string | null>(null);
+  const [, startQuick] = useTransition();
+  const sheetOpen = adding || editing !== null || tagging !== null || deleting !== null || viewing !== null;
+  const quickAdd = (payload: { file?: File; url?: string }) => {
+    const fd = new FormData();
+    fd.set("scriptId", scriptId);
+    if (payload.file) fd.set("file", payload.file);
+    if (payload.url) fd.set("url", payload.url);
+    setQuickStatus("Adding reference…");
+    startQuick(async () => {
+      const result = await addReference(await downscaleUpload(fd));
+      setQuickStatus(result?.error ?? null);
+    });
+  };
+  // The window listeners below read the latest quickAdd through this ref.
+  const quickAddRef = useRef(quickAdd);
+  useEffect(() => {
+    quickAddRef.current = quickAdd;
+  });
+
+  useEffect(() => {
+    if (sheetOpen) return;
+    const isEditable = (el: EventTarget | null) =>
+      el instanceof HTMLElement && (el.isContentEditable || el.closest("input, textarea, select") !== null);
+    const fromTransfer = (dt: DataTransfer | null) => {
+      if (!dt) return null;
+      const file = [...dt.files].find((f) => f.type.startsWith("image/"));
+      if (file) return { file };
+      const text = (dt.getData("text/uri-list") || dt.getData("text/plain")).trim().split("\n")[0];
+      return /^https?:\/\/\S+$/i.test(text) ? { url: text } : null;
+    };
+    const onPaste = (e: ClipboardEvent) => {
+      if (isEditable(e.target)) return;
+      const payload = fromTransfer(e.clipboardData);
+      if (!payload) return;
+      e.preventDefault();
+      quickAddRef.current(payload);
+    };
+    const onDragOver = (e: DragEvent) => {
+      if (e.dataTransfer?.types.some((t) => t === "Files" || t === "text/uri-list")) e.preventDefault();
+    };
+    const onDrop = (e: DragEvent) => {
+      const payload = fromTransfer(e.dataTransfer);
+      if (!payload) return;
+      e.preventDefault();
+      quickAddRef.current(payload);
+    };
+    window.addEventListener("paste", onPaste);
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", onDrop);
+    return () => {
+      window.removeEventListener("paste", onPaste);
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  }, [sheetOpen]);
+
   const untaggedCount = useMemo(() => references.filter((r) => r.collectionIds.length === 0).length, [references]);
   const shown = useMemo(() => {
     if (filter === null) return references;
@@ -64,9 +126,11 @@ export function ReferenceLibraryClient({
   return (
     <>
       <div className="ref-toolbar">
-        <span className="ref-count">
-          {references.length} reference{references.length === 1 ? "" : "s"}
-        </span>
+        {references.length > 0 && (
+          <span className="ref-count">
+            {references.length} reference{references.length === 1 ? "" : "s"}
+          </span>
+        )}
         <button type="button" className="ref-add" onClick={() => setAdding(true)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14" />
@@ -74,6 +138,11 @@ export function ReferenceLibraryClient({
           Add reference
         </button>
       </div>
+      {quickStatus && (
+        <p className="ref-quick" role="status">
+          {quickStatus}
+        </p>
+      )}
 
       {(collections.length > 0 || untaggedCount !== references.length) && references.length > 0 && (
         <div className="ref-filters">
@@ -110,7 +179,7 @@ export function ReferenceLibraryClient({
             <path d="M21 15l-5-5L5 21" />
           </svg>
           <h4>No reference yet</h4>
-          <p>Add an image — a character, a location, a costume grab — and give it a note.</p>
+          <p>Add a reference image or link.</p>
         </div>
       ) : shown.length === 0 ? (
         <div className="empty">
@@ -122,11 +191,9 @@ export function ReferenceLibraryClient({
           {shown.map((ref) => (
             <figure className="ref-card" key={ref.id}>
               <div className="ref-thumb">
-                {/* Tap the image to open the reference detail. Plain <img>:
-                    bytes come from the session-gated /api/assets route, so
-                    Next's image optimizer would only add a hop. */}
+                {/* Tap the card to open the reference detail. */}
                 <button type="button" className="ref-open" onClick={() => setViewing(ref)} aria-label={`Open ${ref.caption ?? "reference"}`}>
-                  <img src={`/api/assets/${ref.assetId}`} alt={ref.caption ?? "Reference image"} loading="lazy" />
+                  <RefVisual source={ref} alt={ref.caption ?? "Reference"} lazy />
                 </button>
                 {ref.placementCount > 0 && (
                   <span className="ref-pin" title={`Pinned in ${ref.placementCount} place${ref.placementCount === 1 ? "" : "s"}`}>
@@ -190,9 +257,9 @@ export function ReferenceLibraryClient({
         </div>
       )}
 
-      <FormSheet open={adding} onClose={() => setAdding(false)} title="Add reference" submitLabel="Add" action={uploadReference} transform={downscaleUpload}>
+      <FormSheet open={adding} onClose={() => setAdding(false)} title="Add reference" submitLabel="Add" action={addReference} transform={downscaleUpload}>
         <input type="hidden" name="scriptId" value={scriptId} />
-        <input className="field" type="file" name="file" accept="image/*" aria-label="Reference image" required />
+        <AddSource key={adding ? "open" : "closed"} />
         <input className="field" name="caption" placeholder="Caption (optional)" aria-label="Caption" />
       </FormSheet>
 
@@ -266,7 +333,7 @@ export function ReferenceLibraryClient({
         open={deleting !== null}
         onClose={() => setDeleting(null)}
         title="Delete this reference?"
-        description="The image and its caption are removed. Any panel pins to it go too."
+        description="It's removed along with any pins in the script."
         confirmLabel="Delete"
         action={deleteReference}
         hidden={{ id: deleting?.id ?? "", scriptId }}
@@ -310,8 +377,9 @@ function ReferenceDetail({
         <button type="button" className="rd-close" onClick={onClose} aria-label="Close">
           ✕
         </button>
-        <img className="rd-img" src={`/api/assets/${reference.assetId}`} alt={reference.caption ?? "Reference"} />
+        <RefVisual source={reference} alt={reference.caption ?? "Reference"} className="rd-img" />
         <div className="rd-body">
+          <RefOpenLink source={reference} className="rd-link" />
           <p className="rd-cap">{reference.caption || <span className="rd-cap-empty">No caption</span>}</p>
 
           {tagNames.length > 0 && (
@@ -342,5 +410,86 @@ function ReferenceDetail({
         </div>
       </div>
     </Portal>
+  );
+}
+
+/**
+ * The add sheet's source: paste a link, or choose (or drop) an image. Whichever
+ * is given is what gets added; the server tells them apart.
+ */
+function AddSource() {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [over, setOver] = useState(false);
+
+  const takeFiles = (files: FileList | null) => {
+    const image = files && [...files].find((f) => f.type.startsWith("image/"));
+    if (!image || !fileRef.current) return;
+    const dt = new DataTransfer();
+    dt.items.add(image);
+    fileRef.current.files = dt.files;
+    setFileName(image.name || "Pasted image");
+  };
+
+  return (
+    <div
+      className="ref-add-zone"
+      data-over={over}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setOver(true);
+      }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setOver(false);
+        takeFiles(e.dataTransfer.files);
+      }}
+    >
+      {fileName ? (
+        <div className="ref-add-picked">
+          <span>{fileName}</span>
+          <button
+            type="button"
+            className="ref-add-clear"
+            onClick={() => {
+              if (fileRef.current) fileRef.current.value = "";
+              setFileName(null);
+            }}
+            aria-label="Remove image"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <>
+          <input
+            className="field"
+            name="url"
+            placeholder="Paste a link or image"
+            aria-label="Link"
+            autoComplete="off"
+            inputMode="url"
+            onPaste={(e) => {
+              if ([...e.clipboardData.files].some((f) => f.type.startsWith("image/"))) {
+                e.preventDefault();
+                takeFiles(e.clipboardData.files);
+              }
+            }}
+          />
+          <button type="button" className="ref-add-choose" onClick={() => fileRef.current?.click()}>
+            or choose an image
+          </button>
+        </>
+      )}
+      <input
+        ref={fileRef}
+        type="file"
+        name="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => setFileName(e.target.files?.[0]?.name ?? null)}
+      />
+    </div>
   );
 }

@@ -79,6 +79,9 @@
      considered — see the design direction for the full inventory. */
   --spring: cubic-bezier(0.32, 0.72, 0, 1);
   --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  /* Desktop height shared by the page outline and the scratch pad, so the two
+     side cards always match. */
+  --side-card-h: min(600px, calc(100vh - var(--nav-height) - 40px));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -233,5 +236,48 @@ button {
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Theme switch cross-fade (see useTheme). The browser snapshots the page in
+   the old appearance and fades it into the new one: one smooth fade for
+   everything, rather than every element transitioning on its own clock. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 1s;
+  animation-timing-function: ease-in-out;
+}
+
+/* Slim scrollbars everywhere: a thin rounded thumb in the label colour on a
+   clear track, no boxed gutter. WebKit/Blink use the pseudo-elements (finer
+   control than `scrollbar-width: thin`); Firefox, which has no pseudo-elements,
+   gets the standard properties. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* The transparent border insets a 4px pill inside the 10px hit area. */
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+  background-color: var(--label-3);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--label-2);
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--label-3) transparent;
   }
 }

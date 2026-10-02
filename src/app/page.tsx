@@ -65,7 +65,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<Sea
                     <path d="M3 7h6l2 2h10v10H3z" />
                   </svg>
                   <h4>No projects yet</h4>
-                  <p>Create your first project from the + in the bar above. Scripts live inside a project.</p>
+                  <p>Create your first project with the + above.</p>
                 </div>
               )}
             </div>

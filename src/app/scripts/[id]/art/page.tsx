@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { formatRelativeTime } from "@/lib/format";
 import { presignDownload, artStorageConfigured } from "@/lib/art-storage";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AccountMenu } from "@/components/library/AccountMenu";
 import { ArtPipelineClient, type ArtPageData } from "@/components/art/ArtPipelineClient";
 
 // V2 Phase E — per-issue art page overview + versions + notes. The page COUNT
@@ -137,6 +138,7 @@ export default async function ScriptArtPage({ params }: { params: Promise<{ id: 
         </Link>
         <span className="nav-spacer" />
         <ThemeToggle />
+        <AccountMenu />
       </nav>
 
       <main className="shell-inner pullback">

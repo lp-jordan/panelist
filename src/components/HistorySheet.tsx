@@ -115,7 +115,7 @@ export function HistorySheet({
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="Name this version (e.g. Sent to editor)"
+              placeholder="Name this version"
               onKeyDown={(e) => {
                 if (e.key === "Enter") saveVersion();
               }}
@@ -130,8 +130,7 @@ export function HistorySheet({
             {items === null && <p className="sx-history-empty">Loading…</p>}
             {items !== null && items.length === 0 && (
               <p className="sx-history-empty">
-                No saved versions yet. Autosave keeps your work; checkpoints appear here as you write, and
-                &ldquo;Save version&rdquo; adds a labelled one.
+                No saved versions yet.
               </p>
             )}
             {items !== null && items.length > 0 && (

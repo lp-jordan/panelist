@@ -140,7 +140,7 @@ export function PdfImporter({ projectId }: { projectId: string }) {
           <div className="import-parsing">
             <div className="import-spinner" aria-hidden="true" />
             <p>
-              Reading your PDF{progress.total ? ` — page ${progress.done} of ${progress.total}` : "…"}
+              Reading your PDF{progress.total ? `, page ${progress.done} of ${progress.total}` : "…"}
             </p>
           </div>
         ) : (
@@ -151,7 +151,6 @@ export function PdfImporter({ projectId }: { projectId: string }) {
               <path d="M12 11v6M9.5 13.5L12 11l2.5 2.5" />
             </svg>
             <strong>Choose a PDF</strong>
-            <span>Its pages become an image-backed script — references and art work on top, but it can&apos;t be edited in the panel editor.</span>
           </button>
         )}
         {error && <p className="import-error">{error}</p>}
@@ -179,7 +178,7 @@ export function PdfImporter({ projectId }: { projectId: string }) {
         </div>
       </div>
 
-      <p className="import-hint">Tap a page to exclude it from numbering — title pages, credits, anything that shouldn&apos;t count.</p>
+      <p className="import-hint">Tap a page to leave it out of the numbering, like a title or credits page.</p>
 
       <div className="import-grid">
         {pages.map((p) => {

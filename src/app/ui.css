@@ -244,7 +244,10 @@
   color: var(--label);
   font-size: 0.96875rem;
   outline: 0;
-  transition: background 0.22s var(--ease), box-shadow 0.22s var(--ease);
+  /* background-color, not the shorthand: select.field draws its arrow with
+     background-image, and animating the shorthand slid the arrow in from the
+     left edge every time the field lost focus. */
+  transition: background-color 0.22s var(--ease), box-shadow 0.22s var(--ease);
 }
 
 .field::placeholder {
@@ -252,7 +255,7 @@
 }
 
 .field:focus {
-  background: var(--bg-elevated);
+  background-color: var(--bg-elevated);
   box-shadow: 0 0 0 3.5px color-mix(in srgb, var(--blue) 26%, transparent),
     0 0 0 1px var(--blue);
 }
@@ -487,10 +490,22 @@ select.field {
   z-index: 1;
 }
 
+/* One line, always: on narrow screens it truncates rather than wrapping. */
 .row-sub {
   font-size: var(--text-fine);
   color: var(--label-2);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Phones: the whole row is the tap target, so the chevron is just noise
+   beside three controls. */
+@media (max-width: 500px) {
+  .row .chev {
+    display: none;
+  }
 }
 
 .row-sub .dot {
@@ -515,7 +530,8 @@ select.field {
   font-weight: 600;
 }
 
-/* Hidden until the row is approached, so four controls per row become none. */
+/* Always present but quiet, so the row's controls don't leave an empty gap
+   on desktop; full strength when the row is approached. */
 .more-btn {
   display: grid;
   place-items: center;
@@ -524,7 +540,7 @@ select.field {
   height: 28px;
   border-radius: var(--radius-sm);
   color: var(--label-2);
-  opacity: 0;
+  opacity: 0.55;
   transition: opacity 0.18s var(--ease), background 0.18s var(--ease),
     transform 0.12s var(--ease);
 }
@@ -1106,6 +1122,138 @@ body:has(.scrim[data-open="true"]) .pullback {
   display: block;
 }
 
+.ref-thumb .ref-linktile {
+  width: 100%;
+  height: 100%;
+}
+
+/* A link reference's stand-in for an image: a link glyph and the site name,
+   at whatever size the caller's class gives it. */
+/* span.class outranks the callers' own display rules (.rd-img etc.). */
+span.ref-linktile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 0;
+  padding: 8px;
+  background: var(--fill);
+  color: var(--label-2);
+  overflow: hidden;
+}
+
+.ref-linktile svg {
+  width: 40%;
+  max-width: 34px;
+  min-width: 14px;
+  height: auto;
+}
+
+.ref-linktile-host {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-fine);
+  font-family: var(--font-ui);
+}
+
+/* Tiny thumbs (placing chip, orphan row) have no room for the site name. */
+.place-thumb .ref-linktile-host,
+.orphan-thumb .ref-linktile-host {
+  display: none;
+}
+
+.place-thumb.ref-linktile,
+.orphan-thumb.ref-linktile {
+  padding: 4px;
+}
+
+/* In the detail views the tile stands in for a full image. */
+.rd-img.ref-linktile,
+.pin-detail-img.ref-linktile {
+  aspect-ratio: 4 / 3;
+  height: auto;
+}
+
+.rd-link,
+.pin-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--blue);
+  font-size: var(--text-sub);
+  font-weight: 500;
+}
+
+.pin-detail-link {
+  margin-top: 8px;
+}
+
+/* Status for a pasted/dropped reference ("Adding reference…" or an error). */
+.ref-quick {
+  margin: -8px 0 12px;
+  font-size: var(--text-fine);
+  color: var(--label-2);
+}
+
+/* The add sheet's source box: paste a link or image, or choose/drop a file. */
+.ref-add-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 10px;
+  border: 1px dashed var(--separator);
+  border-radius: var(--radius);
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+
+.ref-add-zone[data-over="true"] {
+  border-color: var(--blue);
+  background: color-mix(in srgb, var(--blue) 8%, transparent);
+}
+
+.ref-add-choose {
+  align-self: center;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  color: var(--blue);
+  font-size: var(--text-sub);
+}
+
+.ref-add-choose:hover {
+  background: var(--fill);
+}
+
+.ref-add-picked {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 4px 0 12px;
+  border-radius: 10px;
+  background: var(--fill);
+  font-size: var(--text-sub);
+}
+
+.ref-add-picked span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ref-add-clear {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  color: var(--label-2);
+}
+
 /* --- reference detail modal (V2 §2.3 screen 3) --------------------------- */
 
 .rd-modal {
@@ -1113,7 +1261,7 @@ body:has(.scrim[data-open="true"]) .pullback {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  z-index: 61;
+  z-index: 80; /* above .scrim (70); it sat under it and swallowed every click */
   width: min(460px, calc(100vw - 32px));
   max-height: calc(100dvh - 48px);
   overflow: auto;
@@ -1435,8 +1583,7 @@ body:has(.scrim[data-open="true"]) .pullback {
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  background-size: cover;
-  background-position: center;
+  object-fit: cover;
   flex: none;
 }
 
@@ -1644,8 +1791,7 @@ body:has(.scrim[data-open="true"]) .pullback {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background-size: cover;
-  background-position: center;
+  object-fit: cover;
   flex: none;
 }
 
@@ -1721,7 +1867,7 @@ body:has(.scrim[data-open="true"]) .pullback {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  z-index: 61;
+  z-index: 80; /* above .scrim (70) */
   width: min(520px, calc(100vw - 32px));
   max-height: 80vh;
   overflow: auto;
@@ -1765,9 +1911,10 @@ body:has(.scrim[data-open="true"]) .pullback {
 }
 
 .picker-img {
+  display: block;
+  width: 100%;
   aspect-ratio: 3 / 4;
-  background-size: cover;
-  background-position: center;
+  object-fit: cover;
 }
 
 .picker-cap {
@@ -1869,19 +2016,22 @@ body:has(.scrim[data-open="true"]) .pullback {
   flex: none;
 }
 
+/* Email gets its own full-width row; role + Invite sit beneath it, so the
+   address is never cut off in the narrow sheet. */
 .invite-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
   padding: 4px 4px 0;
 }
 
 .invite-form .field {
-  flex: 1 1 auto;
+  flex: 1 1 100%;
 }
 
 .invite-form select.field {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   width: auto;
 }
 
@@ -1950,7 +2100,7 @@ body:has(.scrim[data-open="true"]) .pullback {
    --------------------------------------------------------------------------- */
 .art-headrow { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 4px 0 18px; }
 .art-meta { color: var(--label-2); font-size: var(--text-row); margin: 0; }
-.art-meta b { color: var(--label); font-weight: 600; font-variant-numeric: tabular-nums; }
+.art-meta b { color: inherit; font-weight: inherit; font-variant-numeric: tabular-nums; }
 .art-dot { margin: 0 8px; color: var(--label-3); }
 
 .art-btn { font-family: inherit; font-size: var(--text-row); font-weight: 590; border: 0; border-radius: var(--radius-pill); padding: 7px 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -1958,6 +2108,7 @@ body:has(.scrim[data-open="true"]) .pullback {
 .art-btn-plain { background: var(--fill); color: var(--blue); }
 .art-btn-danger { background: var(--red); color: #fff; }
 .art-btn:active { opacity: 0.7; }
+.art-btn:disabled { opacity: 0.4; cursor: default; }
 
 .art-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
 .art-tile { background: var(--bg-elevated); border-radius: var(--radius-lg); overflow: hidden; cursor: pointer; border: 0.5px solid var(--separator); text-align: left; padding: 0; color: inherit; position: relative; transition: transform 0.12s var(--ease); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
@@ -1978,7 +2129,21 @@ body:has(.scrim[data-open="true"]) .pullback {
 @media (max-width: 820px) { .art-detail { grid-template-columns: 1fr; gap: 24px; } }
 .art-stage { background: var(--bg-canvas); border-radius: var(--radius-lg); border: 0.5px solid var(--separator); padding: 24px; display: flex; align-items: center; justify-content: center; min-height: 200px; }
 .art-stage.art-drop-hot { outline: 3px solid var(--blue); outline-offset: -3px; }
-.art-canvas { position: relative; width: 100%; max-width: 520px; aspect-ratio: 6.625 / 10.25; background: var(--bg-elevated); box-shadow: var(--shadow-paper); border-radius: 3px; overflow: hidden; cursor: crosshair; }
+.art-canvas { position: relative; width: 100%; max-width: 520px; aspect-ratio: 6.625 / 10.25; background: var(--bg-elevated); box-shadow: var(--shadow-paper); border-radius: 3px; overflow: hidden; cursor: zoom-in; }
+/* Note mode: the next click places a pin. */
+.art-stage-noting .art-canvas { cursor: crosshair; outline: 2px solid var(--blue); outline-offset: 3px; }
+
+.art-addnote { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: var(--radius-pill); background: var(--fill); color: var(--blue); font-size: var(--text-sub); font-weight: 600; white-space: nowrap; }
+.art-addnote:hover { background: var(--fill-press); }
+.art-addnote[data-active="true"] { background: var(--blue); color: #fff; font-weight: 500; }
+
+/* Full-screen art viewer: fit to screen, click to zoom to full size. */
+.art-viewer { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(0, 0, 0, 0.88); overflow: auto; }
+.art-viewer img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5); }
+.art-viewer[data-zoomed="true"] { align-items: flex-start; justify-content: flex-start; }
+.art-viewer[data-zoomed="true"] img { max-width: none; max-height: none; margin: auto; cursor: zoom-out; }
+.art-viewer-close { position: fixed; top: max(12px, env(safe-area-inset-top)); right: 12px; z-index: 1; width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, 0.16); color: #fff; font-size: 16px; }
+.art-viewer-close:hover { background: rgba(255, 255, 255, 0.28); }
 .art-canvas img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .art-canvas-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px; color: var(--label-3); font-weight: 600; font-size: var(--text-sub); }
 
@@ -1988,7 +2153,7 @@ body:has(.scrim[data-open="true"]) .pullback {
 .art-pin-ghost { background: var(--label-2); }
 
 .art-comments { margin-top: 18px; }
-.art-clabel { display: flex; align-items: baseline; justify-content: space-between; margin: 0 2px 12px; }
+.art-clabel { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 2px 12px; }
 .art-clabel > span:first-child { font-size: var(--text-sub); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--label-2); }
 .art-chint { font-size: var(--text-fine); color: var(--label-3); }
 .art-commentlist { display: flex; flex-direction: column; gap: 10px; }

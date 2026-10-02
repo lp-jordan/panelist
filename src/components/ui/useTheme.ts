@@ -39,8 +39,20 @@ export function useTheme() {
   const theme = useSyncExternalStore<Theme>(subscribe, readTheme, () => "system");
 
   const setTheme = useCallback((next: Theme) => {
-    writeTheme(next);
-    notify();
+    const apply = () => {
+      writeTheme(next);
+      notify();
+    };
+    // Cross-fade the whole page from the old appearance to the new one (the
+    // ::view-transition rules in globals.css set the timing). Where the browser
+    // lacks view transitions, or the user prefers reduced motion, it switches
+    // instantly as before.
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!document.startViewTransition || reduceMotion) {
+      apply();
+      return;
+    }
+    document.startViewTransition(apply);
   }, []);
 
   const cycle = useCallback(() => {

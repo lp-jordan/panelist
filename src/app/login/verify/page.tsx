@@ -4,7 +4,7 @@ import { peekLinkToken } from "@/lib/login-tokens";
 import { verifyLink } from "@/app/actions/auth";
 import "../login.css";
 
-export const metadata: Metadata = { title: "Sign in — Panelist" };
+export const metadata: Metadata = { title: "Sign in · Panelist" };
 
 // Magic-link landing page. The GET only *looks up* the token; signing in takes a
 // button press (a POST to verifyLink). Email security scanners often open links

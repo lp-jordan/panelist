@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Portal } from "@/components/ui/Portal";
 import {
   createArtUploadUrl,
   finalizeArtVersion,
@@ -323,7 +324,7 @@ function GridView({
     <>
       {!locked && (
         <p className="art-lockhint">
-          This script isn’t locked. Page numbers can still shift as it’s edited, which moves art out from under its page. Lock it once the page count is final.
+          Lock the script before uploading art. Page numbers can still change.
         </p>
       )}
       <div className="art-headrow">
@@ -336,15 +337,15 @@ function GridView({
           )}
         </p>
         <div className="art-headact">
-          <button className="art-btn art-btn-tint" onClick={onRead} disabled={!anyArt} title={anyArt ? "Read through the current art" : "Upload some art first"}>
+          <button className="art-btn art-btn-plain" onClick={onRead} disabled={!anyArt} title={anyArt ? "Read through the current art" : "Upload art first"}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="16" height="16">
               <path d="M2 5h8a3 3 0 013 3v11a2.5 2.5 0 00-2.5-2.5H2z" />
               <path d="M22 5h-8a3 3 0 00-3 3v11a2.5 2.5 0 012.5-2.5H22z" />
             </svg>
             Read
           </button>
-          <button className="art-btn art-btn-plain" onClick={onDownloadAll}>
-            Download all (current)
+          <button className="art-btn art-btn-plain" onClick={onDownloadAll} disabled={!anyArt} title={anyArt ? "Download the current version of every page" : "Upload art first"}>
+            Download all
           </button>
         </div>
       </div>
@@ -459,6 +460,9 @@ function PageView({
   const [hotDrop, setHotDrop] = useState(false);
   const [composer, setComposer] = useState<null | { x: number; y: number; text: string }>(null);
   const [hotId, setHotId] = useState<string | null>(null);
+  // Clicking the art views it; "Add note" arms a one-shot note placement.
+  const [noteMode, setNoteMode] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
@@ -475,11 +479,30 @@ function PageView({
 
   function onStageClick(e: React.MouseEvent) {
     if (!cur) return;
+    if (!noteMode) {
+      if (cur.previewUrl) setViewerOpen(true);
+      return;
+    }
     const r = (stageRef.current as HTMLElement).getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width;
     const y = (e.clientY - r.top) / r.height;
     setComposer({ x: Math.min(1, Math.max(0, x)), y: Math.min(1, Math.max(0, y)), text: "" });
+    setNoteMode(false);
   }
+
+  // N toggles note mode on desktop (ignored while typing).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "n" && e.key !== "N") return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || t.closest("input, textarea, select"))) return;
+      if (!cur) return;
+      setNoteMode((m) => !m);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [cur]);
 
   return (
     <>
@@ -487,11 +510,15 @@ function PageView({
         ‹ Pages
       </button>
 
+      {viewerOpen && cur?.previewUrl && (
+        <ArtViewer src={cur.previewUrl} alt={`Page ${data.pageNumber} art`} onClose={() => setViewerOpen(false)} />
+      )}
+
       <div className="art-detail">
         <div className="art-leftcol">
           <div
             ref={stageRef}
-            className={`art-stage${hotStage ? " art-drop-hot" : ""}`}
+            className={`art-stage${hotStage ? " art-drop-hot" : ""}${noteMode ? " art-stage-noting" : ""}`}
             onClick={onStageClick}
             onDragEnter={(e) => {
               e.preventDefault();
@@ -508,7 +535,7 @@ function PageView({
               if (file) onUpload(data.pageNumber, file);
             }}
           >
-            <div className="art-canvas" title={cur ? "Click the art to leave a note" : undefined}>
+            <div className="art-canvas" title={cur ? (noteMode ? "Click to place the note" : "Click to view full size") : undefined}>
               {cur && (cur.previewStatus === "PENDING" || cur.previewStatus === "PROCESSING") ? (
                 <span className="art-canvas-empty">
                   <span className="art-spin art-spin-dark" aria-hidden="true" /> Processing preview…
@@ -517,7 +544,7 @@ function PageView({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={cur.previewUrl} alt={`Page ${data.pageNumber} art`} />
               ) : cur ? (
-                <span className="art-canvas-empty">{fmtType(cur.mime)} — no web preview</span>
+                <span className="art-canvas-empty">{fmtType(cur.mime)}: no web preview</span>
               ) : (
                 <span className="art-canvas-empty">No art yet</span>
               )}
@@ -546,7 +573,31 @@ function PageView({
           <div className="art-comments">
             <div className="art-clabel">
               <span>Notes on the art</span>
-              <span className="art-chint">Click the page to pin a note</span>
+              {cur && (
+                <button
+                  type="button"
+                  className="art-addnote"
+                  data-active={noteMode}
+                  aria-pressed={noteMode}
+                  title="Add a note (N)"
+                  onClick={() => {
+                    setComposer(null);
+                    setNoteMode((m) => !m);
+                  }}
+                >
+                  {noteMode ? (
+                    "Click the art to place it · Cancel"
+                  ) : (
+                    <>
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="14" height="14">
+                        <path d="M12 21s-7-5.5-7-11a7 7 0 0114 0c0 5.5-7 11-7 11z" />
+                        <circle cx="12" cy="10" r="2.5" />
+                      </svg>
+                      Add note
+                    </>
+                  )}
+                </button>
+              )}
             </div>
 
             {composer && (
@@ -580,7 +631,7 @@ function PageView({
 
             <div className="art-commentlist">
               {orderedComments.length === 0 ? (
-                <div className="art-cempty">No notes yet — click anywhere on the art to leave one.</div>
+                <div className="art-cempty">No notes yet.</div>
               ) : (
                 orderedComments.map((c, i) => {
                   const mine = c.authorId === currentUserId;
@@ -809,5 +860,46 @@ function VersionCard({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Full-screen look at the current art. Fits the screen; click (or tap) to
+ * zoom to full size and scroll around, again to fit. Escape, ✕ or the
+ * backdrop closes it.
+ */
+function ArtViewer({ src, alt, onClose }: { src: string; alt: string; onClose: () => void }) {
+  const [zoomed, setZoomed] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
+
+  return (
+    <Portal>
+      <div className="art-viewer" role="dialog" aria-modal="true" aria-label={alt} data-zoomed={zoomed} onClick={onClose}>
+        <button type="button" className="art-viewer-close" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt}
+          onClick={(e) => {
+            e.stopPropagation();
+            setZoomed((z) => !z);
+          }}
+        />
+      </div>
+    </Portal>
   );
 }

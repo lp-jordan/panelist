@@ -202,7 +202,7 @@ function ReaderPageView({ page }: { page: ReaderPage }) {
     page.status === "PENDING" || page.status === "PROCESSING"
       ? "Processing preview…"
       : page.status
-        ? `${fmtType(page.mime)} — no web preview`
+        ? `${fmtType(page.mime)}: no web preview`
         : "No art yet";
   return (
     <div className="reader-blank">

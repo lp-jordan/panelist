@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getCurrentUser, accessibleScriptWhere } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { AccountMenu } from "@/components/library/AccountMenu";
 import { ReferenceLibraryClient, type ReferenceCard } from "@/components/reference/ReferenceLibraryClient";
 
 // Per-issue reference library (project-hub decision: each script carries its
@@ -24,6 +25,7 @@ export default async function ScriptReferencePage({ params }: { params: Promise<
           id: true,
           caption: true,
           assetId: true,
+          url: true,
           collections: { select: { collectionId: true } },
           _count: { select: { placements: true } },
         },
@@ -40,6 +42,7 @@ export default async function ScriptReferencePage({ params }: { params: Promise<
   const references: ReferenceCard[] = script.references.map((ref) => ({
     id: ref.id,
     assetId: ref.assetId,
+    url: ref.url,
     caption: ref.caption,
     placementCount: ref._count.placements,
     collectionIds: ref.collections.map((c) => c.collectionId),
@@ -62,6 +65,7 @@ export default async function ScriptReferencePage({ params }: { params: Promise<
         </Link>
         <span className="nav-spacer" />
         <ThemeToggle />
+        <AccountMenu />
       </nav>
 
       <main className="shell-inner pullback">

@@ -11,7 +11,7 @@
   left: min(calc(50vw + 408px + 12px), calc(100vw - 224px - 20px));
   z-index: 30;
   width: 224px;
-  height: min(520px, calc(100vh - var(--nav-height) - 40px));
+  height: var(--side-card-h);
   display: flex;
   flex-direction: column;
   gap: 6px;

@@ -405,12 +405,14 @@ model AssetData {
 model Reference {
   id        String   @id @default(cuid())
   scriptId  String
-  assetId   String   @unique
+  // Exactly one of assetId (an uploaded image) or url (a web link) is set.
+  assetId   String?  @unique
+  url       String?
   caption   String?
   createdAt DateTime @default(now())
 
   script      Script                  @relation(fields: [scriptId], references: [id], onDelete: Cascade)
-  asset       Asset                   @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  asset       Asset?                  @relation(fields: [assetId], references: [id], onDelete: Cascade)
   collections ReferenceInCollection[]
   placements  ReferencePlacement[]
 }

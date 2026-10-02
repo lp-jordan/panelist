@@ -46,7 +46,7 @@ export async function issueLoginToken(email: string, name: string | null = null)
     orderBy: { createdAt: "desc" },
   });
   if (recent[0] && now - recent[0].createdAt.getTime() < MIN_SECONDS_BETWEEN_REQUESTS * 1000) {
-    return { ok: false, error: "A code was just sent — give it a moment before asking for another." };
+    return { ok: false, error: "A code was just sent. Wait a moment before asking for another." };
   }
   if (recent.length >= MAX_REQUESTS_PER_HOUR) {
     return { ok: false, error: "Too many codes requested. Try again in a little while." };
