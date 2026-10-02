@@ -24,12 +24,12 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@react-pdf/renderer"],
   experimental: {
     serverActions: {
-      // Reference images upload through a Server Action (uploadReference), which
-      // otherwise caps request bodies at 1 MB — a normal phone photo exceeds it
-      // and the action throws "Body exceeded 1 MB limit". Keep this a touch
-      // above the action's own 20 MB file cap to leave room for multipart
-      // boundaries and the other form fields.
-      bodySizeLimit: "22mb",
+      // Server Actions cap request bodies at 1 MB by default. Two actions take
+      // files: reference images (20 MB cap) and PDF import, which sends every
+      // rasterized page at once (createImportedScript caps the total at
+      // 150 MB). Sit a little above the largest so multipart overhead and the
+      // other form fields fit; each action still enforces its own limit.
+      bodySizeLimit: "160mb",
     },
   },
 };
