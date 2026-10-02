@@ -75,8 +75,11 @@ export function ReferenceLibraryClient({
 
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<ReferenceCard | null>(null);
-  const [deleting, setDeleting] = useState<ReferenceCard | null>(null);
-  const [moving, setMoving] = useState<ReferenceCard | null>(null);
+  // Delete / Move act on one reference or on the whole multi-selection.
+  const [deleting, setDeleting] = useState<string[] | null>(null);
+  const [moving, setMoving] = useState<{ ids: string[]; folderId: string | null } | null>(null);
+  // Ctrl/⌘-click selects several cards; cleared on Escape or leaving the view.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewing, setViewing] = useState<ReferenceCard | null>(null);
   const [newFolder, setNewFolder] = useState(false);
   const [renamingFolder, setRenamingFolder] = useState<ReferenceFolderTile | null>(null);
@@ -90,13 +93,38 @@ export function ReferenceLibraryClient({
     [references, folder],
   );
 
-  const fileInto = (refId: string, folderId: string | null) => {
+  const fileInto = (refIds: string[], folderId: string | null) => {
     const fd = new FormData();
-    fd.set("id", refId);
+    refIds.forEach((id) => fd.append("id", id));
     fd.set("scriptId", scriptId);
     fd.set("folderId", folderId ?? "");
+    setSelected(new Set());
     startMove(() => moveReference(fd));
   };
+
+  const toggleSelected = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // A different folder is a different view: start with nothing selected.
+  const [selectionView, setSelectionView] = useState(folder?.id ?? null);
+  if (selectionView !== (folder?.id ?? null)) {
+    setSelectionView(folder?.id ?? null);
+    setSelected(new Set());
+  }
+
+  useEffect(() => {
+    if (selected.size === 0) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(new Set());
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selected.size]);
 
   // Paste or drop an image or a link anywhere on the page to add it straight
   // away, into the open folder; no sheet, no mode. The add sheet does the same
@@ -170,12 +198,12 @@ export function ReferenceLibraryClient({
     },
     onDragLeave: () => setDropTarget(null),
     onDrop: (e: React.DragEvent) => {
-      const refId = e.dataTransfer.getData(CARD_DRAG);
+      const refIds = e.dataTransfer.getData(CARD_DRAG).split(",").filter(Boolean);
       setDropTarget(null);
-      if (!refId) return;
+      if (refIds.length === 0) return;
       e.preventDefault();
       e.stopPropagation();
-      fileInto(refId, id);
+      fileInto(refIds, id);
     },
   });
 
@@ -184,16 +212,21 @@ export function ReferenceLibraryClient({
       <div className="ref-toolbar">
         {folder ? (
           <nav className="ref-crumbs" aria-label="Folder">
+            {/* Back to the root; also a drop target for filing cards back out. */}
             <button
               type="button"
-              className="ref-crumb"
+              className="ref-crumb-back"
               data-drop={dropTarget === "root"}
               onClick={() => openFolder(null)}
+              aria-label="Back to all references"
+              title="All references"
               {...folderTarget(null)}
             >
-              All references
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 5l-7 7 7 7" />
+              </svg>
             </button>
-            <span className="ref-crumb-sep" aria-hidden="true">›</span>
+            <FolderIcon />
             <span className="ref-crumb-here">{folder.name}</span>
             <span className="ref-folder-menu">
               <Menu label="Folder actions">
@@ -278,20 +311,39 @@ export function ReferenceLibraryClient({
             <figure
               className="ref-card"
               key={ref.id}
+              data-selected={selected.has(ref.id)}
               draggable
               onDragStart={(e) => {
-                e.dataTransfer.setData(CARD_DRAG, ref.id);
+                // Dragging a selected card carries the whole selection.
+                const ids = selected.has(ref.id) ? [...selected] : [ref.id];
+                e.dataTransfer.setData(CARD_DRAG, ids.join(","));
                 e.dataTransfer.effectAllowed = "move";
               }}
             >
               <div className="ref-thumb">
-                {/* Tap the card to open the reference detail. */}
-                <button type="button" className="ref-open" onClick={() => setViewing(ref)} aria-label={`Open ${ref.caption ?? "reference"}`}>
+                {/* Tap to open the reference; Ctrl/⌘-click to select several. */}
+                <button
+                  type="button"
+                  className="ref-open"
+                  onClick={(e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                      e.preventDefault();
+                      toggleSelected(ref.id);
+                      return;
+                    }
+                    setSelected(new Set());
+                    setViewing(ref);
+                  }}
+                  aria-label={`Open ${ref.caption ?? "reference"}`}
+                  aria-pressed={selected.size > 0 ? selected.has(ref.id) : undefined}
+                >
                   <RefVisual source={ref} alt={ref.caption ?? "Reference"} lazy />
                 </button>
-                {ref.placementCount > 0 && (
-                  <span className="ref-pin" title={`Pinned in ${ref.placementCount} place${ref.placementCount === 1 ? "" : "s"}`}>
-                    {ref.placementCount}
+                {selected.has(ref.id) && (
+                  <span className="ref-check" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M5 12.5l4.5 4.5L19 7.5" />
+                    </svg>
                   </span>
                 )}
                 <span className="ref-card-menu">
@@ -304,12 +356,12 @@ export function ReferenceLibraryClient({
                             <path d="M4 20h4L20 8l-4-4L4 16z" />
                           </svg>
                         </button>
-                        <button type="button" role="menuitem" onClick={() => { close(); setMoving(ref); }}>
+                        <button type="button" role="menuitem" onClick={() => { close(); setMoving({ ids: [ref.id], folderId: ref.folderId }); }}>
                           Move to…
                           <FolderIcon />
                         </button>
                         <hr />
-                        <button type="button" role="menuitem" className="danger" onClick={() => { close(); setDeleting(ref); }}>
+                        <button type="button" role="menuitem" className="danger" onClick={() => { close(); setDeleting([ref.id]); }}>
                           Delete
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                             <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
@@ -323,6 +375,21 @@ export function ReferenceLibraryClient({
               {ref.caption && <figcaption className="ref-cap">{ref.caption}</figcaption>}
             </figure>
           ))}
+        </div>
+      )}
+
+      {selected.size > 0 && (
+        <div className="ref-bulkbar" role="toolbar" aria-label="Selected references">
+          <span className="ref-bulk-count">{selected.size} selected</span>
+          <button type="button" onClick={() => setMoving({ ids: [...selected], folderId: folder?.id ?? null })}>
+            Move to…
+          </button>
+          <button type="button" className="ref-bulk-danger" onClick={() => setDeleting([...selected])}>
+            Delete
+          </button>
+          <button type="button" className="ref-bulk-clear" onClick={() => setSelected(new Set())} aria-label="Clear selection" title="Clear selection">
+            ✕
+          </button>
         </div>
       )}
 
@@ -347,8 +414,20 @@ export function ReferenceLibraryClient({
         />
       </FormSheet>
 
-      <FormSheet key={moving?.id ?? "none"} open={moving !== null} onClose={() => setMoving(null)} title="Move to" submitLabel="Move" action={moveReference}>
-        <input type="hidden" name="id" value={moving?.id ?? ""} />
+      <FormSheet
+        key={moving?.ids.join(",") ?? "none"}
+        open={moving !== null}
+        onClose={() => setMoving(null)}
+        title={moving && moving.ids.length > 1 ? `Move ${moving.ids.length} references` : "Move to"}
+        submitLabel="Move"
+        action={async (fd) => {
+          await moveReference(fd);
+          setSelected(new Set());
+        }}
+      >
+        {(moving?.ids ?? []).map((id) => (
+          <input key={id} type="hidden" name="id" value={id} />
+        ))}
         <input type="hidden" name="scriptId" value={scriptId} />
         <select className="field" name="folderId" defaultValue={moving?.folderId ?? ""} aria-label="Folder">
           <option value="">All references (no folder)</option>
@@ -387,11 +466,11 @@ export function ReferenceLibraryClient({
             setViewing(null);
           }}
           onMove={() => {
-            setMoving(viewing);
+            setMoving({ ids: [viewing.id], folderId: viewing.folderId });
             setViewing(null);
           }}
           onDelete={() => {
-            setDeleting(viewing);
+            setDeleting([viewing.id]);
             setViewing(null);
           }}
         />
@@ -400,11 +479,15 @@ export function ReferenceLibraryClient({
       <ActionSheet
         open={deleting !== null}
         onClose={() => setDeleting(null)}
-        title="Delete this reference?"
-        description="It's removed along with any pins in the script."
+        title={deleting && deleting.length > 1 ? `Delete ${deleting.length} references?` : "Delete this reference?"}
+        description="Any pins in the script go too."
         confirmLabel="Delete"
-        action={deleteReference}
-        hidden={{ id: deleting?.id ?? "", scriptId }}
+        action={async (fd) => {
+          await deleteReference(fd);
+          setSelected(new Set());
+          setDeleting(null);
+        }}
+        hidden={{ id: deleting ?? [], scriptId }}
       />
 
       <ActionSheet

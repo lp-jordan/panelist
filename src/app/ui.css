@@ -1065,35 +1065,58 @@ body:has(.scrim[data-open="true"]) .pullback {
   font-variant-numeric: tabular-nums;
 }
 
-/* A card being dragged over a folder (or back to "All references"). */
+/* A card being dragged over a folder (or the back button, to file it out). */
 .ref-folder[data-drop="true"],
-.ref-crumb[data-drop="true"] {
+.ref-crumb-back[data-drop="true"] {
   box-shadow: 0 0 0 2px var(--blue);
   background: color-mix(in srgb, var(--blue) 10%, var(--bg-elevated));
 }
 
+/* Inside a folder: back chevron, folder icon, name, "…" menu, all centred on
+   one 32px line. */
 .ref-crumbs {
   margin-right: auto;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
   min-width: 0;
+  height: 32px;
   font-size: var(--text-row);
 }
 
-.ref-crumb {
-  padding: 4px 8px;
-  margin-left: -8px;
-  border-radius: var(--radius-sm);
+.ref-crumbs > svg {
+  flex: none;
+  width: 18px;
+  height: 18px;
   color: var(--blue);
 }
 
-.ref-crumb:hover {
+/* Same chevron and weight as the nav bar's back button. */
+.ref-crumb-back {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin-left: -6px;
+  border-radius: var(--radius-sm);
+  color: var(--blue);
+  transition: background 0.15s var(--ease);
+}
+
+.ref-crumb-back:hover {
   background: var(--fill);
 }
 
-.ref-crumb-sep {
-  color: var(--label-3);
+.ref-crumb-back svg {
+  width: 18px;
+  height: 18px;
+}
+
+.ref-folder-menu {
+  display: flex;
+  align-items: center;
+  flex: none;
 }
 
 .ref-crumb-here {
@@ -1416,23 +1439,75 @@ span.ref-linktile {
   color: var(--red);
 }
 
-/* Orange = placement, everywhere (§2.5). Shown only once a reference is
-   actually pinned; the count comes from Phase C. */
-.ref-pin {
+/* Ctrl/⌘-click selection: a blue ring and a check in the corner. */
+.ref-card[data-selected="true"] {
+  box-shadow: 0 0 0 2.5px var(--blue);
+}
+
+.ref-check {
   position: absolute;
   top: 7px;
   left: 7px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
   display: grid;
   place-items: center;
-  border-radius: var(--radius-pill);
-  background: var(--orange);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--blue);
   color: #fff;
-  font-size: var(--text-fine);
-  font-weight: 600;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.ref-check svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Floating bar for the multi-selection. */
+.ref-bulkbar {
+  position: fixed;
+  left: 50%;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 60;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 6px 6px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-menu);
+  font-size: var(--text-row);
+  white-space: nowrap;
+}
+
+.ref-bulk-count {
+  margin-right: 8px;
+  font-weight: 600;
+  color: var(--label);
+}
+
+.ref-bulkbar button {
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--blue);
+  font-weight: 500;
+}
+
+.ref-bulkbar button:hover {
+  background: var(--fill);
+}
+
+.ref-bulkbar .ref-bulk-danger {
+  color: var(--red);
+}
+
+.ref-bulkbar .ref-bulk-clear {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--label-2);
 }
 
 .ref-card-menu {

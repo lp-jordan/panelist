@@ -30,7 +30,7 @@ export function ActionSheet({
   description?: string;
   confirmLabel: string;
   action: (formData: FormData) => void | Promise<void>;
-  hidden: Record<string, string>;
+  hidden: Record<string, string | string[]>;
   choices?: { label: string; value: string; danger?: boolean }[];
   choiceName?: string;
 }) {
@@ -48,9 +48,11 @@ export function ActionSheet({
       <div className="scrim" data-open={open} onClick={onClose} />
       <div className="sheet" data-open={open} role="alertdialog" aria-label={title} inert={!open}>
         <form action={action} className="sheet-card">
-          {Object.entries(hidden).map(([name, value]) => (
-            <input key={name} type="hidden" name={name} value={value} />
-          ))}
+          {Object.entries(hidden).flatMap(([name, value]) =>
+            (Array.isArray(value) ? value : [value]).map((v, i) => (
+              <input key={`${name}:${i}`} type="hidden" name={name} value={v} />
+            )),
+          )}
           <div className="sheet-head">
             <strong>{title}</strong>
             {description && <span>{description}</span>}
