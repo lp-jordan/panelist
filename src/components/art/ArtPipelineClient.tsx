@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Portal } from "@/components/ui/Portal";
+import { usePinDrag } from "@/lib/usePinDrag";
 import {
   createArtUploadUrl,
   finalizeArtVersion,
@@ -11,6 +12,7 @@ import {
   getArtDownloadUrl,
   createArtComment,
   toggleArtCommentResolved,
+  moveArtComment,
   deleteArtComment,
   setArtVersionNote,
 } from "@/app/actions/art";
@@ -251,6 +253,12 @@ export function ArtPipelineClient({
               router.refresh();
             })
           }
+          onMoveComment={(commentId, xPct, yPct) =>
+            startTransition(async () => {
+              await moveArtComment({ scriptId, commentId, xPct, yPct });
+              router.refresh();
+            })
+          }
           onDeleteComment={(commentId) =>
             startTransition(async () => {
               await deleteArtComment({ scriptId, commentId });
@@ -438,6 +446,7 @@ function PageView({
   onAskDelete,
   onAddComment,
   onToggleResolve,
+  onMoveComment,
   onDeleteComment,
   onSetVersionNote,
 }: {
@@ -452,6 +461,7 @@ function PageView({
   onAskDelete: (v: ArtVersionRow) => void;
   onAddComment: (body: string, xPct: number, yPct: number) => void;
   onToggleResolve: (commentId: string) => void;
+  onMoveComment: (commentId: string, xPct: number, yPct: number) => void;
   onDeleteComment: (commentId: string) => void;
   onSetVersionNote: (versionId: string, note: string) => void;
 }) {
@@ -463,10 +473,13 @@ function PageView({
   // Clicking the art views it; "Add note" arms a one-shot note placement.
   const [noteMode, setNoteMode] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
+  // Drag a note's pin to a new spot (its author or an owner).
+  const pinDrag = usePinDrag((id, pos) => onMoveComment(id, pos.x, pos.y));
   const fileRef = useRef<HTMLInputElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
 
   const cur = data.current;
+  const curBytes = data.versions.find((v) => v.isCurrent)?.bytes ?? null;
   const shown = data.versions.slice(0, VER_SHOWN);
   const older = data.versions.slice(VER_SHOWN);
 
@@ -549,19 +562,25 @@ function PageView({
                 <span className="art-canvas-empty">No art yet</span>
               )}
               {cur &&
-                orderedComments.map((c, i) => (
-                  <span
-                    key={c.id}
-                    className={`art-pin${c.resolved ? " art-pin-done" : ""}${hotId === c.id ? " art-pin-hot" : ""}`}
-                    style={{ left: `${c.xPct * 100}%`, top: `${c.yPct * 100}%` }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setHotId(c.id);
-                    }}
-                  >
-                    {i + 1}
-                  </span>
-                ))}
+                orderedComments.map((c, i) => {
+                  const pos = pinDrag.posFor(c.id, c.xPct, c.yPct);
+                  const movable = c.authorId === currentUserId || isOwner;
+                  return (
+                    <span
+                      key={c.id}
+                      className={`art-pin${c.resolved ? " art-pin-done" : ""}${hotId === c.id ? " art-pin-hot" : ""}`}
+                      style={{ left: `${pos.x * 100}%`, top: `${pos.y * 100}%` }}
+                      data-movable={movable}
+                      {...(movable ? pinDrag.handlers(c.id) : {})}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setHotId(c.id);
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                  );
+                })}
               {composer && (
                 <span className="art-pin art-pin-ghost" style={{ left: `${composer.x * 100}%`, top: `${composer.y * 100}%` }}>
                   +
@@ -690,7 +709,7 @@ function PageView({
             <div className="art-curcard">
               <div className="art-curtop">
                 <span className="art-vt">Version {cur.version}</span>
-                <span className="art-curr-pill">Current</span>
+                {curBytes ? <span className="art-sz">{fmtBytes(curBytes)}</span> : null}
               </div>
               <button className="art-btn art-btn-plain art-dl" onClick={() => onDownload(cur.versionId)}>
                 ⤓ Download current
@@ -784,22 +803,11 @@ function VersionCard({
       <div className="art-vcard">
         <div className="art-vtop">
           <span className="art-vn">Version {v.version}</span>
+          {v.bytes ? <span className="art-sz">{fmtBytes(v.bytes)}</span> : null}
           <span className="art-when">{v.createdLabel}</span>
         </div>
         <div className="art-vrow2">
-          <span>{v.uploaderName}</span>
-          {v.bytes ? (
-            <>
-              <span>·</span>
-              <span className="art-sz">{fmtBytes(v.bytes)}</span>
-            </>
-          ) : null}
-          {v.isCurrent && (
-            <>
-              <span>·</span>
-              <span className="art-cur-tag">Current</span>
-            </>
-          )}
+          <span>Added by {v.uploaderName}</span>
         </div>
 
         {editing ? (
@@ -838,23 +846,33 @@ function VersionCard({
           </div>
         ) : null}
 
+        {/* Icon actions; the title is the tooltip and the accessible name. */}
         <div className="art-vactions">
-          <button className="art-lnk" onClick={() => onDownload(v.id)}>
-            ⤓ Download
+          <button className="art-ico" onClick={() => onDownload(v.id)} title="Download" aria-label="Download">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14" />
+            </svg>
           </button>
-          {!editing && !v.note && (
-            <button className="art-lnk art-restore" onClick={() => setEditing(true)}>
-              + Add note
+          {!editing && (
+            <button className="art-ico" onClick={() => setEditing(true)} title={v.note ? "Edit note" : "Add note"} aria-label={v.note ? "Edit note" : "Add note"}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 20h4L19 9l-4-4L4 16z" />
+              </svg>
             </button>
           )}
           {!v.isCurrent && (
-            <button className="art-lnk art-restore" onClick={() => onMakeCurrent(v.id)}>
-              ↩ Make current
+            <button className="art-ico" onClick={() => onMakeCurrent(v.id)} title="Make current" aria-label="Make current">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 12a8 8 0 108-8 8 8 0 00-5.7 2.3L4 8.6" />
+                <path d="M4 4v4.6h4.6" />
+              </svg>
             </button>
           )}
           {!v.isCurrent && isOwner && (
-            <button className="art-lnk art-del" onClick={() => onAskDelete(v)}>
-              Delete
+            <button className="art-ico art-ico-danger" onClick={() => onAskDelete(v)} title="Delete version" aria-label="Delete version">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" />
+              </svg>
             </button>
           )}
         </div>

@@ -5,9 +5,9 @@ import type { Editor } from "@tiptap/core";
 import { insertPage, insertPanelAfterCurrent } from "@/lib/editor/commands";
 import { Portal } from "@/components/ui/Portal";
 import { useTheme } from "@/components/ui/useTheme";
-import { type Theme } from "@/lib/theme";
+import { type Appearance } from "@/lib/theme";
 
-const THEME_OPTIONS: { value: Theme; label: string; icon: React.ReactNode }[] = [
+const THEME_OPTIONS: { value: Appearance; label: string; icon: React.ReactNode }[] = [
   {
     value: "light",
     label: "Light",
@@ -24,16 +24,6 @@ const THEME_OPTIONS: { value: Theme; label: string; icon: React.ReactNode }[] = 
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" />
-      </svg>
-    ),
-  },
-  {
-    value: "system",
-    label: "Auto",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="3" y="4" width="18" height="12" rx="2" />
-        <path d="M8 20h8M12 16v4" />
       </svg>
     ),
   },
@@ -66,7 +56,7 @@ export function FormatSheet({
   onHistory: () => void;
   onReport: () => void;
 }) {
-  const { theme, setTheme } = useTheme();
+  const { appearance, setAppearance } = useTheme();
 
   // Close on Escape while open.
   useEffect(() => {
@@ -158,10 +148,10 @@ export function FormatSheet({
                   key={opt.value}
                   type="button"
                   role="radio"
-                  aria-checked={theme === opt.value}
+                  aria-checked={appearance === opt.value}
                   className="sx-format-seg-btn"
-                  data-active={theme === opt.value}
-                  onClick={() => setTheme(opt.value)}
+                  data-active={appearance === opt.value}
+                  onClick={() => setAppearance(opt.value)}
                 >
                   {opt.icon}
                   {opt.label}

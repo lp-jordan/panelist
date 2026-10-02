@@ -43,6 +43,8 @@ export async function addReference(formData: FormData): Promise<AddReferenceResu
   if (typeof scriptId !== "string" || scriptId.length === 0) return { error: "Missing script." };
   await assertScriptAccess(scriptId, user.id);
   const caption = typeof captionRaw === "string" && captionRaw.trim().length > 0 ? captionRaw.trim() : null;
+  // Added into whichever folder is open (or the root).
+  const folderId = await folderInScript(scriptId, formData.get("folderId"));
 
   if (file instanceof File && file.size > 0) {
     if (!file.type.startsWith("image/")) return { error: "That file isn't an image." };
@@ -64,22 +66,17 @@ export async function addReference(formData: FormData): Promise<AddReferenceResu
       });
       await tx.asset.update({ where: { id: asset.id }, data: { storageKey: `db:${asset.id}` } });
       await tx.assetData.create({ data: { assetId: asset.id, data: bytes } });
-      await tx.reference.create({ data: { scriptId, assetId: asset.id, caption } });
+      await tx.reference.create({ data: { scriptId, assetId: asset.id, caption, folderId } });
     });
   } else {
     const url = parseLink(formData.get("url"));
     if (!url) return { error: "Add an image or paste a link." };
     // Only the URL is stored; the server never fetches it.
-    await prisma.reference.create({ data: { scriptId, url, caption } });
+    await prisma.reference.create({ data: { scriptId, url, caption, folderId } });
   }
 
   revalidatePath(`/scripts/${scriptId}/reference`);
   return undefined;
-}
-
-/** Form-action wrapper for the add sheet (FormSheet wants a void action). */
-export async function addReferenceFromForm(formData: FormData): Promise<void> {
-  await addReference(formData);
 }
 
 export async function updateReferenceCaption(formData: FormData) {
@@ -98,53 +95,91 @@ export async function updateReferenceCaption(formData: FormData) {
   revalidatePath(`/scripts/${scriptId}/reference`);
 }
 
-// --- collections / tags -----------------------------------------------------
+// --- folders ----------------------------------------------------------------
 
-// Sets a reference's collections (free-form tags, §5) in one go, optionally
-// creating a new collection from the sheet's text field. Read "collection" as
-// "tag": many-to-many, per issue, created as you go.
-export async function updateReferenceTags(formData: FormData) {
-  const user = await getCurrentUser();
-  const referenceId = formData.get("referenceId");
-  const scriptId = formData.get("scriptId");
-  if (typeof referenceId !== "string" || typeof scriptId !== "string") return;
-  await assertScriptAccess(scriptId, user.id);
+const MAX_FOLDER_NAME = 60;
 
-  if (!(await prisma.reference.findFirst({ where: { id: referenceId, scriptId }, select: { id: true } }))) return;
-
-  // Only this script's collections can be attached.
-  const requested = formData.getAll("collectionIds").filter((v): v is string => typeof v === "string");
-  const ids = (
-    await prisma.collection.findMany({ where: { scriptId, id: { in: requested } }, select: { id: true } })
-  ).map((c) => c.id);
-  const newName = typeof formData.get("newCollection") === "string" ? (formData.get("newCollection") as string).trim() : "";
-
-  if (newName) {
-    const created = await prisma.collection.upsert({
-      where: { scriptId_name: { scriptId, name: newName } },
-      create: { scriptId, name: newName },
-      update: {},
-    });
-    if (!ids.includes(created.id)) ids.push(created.id);
-  }
-
-  await prisma.$transaction([
-    prisma.referenceInCollection.deleteMany({ where: { referenceId } }),
-    ...(ids.length > 0
-      ? [prisma.referenceInCollection.createMany({ data: ids.map((collectionId) => ({ referenceId, collectionId })) })]
-      : []),
-  ]);
-  revalidatePath(`/scripts/${scriptId}/reference`);
+function folderName(raw: FormDataEntryValue | null): string {
+  return typeof raw === "string" ? raw.trim().replace(/\s+/g, " ").slice(0, MAX_FOLDER_NAME) : "";
 }
 
-export async function deleteCollection(formData: FormData) {
+/** The folder id if it belongs to this script, else null (the root). */
+async function folderInScript(scriptId: string, raw: FormDataEntryValue | null): Promise<string | null> {
+  if (typeof raw !== "string" || !raw) return null;
+  const folder = await prisma.referenceFolder.findFirst({ where: { id: raw, scriptId }, select: { id: true } });
+  return folder?.id ?? null;
+}
+
+export type FolderResult = { error?: string } | undefined;
+
+export async function createFolder(formData: FormData): Promise<FolderResult> {
+  const user = await getCurrentUser();
+  const scriptId = formData.get("scriptId");
+  if (typeof scriptId !== "string") return { error: "Missing script." };
+  await assertScriptAccess(scriptId, user.id);
+  const name = folderName(formData.get("name"));
+  if (!name) return { error: "Name the folder." };
+  if (await prisma.referenceFolder.findFirst({ where: { scriptId, name }, select: { id: true } })) {
+    return { error: "A folder with that name already exists." };
+  }
+  await prisma.referenceFolder.create({ data: { scriptId, name } });
+  revalidatePath(`/scripts/${scriptId}/reference`);
+  return undefined;
+}
+
+export async function renameFolder(formData: FormData): Promise<FolderResult> {
+  const user = await getCurrentUser();
+  const id = formData.get("id");
+  const scriptId = formData.get("scriptId");
+  if (typeof id !== "string" || typeof scriptId !== "string") return { error: "Missing folder." };
+  await assertScriptAccess(scriptId, user.id);
+  const name = folderName(formData.get("name"));
+  if (!name) return { error: "Name the folder." };
+  const clash = await prisma.referenceFolder.findFirst({ where: { scriptId, name, NOT: { id } }, select: { id: true } });
+  if (clash) return { error: "A folder with that name already exists." };
+  await prisma.referenceFolder.updateMany({ where: { id, scriptId }, data: { name } });
+  revalidatePath(`/scripts/${scriptId}/reference`);
+  return undefined;
+}
+
+/**
+ * Deletes a folder. `contents` = "move" sends its references to the root (the
+ * FK's SetNull does it); "delete" removes them too, images and pins included.
+ */
+export async function deleteFolder(formData: FormData) {
   const user = await getCurrentUser();
   const id = formData.get("id");
   const scriptId = formData.get("scriptId");
   if (typeof id !== "string" || typeof scriptId !== "string") return;
   await assertScriptAccess(scriptId, user.id);
-  // Cascades the ReferenceInCollection rows; the references themselves stay.
-  await prisma.collection.deleteMany({ where: { id, scriptId } });
+  const folder = await prisma.referenceFolder.findFirst({ where: { id, scriptId }, select: { id: true } });
+  if (!folder) return;
+
+  if (formData.get("contents") === "delete") {
+    const refs = await prisma.reference.findMany({ where: { folderId: id, scriptId }, select: { id: true, assetId: true } });
+    const assetIds = refs.map((r) => r.assetId).filter((a): a is string => a !== null);
+    await prisma.$transaction([
+      // Image references go with their Asset (cascade); links are deleted directly.
+      prisma.asset.deleteMany({ where: { id: { in: assetIds } } }),
+      prisma.reference.deleteMany({ where: { folderId: id, scriptId } }),
+      prisma.referenceFolder.delete({ where: { id } }),
+    ]);
+  } else {
+    await prisma.referenceFolder.delete({ where: { id } });
+  }
+  revalidatePath(`/scripts/${scriptId}/reference`);
+  revalidatePath(`/scripts/${scriptId}`);
+}
+
+/** Files a reference in a folder, or back at the root (empty folderId). */
+export async function moveReference(formData: FormData) {
+  const user = await getCurrentUser();
+  const id = formData.get("id");
+  const scriptId = formData.get("scriptId");
+  if (typeof id !== "string" || typeof scriptId !== "string") return;
+  await assertScriptAccess(scriptId, user.id);
+  const folderId = await folderInScript(scriptId, formData.get("folderId"));
+  await prisma.reference.updateMany({ where: { id, scriptId }, data: { folderId } });
   revalidatePath(`/scripts/${scriptId}/reference`);
 }
 
@@ -169,6 +204,20 @@ export async function createPlacement(input: {
 
   await prisma.referencePlacement.create({
     data: { referenceId, pageNumber, xPct: clamp(xPct), yPct: clamp(yPct) },
+  });
+  revalidatePath(`/scripts/${scriptId}`);
+}
+
+/** Moves a pin to a new spot on the same page (x/y are 0–1 page fractions). */
+export async function movePlacement(input: { id: string; scriptId: string; xPct: number; yPct: number }) {
+  const user = await getCurrentUser();
+  const { id, scriptId, xPct, yPct } = input;
+  if (!id || !Number.isFinite(xPct) || !Number.isFinite(yPct)) return;
+  await assertScriptAccess(scriptId, user.id);
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+  await prisma.referencePlacement.updateMany({
+    where: { id, reference: { scriptId } },
+    data: { xPct: clamp(xPct), yPct: clamp(yPct) },
   });
   revalidatePath(`/scripts/${scriptId}`);
 }

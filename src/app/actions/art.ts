@@ -262,6 +262,27 @@ export async function toggleArtCommentResolved(input: { scriptId: string; commen
   revalidatePath(`/scripts/${scriptId}/art`);
 }
 
+/** Move a note's pin. Author, or the script owner, may move it. */
+export async function moveArtComment(input: { scriptId: string; commentId: string; xPct: number; yPct: number }) {
+  const user = await getCurrentUser();
+  const { scriptId, commentId, xPct, yPct } = input;
+  if (!Number.isFinite(xPct) || !Number.isFinite(yPct)) return;
+  await assertScriptAccess(scriptId, user.id);
+
+  const comment = await prisma.artComment.findFirst({
+    where: { id: commentId, artPage: { scriptId } },
+    select: { authorId: true },
+  });
+  if (!comment) throw new Error("not found");
+  if (comment.authorId !== user.id && (await getScriptRole(scriptId, user.id)) !== "OWNER") {
+    throw new Error("forbidden");
+  }
+
+  const clamp = (n: number) => Math.min(1, Math.max(0, n));
+  await prisma.artComment.update({ where: { id: commentId }, data: { xPct: clamp(xPct), yPct: clamp(yPct) } });
+  revalidatePath(`/scripts/${scriptId}/art`);
+}
+
 /** Delete a note. Author, or the script owner, may remove it. */
 export async function deleteArtComment(input: { scriptId: string; commentId: string }) {
   const user = await getCurrentUser();
