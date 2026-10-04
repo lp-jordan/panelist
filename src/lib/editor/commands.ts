@@ -47,6 +47,20 @@ export function insertNodeAndFocus(editor: Editor, pos: number, nodeJSON: Record
 // searching in `direction` from the deletion point — used for Backspace on an
 // empty element, where "nearest valid position searching backward" is
 // exactly "end of whatever came before it".
+/**
+ * A short shake on the node at `pos` — the editor's way of saying "that key
+ * did nothing, on purpose" (e.g. Backspace that won't merge into another
+ * speaker's line). Purely visual; the document is untouched.
+ */
+export function nudgeNodeAt(editor: Editor, pos: number) {
+  const dom = editor.view.nodeDOM(pos);
+  if (!(dom instanceof HTMLElement)) return;
+  dom.classList.remove("sx-nudge");
+  void dom.offsetWidth; // restart the animation if it's already running
+  dom.classList.add("sx-nudge");
+  dom.addEventListener("animationend", () => dom.classList.remove("sx-nudge"), { once: true });
+}
+
 export function deleteRangeAndFocusNear(editor: Editor, from: number, to: number, direction: -1 | 1) {
   try {
     const tr = editor.state.tr.delete(from, to);
@@ -83,8 +97,12 @@ export function mergeTextElementBackward(editor: Editor, nodePos: number): boole
     (node.attrs.kind !== "dialogue" || prev.attrs.character === node.attrs.character);
 
   // Nothing safe to merge into: swallow the key so the caret stays put rather
-  // than hopping into (and then deleting) the description or another speaker.
-  if (!canMerge) return true;
+  // than hopping into (and then deleting) the description or another speaker,
+  // and nudge the line so it reads as deliberate rather than broken.
+  if (!canMerge) {
+    nudgeNodeAt(editor, nodePos);
+    return true;
+  }
 
   // Fold this line's content onto the end of the previous line and remove it.
   // `joinPos` sits inside the previous line, just before its closing token;

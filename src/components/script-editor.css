@@ -1871,3 +1871,23 @@
 .tp-draft-date:focus::-webkit-calendar-picker-indicator {
   opacity: 0.6;
 }
+
+/* "That key did nothing, on purpose": a quick sideways shake on the line or
+   panel (nudgeNodeAt), e.g. Backspace that won't merge into another speaker. */
+.sx-nudge {
+  animation: sx-nudge 0.28s ease-in-out;
+}
+
+@keyframes sx-nudge {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-3px); }
+  45% { transform: translateX(3px); }
+  70% { transform: translateX(-2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sx-nudge {
+    animation: none;
+  }
+}
+
