@@ -619,6 +619,21 @@
   -webkit-user-select: text;
 }
 
+/* Touch screens: a long-press that lands in one of these labels has no
+   editable spot to start in, so the editor moved the selection's start back to
+   the previous editable text (selecting "Celia" in Panel 4 also selected the
+   end of Panel 3). Unselectable labels make the selection snap to the text
+   that follows instead. Desktop keeps them copyable. */
+@media (pointer: coarse) {
+  .sx-page-heading,
+  .sx-panel-label,
+  .sx-text-element-label,
+  .sx-no-copy {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
 /* The page header is set 1.6x the body, matching the reference doc's 16pt
    heading over 10pt body. */
 .sx-page-heading {
