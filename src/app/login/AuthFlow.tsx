@@ -178,6 +178,9 @@ function Flow({ mode, onRestart }: { mode: AuthMode; onRestart: () => void }) {
           </div>
         </>
       )}
+      <Link href="/privacy" className="login-privacy">
+        Privacy
+      </Link>
     </main>
   );
 }
