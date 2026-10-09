@@ -680,7 +680,8 @@ select.field {
   pointer-events: auto;
 }
 
-.menu button {
+.menu button,
+.menu a {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -692,11 +693,13 @@ select.field {
   transition: background 0.12s var(--ease);
 }
 
-.menu button:hover {
+.menu button:hover,
+.menu a:hover {
   background: var(--fill);
 }
 
-.menu button:active {
+.menu button:active,
+.menu a:active {
   background: var(--fill-press);
 }
 

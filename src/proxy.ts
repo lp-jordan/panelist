@@ -35,11 +35,12 @@ function contentSecurityPolicy(nonce: string) {
   ].join("; ");
 }
 
-// Reachable signed out: the log-in and sign-up pages, the magic-link landing page, and invite
+// Reachable signed out: the log-in and sign-up pages, the magic-link landing page, the
+// privacy note, and invite
 // links (the invite page itself sends signed-out visitors to /login with the
 // invited email prefilled).
 function isPublic(path: string) {
-  return path === "/login" || path === "/signup" || path === "/login/verify" || path.startsWith("/invite/");
+  return path === "/login" || path === "/signup" || path === "/login/verify" || path === "/privacy" || path.startsWith("/invite/");
 }
 
 export async function proxy(request: NextRequest) {

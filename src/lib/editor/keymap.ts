@@ -10,6 +10,7 @@ import {
   deleteRangeAndFocusNear,
   endPanelFromEmptyLine,
   mergeTextElementBackward,
+  nudgeNodeAt,
 } from "./commands";
 import { findAncestorPos } from "./positions";
 
@@ -164,18 +165,27 @@ export const ScriptKeymap = Extension.create({
         }
 
         if (parentType === "panelDescription") {
-          if (!lineIsEmpty) return false;
           const panelPos = findAncestorPos(state, $from.pos, "panel");
           const pagePos = findAncestorPos(state, $from.pos, "page");
           if (panelPos == null || pagePos == null) return false;
+
+          // At the start of a panel there's nothing Backspace may do unless the
+          // whole panel is empty: nudge it so the refusal reads as deliberate.
+          // (The description is isolating, so there was never a native delete
+          // to fall back to.)
+          const refuse = () => {
+            nudgeNodeAt(editor, panelPos);
+            return true;
+          };
+          if (!lineIsEmpty) return refuse();
 
           const panelNode = state.doc.resolve(panelPos).nodeAfter;
           const pageNode = state.doc.resolve(pagePos).nodeAfter;
           // Only remove the whole (empty) panel if it has no dialogue/caption/
           // SFX lines and isn't the page's only content — an empty page is
           // handled by Mod-Backspace instead, so there's always somewhere to type.
-          if (!panelNode || panelNode.childCount > 1) return false;
-          if (!pageNode || pageNode.childCount <= 1) return false;
+          if (!panelNode || panelNode.childCount > 1) return refuse();
+          if (!pageNode || pageNode.childCount <= 1) return refuse();
 
           return deleteRangeAndFocusNear(editor, panelPos, panelPos + panelNode.nodeSize, -1);
         }

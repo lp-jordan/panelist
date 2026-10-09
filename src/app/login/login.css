@@ -132,3 +132,14 @@
 .login-actions .login-switch {
   margin-top: 0;
 }
+
+/* Quiet link to the privacy note, under the sign-in flow. */
+.login-privacy {
+  margin-top: 28px;
+  font-size: var(--text-fine);
+  color: var(--label-2);
+}
+
+.login-privacy:hover {
+  text-decoration: underline;
+}

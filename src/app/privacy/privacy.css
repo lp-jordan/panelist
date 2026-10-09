@@ -1,0 +1,65 @@
+/* The privacy note: a single readable column on the grouped background. */
+
+.privacy {
+  flex: 1;
+  padding: 48px 16px 64px;
+  background: var(--bg-grouped);
+}
+
+.privacy-body {
+  max-width: 640px;
+  margin: 0 auto;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--label);
+}
+
+.privacy-back {
+  display: inline-block;
+  margin-bottom: 20px;
+  font-size: var(--text-sub);
+  color: var(--blue);
+}
+
+.privacy-back:hover {
+  text-decoration: underline;
+}
+
+.privacy h1 {
+  font-size: var(--text-head);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.privacy-meta {
+  margin-top: 4px;
+  font-size: var(--text-fine);
+  color: var(--label-2);
+}
+
+.privacy h2 {
+  margin-top: 32px;
+  font-size: 1.0625rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.privacy p,
+.privacy ul {
+  margin-top: 12px;
+}
+
+.privacy ul {
+  padding-left: 1.2em;
+  list-style: disc;
+}
+
+.privacy li + li {
+  margin-top: 8px;
+}
+
+.privacy a:not(.privacy-back) {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
