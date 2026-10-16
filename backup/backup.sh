@@ -30,6 +30,11 @@ MODE="${BACKUP_MODE:-backup}"
 # pass through Railway, which bills outbound data.
 ART_BUCKET="${ART_SOURCE_BUCKET:-}"
 
+# The endpoint is the account URL only. Cloudflare's dashboard shows it with
+# the bucket appended (…cloudflarestorage.com/<bucket>); drop any path so both
+# aws-cli and rclone address buckets themselves.
+R2_ENDPOINT="$(printf '%s' "$R2_ENDPOINT" | sed -E 's#^(https?://[^/]+).*#\1#')"
+
 # R2 ignores region but the S3 client needs one.
 export AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION:-auto}"
 # R2's wildcard cert only covers one label, so virtual-hosted-style addressing
