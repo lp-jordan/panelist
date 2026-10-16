@@ -12,7 +12,9 @@
 // ever added) never double-processes a row.
 
 import { spawn } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { pipeline } from "node:stream/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import pg from "pg";
@@ -64,24 +66,27 @@ async function claim() {
   return rows[0] ?? null;
 }
 
+// Stream straight to disk: originals can be up to 250 MB, and buffering one in
+// memory first would double the worker's peak RAM for nothing.
 async function downloadToFile(key, dest) {
   const res = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
-  const chunks = [];
-  for await (const chunk of res.Body) chunks.push(chunk);
-  await writeFile(dest, Buffer.concat(chunks));
+  await pipeline(res.Body, createWriteStream(dest));
 }
 
 // ImageMagick: first page/flattened composite -> downscaled webp. `[0]` picks the
-// first PDF page / the merged PSD composite / the first TIFF frame. -flatten
-// composites layers onto a white ground. Memory limits keep a huge PSD in check.
+// first PDF page / the merged PSD composite / the first TIFF frame. Resize
+// BEFORE -flatten: flattening makes a second full-size copy, and a 600 dpi page
+// (6600x10200, ~540 MB of pixel cache at Q16) twice over blew the disk cache
+// limit. Resized first, only the decoded original is full size. -flatten then
+// composites any transparency onto white. Memory/disk caps live in the
+// Dockerfile's policy.xml (command-line -limit can't raise them).
 function render(input, output) {
   return new Promise((resolve, reject) => {
     const args = [
-      "-limit", "memory", "512MiB",
-      "-limit", "map", "1GiB",
       `${input}[0]`,
-      "-flatten",
       "-resize", `${MAX_PX}x${MAX_PX}>`,
+      "-background", "white",
+      "-flatten",
       "-quality", "82",
       output,
     ];

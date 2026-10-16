@@ -17,6 +17,20 @@ RUN set -eux; \
     fi; \
   done
 
+# Debian also caps the pixel cache low (16K px a side, 1 GiB of disk), sized for
+# thumbnails of untrusted uploads, not print-resolution comic pages: a 1200 dpi
+# 11x17 page is 13200x20400. Lift the size caps and let big images spill to
+# disk (the container's /tmp has plenty); keep RAM caps at Debian's defaults so
+# a huge file costs disk time, not memory. These are ceilings: `-limit` on the
+# command line can only lower them.
+RUN set -eux; \
+  for f in /etc/ImageMagick-6/policy.xml /etc/ImageMagick-7/policy.xml; do \
+    if [ -f "$f" ]; then \
+      sed -i -E 's/(name="width" value=")[^"]*"/\132KP"/; s/(name="height" value=")[^"]*"/\132KP"/' "$f"; \
+      sed -i -E 's/(name="area" value=")[^"]*"/\11GP"/; s/(name="disk" value=")[^"]*"/\116GiB"/' "$f"; \
+    fi; \
+  done
+
 WORKDIR /app
 COPY package.json ./
 RUN npm install --omit=dev
