@@ -4,12 +4,17 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
 import { assignPageNumbers, MAX_SPAN } from "@/lib/import/pages";
+import {
+  IMPORT_IMAGE_TYPES,
+  MAX_IMPORT_BYTES,
+  MAX_IMPORT_PAGE_BYTES as MAX_PAGE_BYTES,
+  MAX_IMPORT_PAGES as MAX_PAGES,
+} from "@/lib/import/limits";
 
-// A rasterized PDF page is a downscaled PNG — a few hundred KB each. Cap per
-// page and overall so a runaway import can't dump hundreds of MB into Postgres.
-const MAX_PAGES = 300;
-const MAX_PAGE_BYTES = 8 * 1024 * 1024;
-const MAX_TOTAL_BYTES = 150 * 1024 * 1024;
+// A rasterized PDF page is a downscaled WebP (JPEG on Safari), around 100 KB.
+// Cap per page and overall so a runaway import can't dump hundreds of MB into
+// Postgres; the overall cap also keeps the request under the proxy's limit.
+const MAX_TOTAL_BYTES = MAX_IMPORT_BYTES;
 
 // span: 0 = continues the comic page before it, 1 = starts one, 2+ = starts a
 // spread (see lib/import/pages). Missing = 1, one PDF page per comic page.
@@ -60,6 +65,7 @@ export async function createImportedScript(formData: FormData): Promise<ImportRe
   let total = 0;
   const buffers: Uint8Array[] = [];
   for (const file of images) {
+    if (!IMPORT_IMAGE_TYPES.has(file.type)) return { error: "Something went wrong reading the PDF." };
     if (file.size > MAX_PAGE_BYTES) return { error: "One of the pages was too large." };
     total += file.size;
     if (total > MAX_TOTAL_BYTES) return { error: "That PDF is too large to import." };
@@ -77,6 +83,7 @@ export async function createImportedScript(formData: FormData): Promise<ImportRe
     pageNumber: pageNumbers[i],
     text: m.text && m.text.trim().length > 0 ? m.text : null,
     bytes: buffers[i],
+    mime: images[i].type,
   }));
 
   const script = await prisma.$transaction(async (tx) => {
@@ -96,7 +103,7 @@ export async function createImportedScript(formData: FormData): Promise<ImportRe
 
     for (const row of rows) {
       const asset = await tx.asset.create({
-        data: { kind: "PDF_PAGE", storageKey: "", mime: "image/png", bytes: row.bytes.length },
+        data: { kind: "PDF_PAGE", storageKey: "", mime: row.mime, bytes: row.bytes.length },
       });
       await tx.asset.update({ where: { id: asset.id }, data: { storageKey: `db:${asset.id}` } });
       // .slice() yields Uint8Array<ArrayBuffer>, the exact type Prisma's Bytes wants.

@@ -4,16 +4,37 @@ import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createImportedScript } from "@/app/actions/import";
 import { assignPageNumbers, detectPageSpans } from "@/lib/import/pages";
+import { MAX_IMPORT_BYTES, MAX_IMPORT_PAGES, formatMB } from "@/lib/import/limits";
 
 // Render each page to roughly this width (px). The read view sheet is 816px
 // wide; a touch more keeps text crisp on high-DPI screens without bloating the
-// stored PNG.
+// stored image.
 const TARGET_WIDTH = 1400;
+
+// Pages are stored (and served on every read) from Postgres, so encode them
+// small: WebP keeps text crisp at a fraction of PNG's size. Safari can't encode
+// WebP from a canvas and silently hands back a PNG, so fall back to JPEG there.
+// Measured on a 61-page script at 1400px: PNG 14 MB, WebP 0.8 4.7 MB, JPEG 0.85
+// 9.2 MB (too close to the upload limit), hence 0.75 for the fallback.
+const WEBP_QUALITY = 0.8;
+const JPEG_QUALITY = 0.75;
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number) {
+  return new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Render failed."))), type, quality),
+  );
+}
+
+async function encodePage(canvas: HTMLCanvasElement) {
+  const webp = await canvasToBlob(canvas, "image/webp", WEBP_QUALITY);
+  if (webp.type === "image/webp") return webp;
+  return canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
+}
 
 type ParsedPage = {
   order: number;
   previewUrl: string; // object URL for the grid thumbnail
-  blob: Blob; // full-res PNG uploaded on import
+  blob: Blob; // compressed page image uploaded on import (WebP or JPEG)
   text: string | null;
   included: boolean;
   // 0 = continues the comic page before it; 1 = starts one; 2+ = starts a spread.
@@ -68,9 +89,8 @@ export function PdfImporter({ projectId }: { projectId: string }) {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         await page.render({ canvasContext: ctx, viewport }).promise;
 
-        const blob = await new Promise<Blob>((resolve, reject) =>
-          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("Render failed."))), "image/png"),
-        );
+        const blob = await encodePage(canvas);
+        canvas.width = canvas.height = 0; // release the bitmap; long PDFs add up
 
         let text: string | null = null;
         try {
@@ -121,9 +141,26 @@ export function PdfImporter({ projectId }: { projectId: string }) {
   const includedCount = pages.filter((p) => p.included).length;
   const { pageNumbers, total: artPageCount } = assignPageNumbers(pages);
 
+  // Every page goes up in one request (skipped pages too: they're kept as
+  // unnumbered front matter), so this is what the upload limit applies to.
+  const meta = JSON.stringify(pages.map((p) => ({ included: p.included, text: p.text, span: p.span })));
+  const uploadBytes = pages.reduce((sum, p) => sum + p.blob.size, 0) + new Blob([meta]).size;
+  const tooLarge = uploadBytes > MAX_IMPORT_BYTES;
+  const tooMany = pages.length > MAX_IMPORT_PAGES;
+
   async function submit() {
     if (includedCount === 0) {
       setError("Keep at least one page.");
+      return;
+    }
+    if (tooMany) {
+      setError(`This PDF has ${pages.length} pages; the most an import can take is ${MAX_IMPORT_PAGES}. Split it into smaller PDFs and import each one.`);
+      return;
+    }
+    if (tooLarge) {
+      setError(
+        `This PDF is too large to import (${formatMB(uploadBytes)}; the limit is ${formatMB(MAX_IMPORT_BYTES)}). Split it into smaller PDFs and import each one.`,
+      );
       return;
     }
     setError(null);
@@ -132,16 +169,28 @@ export function PdfImporter({ projectId }: { projectId: string }) {
     const form = new FormData();
     form.set("projectId", projectId);
     form.set("title", title.trim() || "Imported script");
-    form.set("meta", JSON.stringify(pages.map((p) => ({ included: p.included, text: p.text, span: p.span }))));
-    pages.forEach((p) => form.append("image", new File([p.blob], `p${p.order}.png`, { type: "image/png" })));
+    form.set("meta", meta);
+    pages.forEach((p) => {
+      const ext = p.blob.type === "image/webp" ? "webp" : "jpg";
+      form.append("image", new File([p.blob], `p${p.order}.${ext}`, { type: p.blob.type }));
+    });
 
-    const result = await createImportedScript(form);
-    if (result.error || !result.scriptId) {
-      setError(result.error ?? "Import failed. Please try again.");
+    // A failed request (the connection dropped, the body was refused) throws
+    // rather than returning an error. Catch it, or the page sits on
+    // "Importing…" forever.
+    try {
+      const result = await createImportedScript(form);
+      if (result.error || !result.scriptId) {
+        setError(result.error ?? "Import failed. Please try again.");
+        setPhase("review");
+        return;
+      }
+      router.push(`/scripts/${result.scriptId}`);
+    } catch (err) {
+      console.error(err);
+      setError("Import failed. Check your connection and try again.");
       setPhase("review");
-      return;
     }
-    router.push(`/scripts/${result.scriptId}`);
   }
 
   // --- render ---------------------------------------------------------------
