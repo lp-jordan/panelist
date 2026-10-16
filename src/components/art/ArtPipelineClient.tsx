@@ -58,6 +58,21 @@ export type ArtPageData = {
   comments: ArtCommentRow[];
 };
 
+// Drag-to-upload must only react to files dragged in from the computer.
+// Dragging a tile's preview image around the page is a browser drag too, and
+// Chrome even attaches the dragged image as a File, so a stray drop onto
+// another tile would upload that low-res preview as a new version. Remember
+// when a drag started inside the page and ignore it.
+let dragFromPage = false;
+if (typeof window !== "undefined") {
+  window.addEventListener("dragstart", () => (dragFromPage = true));
+  window.addEventListener("dragend", () => (dragFromPage = false));
+  window.addEventListener("drop", () => (dragFromPage = false));
+}
+function isFileDrag(e: React.DragEvent) {
+  return !dragFromPage && Array.from(e.dataTransfer.types).includes("Files");
+}
+
 function fmtBytes(b: number | null) {
   if (!b) return "";
   const mb = b / (1024 * 1024);
@@ -551,16 +566,20 @@ function GridTile({
       className={`art-tile${hot ? " art-drop-hot" : ""}`}
       onClick={() => onOpen(p.pageNumber)}
       onDragEnter={(e) => {
+        if (!isFileDrag(e)) return;
         e.preventDefault();
         setHot(true);
       }}
-      onDragOver={(e) => e.preventDefault()}
+      onDragOver={(e) => {
+        if (isFileDrag(e)) e.preventDefault();
+      }}
       onDragLeave={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setHot(false);
       }}
       onDrop={(e) => {
         e.preventDefault();
         setHot(false);
+        if (!isFileDrag(e)) return;
         const file = e.dataTransfer.files?.[0];
         if (file) onDrop(p.pageNumber, file);
       }}
@@ -598,7 +617,7 @@ function ThumbInner({
   }
   if (cur.previewUrl) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={cur.previewUrl} alt={`Page ${pageNumber} art`} />;
+    return <img src={cur.previewUrl} alt={`Page ${pageNumber} art`} draggable={false} />;
   }
   return <span className="art-empty art-empty--file">{fmtType(cur.mime)}</span>;
 }
@@ -721,16 +740,20 @@ function PageView({
             className={`art-stage${hotStage ? " art-drop-hot" : ""}${noteMode ? " art-stage-noting" : ""}`}
             onClick={onStageClick}
             onDragEnter={(e) => {
+              if (!isFileDrag(e)) return;
               e.preventDefault();
               setHotStage(true);
             }}
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              if (isFileDrag(e)) e.preventDefault();
+            }}
             onDragLeave={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget as Node)) setHotStage(false);
             }}
             onDrop={(e) => {
               e.preventDefault();
               setHotStage(false);
+              if (!isFileDrag(e)) return;
               const file = e.dataTransfer.files?.[0];
               if (file) onUpload(data.pageNumber, file);
             }}
@@ -742,7 +765,7 @@ function PageView({
                 </span>
               ) : view?.previewUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={view.previewUrl} alt={`Page ${data.pageNumber}, version ${view.version}`} />
+                <img src={view.previewUrl} alt={`Page ${data.pageNumber}, version ${view.version}`} draggable={false} />
               ) : view ? (
                 <span className="art-canvas-empty">{fmtType(view.mime)}: no web preview</span>
               ) : (
@@ -918,16 +941,20 @@ function PageView({
             className={`art-drop${hotDrop ? " art-hot" : ""}`}
             onClick={pickFile}
             onDragEnter={(e) => {
+              if (!isFileDrag(e)) return;
               e.preventDefault();
               setHotDrop(true);
             }}
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => {
+              if (isFileDrag(e)) e.preventDefault();
+            }}
             onDragLeave={(e) => {
               if (!e.currentTarget.contains(e.relatedTarget as Node)) setHotDrop(false);
             }}
             onDrop={(e) => {
               e.preventDefault();
               setHotDrop(false);
+              if (!isFileDrag(e)) return;
               const file = e.dataTransfer.files?.[0];
               if (file) onUpload(data.pageNumber, file);
             }}
