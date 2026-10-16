@@ -166,8 +166,8 @@ export async function setCurrentArtVersion(input: { scriptId: string; versionId:
 }
 
 /**
- * Hard-delete a NON-current version: remove the row and its R2 objects. Owner
- * only. Records an Event so the deletion survives even though the file doesn't.
+ * Hard-delete a version: remove the row and its R2 objects. Owner only. If it
+ * was current, the newest remaining version takes over (or the page has none). Records an Event so the deletion survives even though the file doesn't.
  */
 export async function deleteArtVersion(input: { scriptId: string; versionId: string }) {
   const user = await getCurrentUser();
@@ -185,19 +185,35 @@ export async function deleteArtVersion(input: { scriptId: string; versionId: str
     },
   });
   if (!version) throw new Error("not found");
-  if (version.artPage.currentVersionId === versionId) {
-    throw new Error("cannot delete the current version");
-  }
+
+  // Deleting the current version hands "current" to the newest version left,
+  // or leaves the page with no art if it was the only one.
+  const wasCurrent = version.artPage.currentVersionId === versionId;
+  const next = wasCurrent
+    ? await prisma.artVersion.findFirst({
+        where: { artPageId: version.artPage.id, id: { not: versionId } },
+        orderBy: { version: "desc" },
+        select: { id: true, version: true },
+      })
+    : null;
 
   // Delete the DB row first; only touch R2 once that's committed.
   await prisma.$transaction([
+    ...(wasCurrent
+      ? [prisma.artPage.update({ where: { id: version.artPage.id }, data: { currentVersionId: next?.id ?? null } })]
+      : []),
     prisma.artVersion.delete({ where: { id: versionId } }),
     prisma.event.create({
       data: {
         type: "art.version.deleted",
         subjectId: version.artPage.id,
         actorId: user.id,
-        meta: JSON.stringify({ scriptId, pageNumber: version.artPage.pageNumber, version: version.version }),
+        meta: JSON.stringify({
+          scriptId,
+          pageNumber: version.artPage.pageNumber,
+          version: version.version,
+          ...(wasCurrent ? { wasCurrent: true, newCurrentVersion: next?.version ?? null } : {}),
+        }),
       },
     }),
   ]);

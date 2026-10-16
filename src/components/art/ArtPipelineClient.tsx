@@ -291,18 +291,25 @@ export function ArtPipelineClient({
               router.refresh();
             })
           }
-          onAskDelete={(v) =>
+          onAskDelete={(v) => {
+            // Versions arrive newest first, so the first other one takes over.
+            const next = openPageData.versions.find((o) => o.id !== v.id);
+            const consequence = !v.isCurrent
+              ? ""
+              : next
+                ? ` Version ${next.version} becomes the current version.`
+                : ` Page ${openPageData.pageNumber} will have no art.`;
             setConfirm({
               title: `Delete version ${v.version}?`,
-              body: "Its notes are deleted too. This can’t be undone.",
+              body: `Its notes are deleted too.${consequence} This can’t be undone.`,
               onYes: () =>
                 startTransition(async () => {
                   await deleteArtVersion({ scriptId, versionId: v.id });
                   showToast(`Version ${v.version} deleted`);
                   router.refresh();
                 }),
-            })
-          }
+            });
+          }}
           onAddComment={(versionId, body, xPct, yPct) =>
             startTransition(async () => {
               await createArtComment({ scriptId, pageNumber: openPageData.pageNumber, versionId, body, xPct, yPct });
@@ -673,7 +680,9 @@ function PageView({
   // The version on the stage: the current one, unless a card in the history
   // was picked. Notes belong to a version, so only its notes show.
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const viewedRow = data.versions.find((v) => v.id === (selectedId ?? cur?.versionId)) ?? null;
+  // Fall back to current if the selected version was just deleted.
+  const viewedRow =
+    data.versions.find((v) => v.id === selectedId) ?? data.versions.find((v) => v.id === cur?.versionId) ?? null;
   const view = viewedRow
     ? { versionId: viewedRow.id, version: viewedRow.version, mime: viewedRow.mime, previewUrl: viewedRow.previewUrl, previewStatus: viewedRow.previewStatus }
     : null;
@@ -1094,7 +1103,7 @@ function VersionCard({
               </svg>
             </button>
           )}
-          {!v.isCurrent && isOwner && (
+          {isOwner && (
             <button className="art-ico art-ico-danger" onClick={() => onAskDelete(v)} title="Delete version" aria-label="Delete version">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 7h16M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13" />
