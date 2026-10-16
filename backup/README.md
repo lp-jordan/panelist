@@ -1,38 +1,52 @@
-# Automated database backups → Cloudflare R2
+# Panelist backups
 
-A scheduled `pg_dump` that uploads a compressed, timestamped copy of the whole
-database to a Cloudflare R2 bucket. Runs as its own Railway **cron service**, so
-the database is never exposed publicly — the job reaches Postgres over Railway's
-internal network.
+A nightly Railway **cron service** (`panelist-backup`, Root Directory `backup`)
+that copies, into the backup R2 bucket:
 
-Restores a full point-in-time copy: `gunzip -c panelist-*.sql.gz | psql "$DATABASE_URL"`.
+- the **whole database**, as a `pg_dump` encrypted with
+  [age](https://age-encryption.org) to the backup public key, and
+- **every art original**, every version, from the art bucket.
 
-## One-time setup
+Art deleted from Panelist moves to `art/deleted/<date>/` in the backup instead
+of vanishing. The database stays private: the job reaches Postgres over
+Railway's internal network. Restores (and the monthly practice restore) are in
+[RESTORE.md](RESTORE.md).
 
-### 1. Cloudflare R2 (once)
-1. Cloudflare dashboard → **R2** → create a bucket, e.g. `panelist-backups`.
-2. **R2 → Manage API Tokens → Create API Token**: scope **Object Read & Write**,
-   limited to that bucket. Copy the **Access Key ID**, **Secret Access Key**, and
-   your account's **S3 endpoint** (`https://<ACCOUNT_ID>.r2.cloudflarestorage.com`).
-3. (Recommended) Bucket → **Settings → Object lifecycle rules**: delete objects
-   under `backups/` older than N days (e.g. 30) so old dumps don't accumulate.
+## Variables (panelist-backup service)
 
-### 2. Railway backup service (once)
-Create a **new service in the same project** (so it shares the private network
-with Postgres):
-1. New service → **Deploy from the same GitHub repo**.
-2. Service **Settings → Source → Root Directory** = `backup` (so it builds this
-   Dockerfile, not the app).
-3. **Settings → Cron Schedule** = e.g. `0 6 * * *` (daily 06:00 UTC).
-4. **Variables** — set:
-   - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (reference the Postgres service
-     so it uses the internal URL)
-   - `R2_ENDPOINT` = `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`
-   - `R2_BUCKET` = `panelist-backups`
-   - `AWS_ACCESS_KEY_ID` = R2 token access key
-   - `AWS_SECRET_ACCESS_KEY` = R2 token secret
-5. Deploy. Trigger once manually to confirm a `backups/panelist-<timestamp>.sql.gz`
-   object appears in the bucket.
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` |
+| `R2_ENDPOINT` | `https://<ACCOUNT_ID>.r2.cloudflarestorage.com` |
+| `R2_BUCKET` | the backup bucket, e.g. `panelist-backups` |
+| `ART_SOURCE_BUCKET` | the art bucket, `panelist-art` |
+| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | one R2 token with **Object Read** on the art bucket and **Object Read & Write** on the backup bucket |
+| `BACKUP_AGE_RECIPIENT` | the backup **public** key (`panelist-backup-key.pub`) |
 
-Because it's a cron service, Railway runs the container on the schedule; it dumps,
-uploads, and exits.
+One token covers both buckets on purpose: rclone then copies art inside R2
+(server-side), so art bytes never pass through Railway, which bills outbound
+data. Both buckets must be in the same Cloudflare account for that.
+
+Without `ART_SOURCE_BUCKET` the job skips art; without `BACKUP_AGE_RECIPIENT`
+the dump is uploaded unencrypted. Both log a WARNING.
+
+## Backup bucket settings (Cloudflare → R2 → bucket → Settings)
+
+**Bucket lock rules** (nothing in these can be deleted or overwritten early):
+- prefix `db/`: 30 days
+- prefix `art/deleted/`: 30 days
+
+**Object lifecycle rules** (delete old copies):
+- prefix `db/daily/`: delete after 31 days
+- prefix `db/monthly/`: delete after 366 days
+- prefix `art/deleted/`: delete after 31 days
+- prefix `backups/`: delete after 30 days (old dumps from before this setup)
+
+`art/current/` gets no lock: the nightly sync has to move deleted art out of
+it into `art/deleted/`.
+
+## The private key
+
+The backup private key never lives in Railway. It's kept by whoever runs
+Panelist (password manager plus an offline copy), and pasted in only for a
+restore. Lose every copy and the database backups can't be opened.
