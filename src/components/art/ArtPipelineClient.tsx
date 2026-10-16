@@ -15,6 +15,7 @@ import {
   moveArtComment,
   deleteArtComment,
   setArtVersionNote,
+  setArtPageCount,
 } from "@/app/actions/art";
 
 export type PreviewStatus = "PENDING" | "PROCESSING" | "READY" | "FAILED";
@@ -70,6 +71,9 @@ export function ArtPipelineClient({
   scriptId,
   pages,
   isOwner,
+  canEditPageCount = false,
+  artPageNumbers = [],
+  hiddenArtPages = [],
   currentUserId,
   locked,
   storageReady,
@@ -78,6 +82,12 @@ export function ArtPipelineClient({
   scriptId: string;
   pages: ArtPageData[];
   isOwner: boolean;
+  // Imported scripts only: the owner can change how many pages show here.
+  canEditPageCount?: boolean;
+  // Page numbers that have art, including any past the count.
+  artPageNumbers?: number[];
+  // Pages past the count that still have art (hidden, not deleted).
+  hiddenArtPages?: number[];
   currentUserId: string;
   locked: boolean;
   storageReady: boolean;
@@ -205,6 +215,40 @@ export function ArtPipelineClient({
           pages={pages}
           locked={locked}
           latestUploadLabel={latestUploadLabel}
+          countControl={
+            <PageCountControl
+              count={pages.length}
+              canEdit={canEditPageCount}
+              artPageNumbers={artPageNumbers}
+              onSave={(count) =>
+                startTransition(async () => {
+                  try {
+                    await setArtPageCount({ scriptId, count });
+                    router.refresh();
+                    showToast(`Page count set to ${count}`);
+                  } catch {
+                    showToast("Couldn’t change the page count");
+                  }
+                })
+              }
+            />
+          }
+          hiddenArtPages={hiddenArtPages}
+          onShowHidden={
+            canEditPageCount && hiddenArtPages.length > 0
+              ? () =>
+                  startTransition(async () => {
+                    const count = hiddenArtPages[hiddenArtPages.length - 1];
+                    try {
+                      await setArtPageCount({ scriptId, count });
+                      router.refresh();
+                      showToast(`Page count set to ${count}`);
+                    } catch {
+                      showToast("Couldn’t change the page count");
+                    }
+                  })
+              : null
+          }
           onOpen={goPage}
           onDrop={upload}
           onDownloadAll={() => {
@@ -318,6 +362,9 @@ function GridView({
   pages,
   locked,
   latestUploadLabel,
+  countControl,
+  hiddenArtPages,
+  onShowHidden,
   onOpen,
   onDrop,
   onDownloadAll,
@@ -326,6 +373,9 @@ function GridView({
   pages: ArtPageData[];
   locked: boolean;
   latestUploadLabel: string | null;
+  countControl: React.ReactNode;
+  hiddenArtPages: number[];
+  onShowHidden: (() => void) | null;
   onOpen: (n: number) => void;
   onDrop: (pageNumber: number, file: File) => void;
   onDownloadAll: () => void;
@@ -340,14 +390,14 @@ function GridView({
         </p>
       )}
       <div className="art-headrow">
-        <p className="art-meta">
-          <b>{pages.length}</b> page{pages.length === 1 ? "" : "s"}
+        <div className="art-meta">
+          {countControl}
           {latestUploadLabel && (
             <>
               <span className="art-dot">·</span> Latest upload <b>{latestUploadLabel}</b>
             </>
           )}
-        </p>
+        </div>
         <div className="art-headact">
           <button className="art-btn art-btn-plain" onClick={onRead} disabled={!anyArt} title={anyArt ? "Read through the current art" : "Upload art first"}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" width="16" height="16">
@@ -367,6 +417,120 @@ function GridView({
           <GridTile key={p.pageNumber} p={p} onOpen={onOpen} onDrop={onDrop} />
         ))}
       </div>
+
+      {hiddenArtPages.length > 0 && (
+        <p className="art-hidden-note">
+          Art on {pageListText(hiddenArtPages)} is hidden because the page count is {pages.length}.{" "}
+          {onShowHidden && (
+            <button type="button" className="art-lnk" onClick={onShowHidden}>
+              Show {hiddenArtPages.length === 1 ? "it" : "them"} again
+            </button>
+          )}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** "page 7", "pages 35–36", or "pages 4, 9, 12". */
+function pageListText(ns: number[]) {
+  if (ns.length === 1) return `page ${ns[0]}`;
+  const contiguous = ns.every((n, i) => i === 0 || n === ns[i - 1] + 1);
+  return contiguous ? `pages ${ns[0]}–${ns[ns.length - 1]}` : `pages ${ns.join(", ")}`;
+}
+
+/**
+ * "36 pages", plus an Edit button for the owner of an imported script. Lowering
+ * the count below pages that have art warns first; that art is hidden, never
+ * deleted.
+ */
+function PageCountControl({
+  count,
+  canEdit,
+  artPageNumbers,
+  onSave,
+}: {
+  count: number;
+  canEdit: boolean;
+  artPageNumbers: number[];
+  onSave: (count: number) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(count));
+  const value = Number.parseInt(draft, 10);
+  const valid = Number.isInteger(value) && value >= 1 && value <= 300;
+  // Pages with art that are showing now and would be hidden by this count.
+  const lost = valid ? artPageNumbers.filter((n) => n > value && n <= count).sort((a, b) => a - b) : [];
+
+  if (!editing) {
+    return (
+      <>
+        <b>{count}</b> page{count === 1 ? "" : "s"}
+        {canEdit && (
+          <button
+            type="button"
+            className="art-lnk art-count-edit"
+            onClick={() => {
+              setDraft(String(count));
+              setEditing(true);
+            }}
+          >
+            Edit
+          </button>
+        )}
+      </>
+    );
+  }
+
+  const step = (d: number) => setDraft(String(Math.min(300, Math.max(1, (valid ? value : count) + d))));
+  const save = () => {
+    if (!valid) return;
+    setEditing(false);
+    if (value !== count) onSave(value);
+  };
+
+  return (
+    <>
+      <form
+        className="art-count-editor"
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+      >
+        <button type="button" className="art-count-step" onClick={() => step(-1)} aria-label="One fewer page">
+          −
+        </button>
+        <input
+          className="art-count-input"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={300}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+          aria-label="Page count"
+          autoFocus
+        />
+        <button type="button" className="art-count-step" onClick={() => step(1)} aria-label="One more page">
+          +
+        </button>
+        <span>pages</span>
+        <button type="submit" className="art-btn art-btn-tint" disabled={!valid}>
+          Save
+        </button>
+        <button type="button" className="art-btn art-btn-plain" onClick={() => setEditing(false)}>
+          Cancel
+        </button>
+      </form>
+      {lost.length > 0 && (
+        <span className="art-count-warn" role="status">
+          {lost.length === 1 ? `Page ${lost[0]} has` : `${pageListText(lost).replace(/^p/, "P")} have`} art.{" "}
+          {lost.length === 1 ? "It" : "They"}’ll be hidden, not deleted. Raise the count again to bring{" "}
+          {lost.length === 1 ? "it" : "them"} back.
+        </span>
+      )}
     </>
   );
 }

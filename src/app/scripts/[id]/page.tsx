@@ -66,7 +66,10 @@ export default async function ScriptPage({ params }: { params: Promise<{ id: str
       }),
     ]);
 
-    const pageCount = imported.filter((p) => p.pageNumber != null).length;
+    // Several PDF pages can share a comic page (and a spread uses two numbers),
+    // so count comic pages, not sheets.
+    const pageCount =
+      script.artPageCount ?? Math.max(0, ...imported.map((p) => p.pageNumber ?? 0));
 
     return (
       <ScriptReadView

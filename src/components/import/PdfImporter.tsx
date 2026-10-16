@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createImportedScript } from "@/app/actions/import";
+import { assignPageNumbers, detectPageSpans } from "@/lib/import/pages";
 
 // Render each page to roughly this width (px). The read view sheet is 816px
 // wide; a touch more keeps text crisp on high-DPI screens without bloating the
@@ -15,6 +16,8 @@ type ParsedPage = {
   blob: Blob; // full-res PNG uploaded on import
   text: string | null;
   included: boolean;
+  // 0 = continues the comic page before it; 1 = starts one; 2+ = starts a spread.
+  span: number;
 };
 
 type Phase = "idle" | "parsing" | "review" | "uploading";
@@ -30,6 +33,7 @@ export function PdfImporter({ projectId }: { projectId: string }) {
   const [phase, setPhase] = useState<Phase>("idle");
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [pages, setPages] = useState<ParsedPage[]>([]);
+  const [headings, setHeadings] = useState(0);
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
 
@@ -81,11 +85,20 @@ export function PdfImporter({ projectId }: { projectId: string }) {
           text = null; // scanned page, no text layer — fine
         }
 
-        parsed.push({ order: i - 1, previewUrl: URL.createObjectURL(blob), blob, text, included: true });
+        parsed.push({ order: i - 1, previewUrl: URL.createObjectURL(blob), blob, text, included: true, span: 1 });
         page.cleanup();
         setProgress({ done: i, total: pdf.numPages });
       }
 
+      // Most scripts run a comic page over several PDF pages. Use the page
+      // headings to tell starts from continuations; front matter before the
+      // first heading starts out skipped.
+      const detected = detectPageSpans(parsed.map((p) => p.text));
+      parsed.forEach((p, i) => {
+        p.span = detected.spans[i];
+        p.included = !detected.frontMatter[i];
+      });
+      setHeadings(detected.headings);
       setPages(parsed);
       setPhase("review");
     } catch (err) {
@@ -106,6 +119,7 @@ export function PdfImporter({ projectId }: { projectId: string }) {
   }
 
   const includedCount = pages.filter((p) => p.included).length;
+  const { pageNumbers, total: artPageCount } = assignPageNumbers(pages);
 
   async function submit() {
     if (includedCount === 0) {
@@ -118,7 +132,7 @@ export function PdfImporter({ projectId }: { projectId: string }) {
     const form = new FormData();
     form.set("projectId", projectId);
     form.set("title", title.trim() || "Imported script");
-    form.set("meta", JSON.stringify(pages.map((p) => ({ included: p.included, text: p.text }))));
+    form.set("meta", JSON.stringify(pages.map((p) => ({ included: p.included, text: p.text, span: p.span }))));
     pages.forEach((p) => form.append("image", new File([p.blob], `p${p.order}.png`, { type: "image/png" })));
 
     const result = await createImportedScript(form);
@@ -159,7 +173,6 @@ export function PdfImporter({ projectId }: { projectId: string }) {
   }
 
   // review / uploading
-  let running = 0;
   return (
     <div className="import-review">
       <div className="import-toolbar">
@@ -174,23 +187,48 @@ export function PdfImporter({ projectId }: { projectId: string }) {
           />
         </label>
         <div className="import-count">
-          <b>{includedCount}</b> page{includedCount === 1 ? "" : "s"} → <b>{includedCount}</b> art slot{includedCount === 1 ? "" : "s"}
+          <b>{includedCount}</b> PDF page{includedCount === 1 ? "" : "s"} → <b>{artPageCount}</b> art page{artPageCount === 1 ? "" : "s"}
         </div>
       </div>
 
-      <p className="import-hint">Tap a page to leave it out of the numbering, like a title or credits page.</p>
+      <p className="import-hint">
+        {headings > 0 ? (
+          <>
+            <strong>Found {headings} page heading{headings === 1 ? "" : "s"}.</strong> If the page numbers look right, just
+            import. Tap a page only to leave it out, like a title or credits page.
+          </>
+        ) : (
+          "Tap a page to leave it out of the numbering, like a title or credits page."
+        )}
+      </p>
 
       <div className="import-grid">
-        {pages.map((p) => {
-          const pageNo = p.included ? ++running : null;
+        {pages.map((p, i) => {
+          const pageNo = pageNumbers[i];
+          // A start sheet is the first kept sheet carrying its number.
+          const isStart = pageNo != null && pageNumbers.slice(0, i).lastIndexOf(pageNo) === -1;
+          const spreadEnd = isStart && p.span > 1 ? pageNo + p.span - 1 : null;
+          const chip = pageNo == null
+            ? "SKIP"
+            : !isStart
+              ? `pg. ${pageNo} cont.`
+              : spreadEnd
+                ? `PAGES ${pageNo}–${spreadEnd}`
+                : `PAGE ${pageNo}`;
+          const label = pageNo == null
+            ? ", excluded"
+            : isStart
+              ? `, starts script page ${spreadEnd ? `${pageNo} to ${spreadEnd}` : pageNo}, included`
+              : `, continues script page ${pageNo}, included`;
           return (
             <button
               key={p.order}
               type="button"
               className="import-thumb"
               data-included={p.included}
+              data-cont={pageNo != null && !isStart}
               aria-pressed={p.included}
-              aria-label={`PDF page ${p.order + 1}${p.included ? `, script page ${pageNo}, included` : ", excluded"}`}
+              aria-label={`PDF page ${p.order + 1}${label}`}
               onClick={() => toggle(p.order)}
               disabled={phase === "uploading"}
             >
@@ -201,7 +239,7 @@ export function PdfImporter({ projectId }: { projectId: string }) {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round"><path d="M6 12h12" /></svg>
                 )}
               </span>
-              <span className="import-chip">{p.included ? `PAGE ${pageNo}` : "SKIP"}</span>
+              <span className="import-chip">{chip}</span>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.previewUrl} alt="" className="import-sheet" draggable={false} />
             </button>
@@ -213,7 +251,7 @@ export function PdfImporter({ projectId }: { projectId: string }) {
 
       <div className="import-actions">
         <button type="submit" className="btn-primary" onClick={submit} disabled={phase === "uploading" || includedCount === 0}>
-          {phase === "uploading" ? "Importing…" : `Import ${includedCount} page${includedCount === 1 ? "" : "s"}`}
+          {phase === "uploading" ? "Importing…" : `Import ${artPageCount} page${artPageCount === 1 ? "" : "s"}`}
         </button>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/dal";
 import { prisma } from "@/lib/prisma";
+import { assignPageNumbers, MAX_SPAN } from "@/lib/import/pages";
 
 // A rasterized PDF page is a downscaled PNG — a few hundred KB each. Cap per
 // page and overall so a runaway import can't dump hundreds of MB into Postgres.
@@ -10,7 +11,9 @@ const MAX_PAGES = 300;
 const MAX_PAGE_BYTES = 8 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 150 * 1024 * 1024;
 
-type PageMeta = { included: boolean; text: string | null };
+// span: 0 = continues the comic page before it, 1 = starts one, 2+ = starts a
+// spread (see lib/import/pages). Missing = 1, one PDF page per comic page.
+type PageMeta = { included: boolean; text: string | null; span?: number };
 
 export type ImportResult = { error?: string; scriptId?: string };
 
@@ -19,7 +22,8 @@ export type ImportResult = { error?: string; scriptId?: string };
  * rasterized each page to a PNG and lifted its text in the browser; here we just
  * store them. Pages arrive in original order as `image` files, parallel to a
  * `meta` JSON array marking which count (excluded = front matter). Included
- * pages get sequential comic page numbers; the script lands locked, read-only.
+ * pages get comic page numbers (several PDF pages can share one, see
+ * lib/import/pages); the script lands locked, read-only.
  */
 export async function createImportedScript(formData: FormData): Promise<ImportResult> {
   const user = await getCurrentUser();
@@ -62,10 +66,15 @@ export async function createImportedScript(formData: FormData): Promise<ImportRe
     buffers.push(new Uint8Array(await file.arrayBuffer()));
   }
 
-  let pageNumber = 0;
+  const spans = meta.map((m) =>
+    Number.isInteger(m.span) && (m.span as number) >= 0 && (m.span as number) <= MAX_SPAN ? (m.span as number) : 1,
+  );
+  const { pageNumbers, total: artPageCount } = assignPageNumbers(
+    meta.map((m, i) => ({ included: !!m.included, span: spans[i] })),
+  );
   const rows = meta.map((m, i) => ({
     order: i,
-    pageNumber: m.included ? ++pageNumber : null,
+    pageNumber: pageNumbers[i],
     text: m.text && m.text.trim().length > 0 ? m.text : null,
     bytes: buffers[i],
   }));
@@ -79,6 +88,7 @@ export async function createImportedScript(formData: FormData): Promise<ImportRe
         author: user.name,
         source: "IMPORTED_PDF",
         locked: true,
+        artPageCount,
         draftLabel: "Imported",
         draftDate: new Date(),
       },

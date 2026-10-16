@@ -2243,6 +2243,17 @@ span.ref-linktile {
 .art-headrow { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin: 4px 0 18px; }
 .art-meta { color: var(--label-2); font-size: var(--text-row); margin: 0; }
 .art-meta b { color: inherit; font-weight: inherit; font-variant-numeric: tabular-nums; }
+/* Imported scripts: the owner's page-count editor, inline with the count. */
+.art-count-edit { margin-left: 8px; padding: 3px 6px; border-radius: 6px; font-size: var(--text-sub); }
+.art-count-edit:hover { background: var(--fill); }
+.art-count-editor { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; vertical-align: middle; }
+.art-count-input { width: 64px; height: 32px; border: 0; border-radius: var(--radius-sm); background: var(--fill); color: var(--label); font-family: inherit; font-size: var(--text-row); text-align: center; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+.art-count-input::-webkit-outer-spin-button, .art-count-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.art-count-input:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.art-count-step { width: 30px; height: 30px; border: 0; border-radius: var(--radius-sm); background: var(--fill); color: var(--blue); font-family: inherit; font-size: 17px; font-weight: 600; line-height: 1; cursor: pointer; }
+.art-count-step:active { background: var(--fill-press); }
+.art-count-warn { display: block; margin-top: 10px; background: var(--orange-soft); color: var(--label); border: 0.5px solid color-mix(in srgb, var(--orange) 40%, transparent); border-radius: var(--radius); padding: 10px 13px; font-size: var(--text-sub); line-height: 1.45; max-width: 60ch; }
+.art-hidden-note { margin: 18px 0 0; font-size: var(--text-sub); color: var(--label-2); }
 .art-dot { margin: 0 8px; color: var(--label-3); }
 
 .art-btn { font-family: inherit; font-size: var(--text-row); font-weight: 590; border: 0; border-radius: var(--radius-pill); padding: 7px 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
@@ -2541,6 +2552,22 @@ span.ref-linktile {
   padding: 2px 7px; border-radius: 20px;
   background: var(--label); color: var(--bg-elevated);
 }
+
+/* A page that continues the comic page before it recedes: faded, no check
+   circle, an outlined chip. Page starts are what the eye lands on, so a correct
+   detection reads as nothing to do. Hover/focus brings it back up, so skipping
+   it is still discoverable. */
+.import-thumb[data-cont="true"] .import-sheet { opacity: 0.38; box-shadow: none; }
+.import-thumb[data-cont="true"] .import-toggle { opacity: 0; transition: opacity 0.16s var(--ease); }
+.import-thumb[data-cont="true"]:hover .import-sheet,
+.import-thumb[data-cont="true"]:focus-visible .import-sheet { opacity: 0.75; }
+.import-thumb[data-cont="true"]:hover .import-toggle,
+.import-thumb[data-cont="true"]:focus-visible .import-toggle { opacity: 1; }
+.import-thumb[data-cont="true"] .import-chip {
+  background: var(--bg-elevated); color: var(--label-2); font-weight: 550;
+  box-shadow: 0 0 0 1px var(--separator);
+}
+.import-hint strong { color: var(--label-2); font-weight: 600; }
 
 .import-thumb[data-included="false"] .import-sheet {
   opacity: 0.45; filter: grayscale(0.5); transform: scale(0.97);

@@ -127,6 +127,25 @@ export async function finalizeArtVersion(input: {
   return { versionId: created.id };
 }
 
+/**
+ * Set how many comic pages an imported script's art view shows. Owner only.
+ * Art past the new count is left alone (hidden, not deleted), so raising the
+ * count again brings it back.
+ */
+export async function setArtPageCount(input: { scriptId: string; count: number }) {
+  const user = await getCurrentUser();
+  const { scriptId, count } = input;
+  if (!scriptId || !Number.isInteger(count) || count < 1 || count > 300) throw new Error("bad request");
+  await assertScriptOwner(scriptId, user.id);
+
+  const script = await prisma.script.findUnique({ where: { id: scriptId }, select: { source: true, projectId: true } });
+  if (script?.source !== "IMPORTED_PDF") throw new Error("only imported scripts have an editable page count");
+
+  await prisma.script.update({ where: { id: scriptId }, data: { artPageCount: count } });
+  revalidatePath(`/scripts/${scriptId}`, "layout");
+  if (script.projectId) revalidatePath(`/projects/${script.projectId}`);
+}
+
 /** Roll the "current" pointer back to an earlier version ("Make current"). */
 export async function setCurrentArtVersion(input: { scriptId: string; versionId: string }) {
   const user = await getCurrentUser();

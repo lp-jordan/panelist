@@ -10,7 +10,8 @@ import { ArtPipelineClient, type ArtPageData } from "@/components/art/ArtPipelin
 
 // V2 Phase E — per-issue art page overview + versions + notes. The page COUNT
 // is derived from the script's SCRIPT pages (BLANK pages are skipped by
-// numbering); art is anchored by pageNumber, never Page.id.
+// numbering), or for an imported PDF from Script.artPageCount (set at import,
+// owner-editable here); art is anchored by pageNumber, never Page.id.
 export default async function ScriptArtPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser();
   const { id } = await params;
@@ -22,6 +23,7 @@ export default async function ScriptArtPage({ params }: { params: Promise<{ id: 
       title: true,
       locked: true,
       source: true,
+      artPageCount: true,
       projectId: true,
       project: { select: { name: true } },
       pages: { where: { kind: "SCRIPT" }, select: { id: true } },
@@ -67,8 +69,14 @@ export default async function ScriptArtPage({ params }: { params: Promise<{ id: 
   if (!script) notFound();
 
   const role = await getScriptRole(script.id, user.id);
-  const pageCount = script.source === "IMPORTED_PDF" ? script.importedPages.length : script.pages.length;
+  const imported = script.source === "IMPORTED_PDF";
+  const pageCount = imported ? (script.artPageCount ?? script.importedPages.length) : script.pages.length;
   const byNumber = new Map(script.artPages.map((ap) => [ap.pageNumber, ap]));
+  // Art kept on pages past the count (the owner lowered it). Hidden, not deleted.
+  const hiddenArtPages = script.artPages
+    .filter((ap) => ap.pageNumber > pageCount && ap.versions.length > 0)
+    .map((ap) => ap.pageNumber)
+    .sort((a, b) => a - b);
 
   // Presign inline preview URLs for each CURRENT version that has a web-viewable
   // preview. Presigning is local crypto (no network), so doing it per page is
@@ -154,6 +162,9 @@ export default async function ScriptArtPage({ params }: { params: Promise<{ id: 
           scriptId={script.id}
           pages={pages}
           isOwner={role === "OWNER"}
+          canEditPageCount={role === "OWNER" && imported}
+          artPageNumbers={script.artPages.filter((ap) => ap.versions.length > 0).map((ap) => ap.pageNumber)}
+          hiddenArtPages={hiddenArtPages}
           currentUserId={user.id}
           locked={script.locked}
           storageReady={artStorageConfigured()}

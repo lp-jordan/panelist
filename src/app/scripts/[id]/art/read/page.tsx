@@ -28,6 +28,7 @@ export default async function ArtReaderPage({
       id: true,
       title: true,
       source: true,
+      artPageCount: true,
       pages: { where: { kind: "SCRIPT" }, select: { id: true } },
       importedPages: { where: { pageNumber: { not: null } }, select: { id: true } },
       artPages: {
@@ -44,7 +45,8 @@ export default async function ArtReaderPage({
 
   if (!script) notFound();
 
-  const pageCount = script.source === "IMPORTED_PDF" ? script.importedPages.length : script.pages.length;
+  const pageCount =
+    script.source === "IMPORTED_PDF" ? (script.artPageCount ?? script.importedPages.length) : script.pages.length;
   const byNumber = new Map(script.artPages.map((ap) => [ap.pageNumber, ap]));
   const storageReady = artStorageConfigured();
 

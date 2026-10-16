@@ -143,6 +143,11 @@ model Script {
   // Free-form notes beside the script (the scratch pad). One shared pad per
   // script, plain text, never exported.
   scratchpad String       @default("")
+  // Imported PDFs only: how many comic pages the art view shows. Set at import
+  // (a comic page can run over several PDF pages, a spread is one PDF page for
+  // two) and editable by the owner on the art page. Null = count the numbered
+  // pages, as before.
+  artPageCount Int?
 
   project          Project?          @relation(fields: [projectId], references: [id], onDelete: SetNull)
   owner            User?             @relation(fields: [ownerId], references: [id])

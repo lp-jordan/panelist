@@ -130,9 +130,9 @@ export function ScriptReadView({
   // pages are unnumbered). Imported scripts have no panels, so no panel count.
   const pages = useMemo(() => {
     if (imagePages) {
-      return imagePages
-        .filter((p) => p.pageNumber != null)
-        .map((p) => ({ n: p.pageNumber as number, panelCount: undefined as number | undefined }));
+      // Every comic page, even one with no sheet of its own (the second half
+      // of a spread); jumping to it lands on the sheet that holds it.
+      return Array.from({ length: pageCount }, (_, i) => ({ n: i + 1, panelCount: undefined as number | undefined }));
     }
     const out: { n: number; panelCount: number | undefined }[] = [];
     let n = 0;
@@ -142,7 +142,7 @@ export function ScriptReadView({
       out.push({ n, panelCount: (node.content ?? []).filter((c) => c.type === "panel").length });
     }
     return out;
-  }, [doc, imagePages]);
+  }, [doc, imagePages, pageCount]);
 
   // Fit the fixed-width sheets to the screen (phones especially). min(1, …)
   // leaves desktop untouched. Measured off the document width so the element's
@@ -202,6 +202,17 @@ export function ScriptReadView({
 
   function scrollToPage(pageNo: number) {
     const sheets = stageRef.current?.querySelectorAll<HTMLElement>(".px-page");
+    // Imported sheets carry their comic page number: several PDF pages can
+    // share one, and a spread's sheet covers two. Go to the last sheet that
+    // starts at or before the page.
+    if (imagePages && sheets) {
+      let target: HTMLElement | undefined;
+      sheets.forEach((el) => {
+        if (Number(el.dataset.pageNo) <= pageNo) target = el;
+      });
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
     sheets?.[pageNo - 1]?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
