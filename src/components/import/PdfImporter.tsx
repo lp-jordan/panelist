@@ -154,12 +154,12 @@ export function PdfImporter({ projectId }: { projectId: string }) {
       return;
     }
     if (tooMany) {
-      setError(`This PDF has ${pages.length} pages; the most an import can take is ${MAX_IMPORT_PAGES}. Split it into smaller PDFs and import each one.`);
+      setError(`This PDF has ${pages.length} pages. The most an import can take is ${MAX_IMPORT_PAGES}.`);
       return;
     }
     if (tooLarge) {
       setError(
-        `This PDF is too large to import (${formatMB(uploadBytes)}; the limit is ${formatMB(MAX_IMPORT_BYTES)}). Split it into smaller PDFs and import each one.`,
+        `This PDF is too large to import. Its pages come to ${formatMB(uploadBytes)}, and the limit is ${formatMB(MAX_IMPORT_BYTES)}.`,
       );
       return;
     }
